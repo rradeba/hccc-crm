@@ -34,7 +34,7 @@ const ServiceManagementSystem = () => {
     template: 'custom' // 'custom', 'followup', 'promotion', 'reminder'
   });
   const [jobs, setJobs] = useState([]);
-  const [, setCalendarView] = useState('month'); // 'month', 'week', 'day'
+  // const [, setCalendarView] = useState('month'); // 'month', 'week', 'day'
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [, setSelectedJob] = useState(null);
