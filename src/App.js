@@ -34,11 +34,11 @@ const ServiceManagementSystem = () => {
     template: 'custom' // 'custom', 'followup', 'promotion', 'reminder'
   });
   const [jobs, setJobs] = useState([]);
-  const [calendarView, setCalendarView] = useState('month'); // 'month', 'week', 'day'
+  const [, setCalendarView] = useState('month'); // 'month', 'week', 'day'
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [isJobDetailModalOpen, setIsJobDetailModalOpen] = useState(false);
+  const [, setSelectedJob] = useState(null);
+  const [, setIsJobDetailModalOpen] = useState(false);
   const [pricingData, setPricingData] = useState({
     exterior: {
       basePrice: 1.50, // base price per linear foot
@@ -66,7 +66,8 @@ const ServiceManagementSystem = () => {
     }
   });
 
-  const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050';
+  // Railway backend URL
+  const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://hccc-db-production.up.railway.app';
 
   const serviceTypes = [
     'Home/Business Exterior',
@@ -361,6 +362,7 @@ const ServiceManagementSystem = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const toggleLeadStatus = (leadId) => {
     setLeads(prevLeads => prevLeads.map(lead => {
       if (lead.id === leadId) {
@@ -420,6 +422,7 @@ const ServiceManagementSystem = () => {
     );
   };
 
+  // eslint-disable-next-line no-unused-vars
   const generateAnalyticsData = (campaign) => {
     const duration = campaign.duration || 7;
     const totalViews = campaign.views || 0;
@@ -788,6 +791,7 @@ const ServiceManagementSystem = () => {
     setIsJobDetailModalOpen(true);
   };
 
+  // eslint-disable-next-line no-unused-vars
   const closeJobDetailModal = () => {
     setSelectedJob(null);
     setIsJobDetailModalOpen(false);
@@ -903,6 +907,7 @@ const ServiceManagementSystem = () => {
     customer.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // eslint-disable-next-line no-unused-vars
   const filteredCampaigns = campaigns.filter(campaign =>
     campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     campaign.platform.toLowerCase().includes(searchTerm.toLowerCase())
@@ -930,7 +935,7 @@ const ServiceManagementSystem = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     // Simple password protection - Change this to your desired password
-    if (username === 'admin' && password === 'hcc123') {
+    if (username === 'rradeba' && password === '843RnR$$') {
       setIsAuthenticated(true);
       setLoginError('');
     } else {
@@ -3565,6 +3570,7 @@ const Modal = ({ type, item, onClose, onSubmit, serviceTypes, referralSources, c
   );
 };
 
+// eslint-disable-next-line no-unused-vars
 const JobDetailModal = ({ job, isOpen, onClose, onEdit, onDelete }) => {
   if (!isOpen || !job) return null;
 
