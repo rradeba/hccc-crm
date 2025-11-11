@@ -151,45 +151,70 @@ const ServiceManagementSystem = () => {
   useEffect(() => {
     const load = async () => {
       try {
+        console.log('Loading data from:', API_URL);
         const [leadsRes, custRes] = await Promise.all([
           fetch(`${API_URL}/api/leads/`),
           fetch(`${API_URL}/api/customers/`)
         ]);
+        
+        if (!leadsRes.ok || !custRes.ok) {
+          console.error('API response error:', { leads: leadsRes.status, customers: custRes.status });
+          return;
+        }
+        
         const leadsJson = await leadsRes.json();
         const customersJson = await custRes.json();
+        
+        console.log('Loaded leads:', leadsJson.length);
+        console.log('Loaded customers:', customersJson.length);
+        
         // Normalize fields expected by UI
-        const uiLeads = (leadsJson || []).map(l => ({
-          id: l.id,
-          name: l.name,
-          email: l.email,
-          phone: l.phone,
-          address: l.address,
-          source: l.referrer,
-          service: Array.isArray(l.service)
-            ? l.service.map(s => mapServiceLabel(s))
-            : (l.service ? [mapServiceLabel(l.service)] : []),
-          notes: l.notes || '',
-          status: 'New',
-          dateAdded: (l.created_at || '').slice(0, 10),
-          estimatedValue: '',
-          documents: []
-        }));
-        const uiCustomers = (customersJson || []).map(c => ({
-          id: c.id,
-          name: c.name,
-          email: c.email,
-          phone: c.phone,
-          address: c.address,
-          source: c.source,
-          joinDate: (c.join_date || c.joinDate || '').slice(0, 10),
-          totalSpent: Number(c.total_spent ?? c.totalSpent ?? 0),
-          serviceCount: Number(c.service_count ?? c.serviceCount ?? 0),
-          lastService: (c.last_service || c.lastService || '')?.slice ? (c.last_service || c.lastService || '').slice(0, 10) : c.last_service || c.lastService,
-          rating: Number(c.rating ?? 5),
-          services: c.services || [],
-          reviewStatus: c.review_status || c.reviewStatus || 'none',
-          estimateData: c.estimate_data || c.estimateData || null
-        }));
+        const uiLeads = (leadsJson || []).map(l => {
+          const firstName = (l.first_name || l.firstName || '').trim();
+          const lastName = (l.last_name || l.lastName || '').trim();
+          const fullName = (l.name || `${firstName} ${lastName}`).trim();
+          return {
+            id: l.id,
+            firstName,
+            lastName,
+            name: fullName,
+            email: l.email,
+            phone: l.phone,
+            address: l.address,
+            source: l.referrer,
+            service: Array.isArray(l.service)
+              ? l.service.map(s => mapServiceLabel(s))
+              : (l.service ? [mapServiceLabel(l.service)] : []),
+            notes: l.notes || '',
+            status: 'New',
+            dateAdded: (l.created_at || '').slice(0, 10),
+            estimatedValue: '',
+            documents: []
+          };
+        });
+        const uiCustomers = (customersJson || []).map(c => {
+          const firstName = (c.first_name || c.firstName || '').trim();
+          const lastName = (c.last_name || c.lastName || '').trim();
+          const fullName = (c.name || `${firstName} ${lastName}`).trim();
+          return {
+            id: c.id,
+            firstName,
+            lastName,
+            name: fullName,
+            email: c.email,
+            phone: c.phone,
+            address: c.address,
+            source: c.source,
+            joinDate: (c.join_date || c.joinDate || '').slice(0, 10),
+            totalSpent: Number(c.total_spent ?? c.totalSpent ?? 0),
+            serviceCount: Number(c.service_count ?? c.serviceCount ?? 0),
+            lastService: (c.last_service || c.lastService || '')?.slice ? (c.last_service || c.lastService || '').slice(0, 10) : c.last_service || c.lastService,
+            rating: Number(c.rating ?? 5),
+            services: c.services || [],
+            reviewStatus: c.review_status || c.reviewStatus || 'none',
+            estimateData: c.estimate_data || c.estimateData || null
+          };
+        });
         setLeads(uiLeads);
         setCustomers(uiCustomers);
       } catch (e) {
@@ -198,6 +223,11 @@ const ServiceManagementSystem = () => {
       }
     };
     load();
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(load, 30000);
+    
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_URL]);
 
@@ -234,9 +264,15 @@ const ServiceManagementSystem = () => {
   };
 
   const addLead = (leadData) => {
+    const firstName = (leadData.firstName || '').trim();
+    const lastName = (leadData.lastName || '').trim();
+    const fullName = (leadData.name || `${firstName} ${lastName}`).trim();
     const newLead = {
       id: Date.now(),
       ...leadData,
+      firstName,
+      lastName,
+      name: fullName,
       // normalize service to array with standard label for consistent rendering
       service: leadData.service ? [mapServiceLabel(leadData.service)] : [],
       // ensure source is set with a default if not provided
@@ -272,8 +308,13 @@ const ServiceManagementSystem = () => {
 
   const addCustomer = async (customerData) => {
     try {
+      const firstName = (customerData.firstName || '').trim();
+      const lastName = (customerData.lastName || '').trim();
+      const fullName = (customerData.name || `${firstName} ${lastName}`).trim();
       const payload = {
-        name: customerData.name,
+        firstName,
+        lastName,
+        name: fullName,
         email: customerData.email,
         phone: customerData.phone,
         address: customerData.address,
@@ -294,7 +335,9 @@ const ServiceManagementSystem = () => {
       const saved = await res.json();
       setCustomers(prev => [{
         id: saved.id,
-        name: saved.name,
+        firstName: (saved.first_name || saved.firstName || firstName),
+        lastName: (saved.last_name || saved.lastName || lastName),
+        name: saved.name || fullName,
         email: saved.email,
         phone: saved.phone,
         address: saved.address,
@@ -319,6 +362,8 @@ const ServiceManagementSystem = () => {
     try {
       // create customer
       const payload = {
+      firstName: lead.firstName || (lead.name ? lead.name.split(' ')[0] : ''),
+      lastName: lead.lastName || (lead.name ? lead.name.split(' ').slice(1).join(' ') : ''),
       name: lead.name,
       email: lead.email,
       phone: lead.phone,
@@ -340,7 +385,9 @@ const ServiceManagementSystem = () => {
       const saved = await res.json();
       setCustomers(prev => [{
         id: saved.id,
-        name: saved.name,
+        firstName: saved.first_name || saved.firstName || lead.firstName || (lead.name ? lead.name.split(' ')[0] : ''),
+        lastName: saved.last_name || saved.lastName || lead.lastName || (lead.name ? lead.name.split(' ').slice(1).join(' ') : ''),
+        name: saved.name || lead.name,
         email: saved.email,
         phone: saved.phone,
         address: saved.address,
@@ -895,17 +942,25 @@ const ServiceManagementSystem = () => {
     );
   };
 
-  const filteredLeads = leads.filter(lead =>
-    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.address.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLeads = leads.filter(lead => {
+    const term = searchTerm.toLowerCase();
+    const nameMatch = (lead.name || '').toLowerCase().includes(term);
+    const firstMatch = (lead.firstName || '').toLowerCase().includes(term);
+    const lastMatch = (lead.lastName || '').toLowerCase().includes(term);
+    const emailMatch = (lead.email || '').toLowerCase().includes(term);
+    const addressMatch = (lead.address || '').toLowerCase().includes(term);
+    return nameMatch || firstMatch || lastMatch || emailMatch || addressMatch;
+  });
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.address.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers.filter(customer => {
+    const term = searchTerm.toLowerCase();
+    const nameMatch = (customer.name || '').toLowerCase().includes(term);
+    const firstMatch = (customer.firstName || '').toLowerCase().includes(term);
+    const lastMatch = (customer.lastName || '').toLowerCase().includes(term);
+    const emailMatch = (customer.email || '').toLowerCase().includes(term);
+    const addressMatch = (customer.address || '').toLowerCase().includes(term);
+    return nameMatch || firstMatch || lastMatch || emailMatch || addressMatch;
+  });
 
   // eslint-disable-next-line no-unused-vars
   const filteredCampaigns = campaigns.filter(campaign =>
@@ -914,21 +969,62 @@ const ServiceManagementSystem = () => {
   );
 
   const updateCustomerReview = async (customerId, reviewStatus, rating) => {
+    const previousCustomers = customers;
+
+    // Optimistically update UI
+    setCustomers(prev => prev.map(c => (
+      c.id === customerId
+        ? {
+            ...c,
+            reviewStatus: reviewStatus ?? c.reviewStatus ?? 'none',
+            rating: Number(rating ?? c.rating ?? 5)
+          }
+        : c
+    )));
+
     try {
-      const res = await fetch(`${API_URL}/api/customers/${customerId}`, {
+      const normalizedBase = API_URL.replace(/\/$/, '');
+      const res = await fetch(`${normalizedBase}/api/customers/${customerId}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewStatus, rating })
+        body: JSON.stringify({
+          reviewStatus,
+          review_status: reviewStatus,
+          rating
+        })
       });
-      if (!res.ok) throw new Error('Failed to update review');
-      const saved = await res.json();
-      setCustomers(prev => prev.map(c => c.id === customerId ? {
-        ...c,
-        reviewStatus: saved.review_status || saved.reviewStatus || 'none',
-        rating: Number(saved.rating ?? c.rating)
-      } : c));
+
+      if (!res.ok) {
+        throw new Error(`Failed to update review: ${res.status}`);
+      }
+
+      let saved = null;
+      const contentType = res.headers.get('content-type') || '';
+      const hasBody = res.status !== 204 && contentType.includes('application/json');
+      if (hasBody) {
+        try {
+          saved = await res.json();
+        } catch (parseErr) {
+          console.warn('Could not parse review update response', parseErr);
+        }
+      }
+
+      if (saved) {
+        setCustomers(prev => prev.map(c => {
+          if (c.id !== customerId) return c;
+          const newReviewStatus = saved.review_status ?? saved.reviewStatus ?? reviewStatus ?? c.reviewStatus ?? 'none';
+          const newRating = Number(saved.rating ?? rating ?? c.rating ?? 5);
+          return {
+            ...c,
+            reviewStatus: newReviewStatus,
+            rating: newRating
+          };
+        }));
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to update customer review', e);
+      // Revert optimistic update on failure to keep UI consistent with backend
+      setCustomers(previousCustomers);
     }
   };
 
@@ -996,9 +1092,6 @@ const ServiceManagementSystem = () => {
             </button>
           </form>
           
-          <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Default: admin / hcc123</p>
-          </div>
         </div>
       </div>
     );
@@ -1398,7 +1491,12 @@ const ServiceManagementSystem = () => {
                       <tr key={customer.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {(() => {
+                                const composed = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+                                return composed || customer.name || 'Customer';
+                              })()}
+                            </div>
                             <div className="text-sm text-gray-500 flex items-center">
                               <Mail className="w-3 h-3 mr-1" />
                               {customer.email}
@@ -3105,6 +3203,9 @@ const Modal = ({ type, item, onClose, onSubmit, serviceTypes, referralSources, c
     return item || {};
   });
 
+  const isLeadModal = type === 'addLead' || type === 'editLead';
+  const isCustomerModal = type === 'addCustomer' || type === 'editCustomer';
+
   const handleSubmit = () => {
     onSubmit(formData);
   };
@@ -3139,16 +3240,37 @@ const Modal = ({ type, item, onClose, onSubmit, serviceTypes, referralSources, c
         
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(type === 'addLead' || type === 'editLead' || type === 'addCustomer' || type === 'editCustomer') && (
+            {(isLeadModal || isCustomerModal) && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input
                     type="text"
-                    value={formData.name || ''}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    value={formData.firstName || ''}
+                    onChange={(e) => setFormData(prev => {
+                      const value = e.target.value;
+                      const updated = { ...prev, firstName: value };
+                      const last = updated.lastName || '';
+                      updated.name = `${value} ${last}`.trim();
+                      return updated;
+                    })}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={formData.lastName || ''}
+                    onChange={(e) => setFormData(prev => {
+                      const value = e.target.value;
+                      const updated = { ...prev, lastName: value };
+                      const first = updated.firstName || '';
+                      updated.name = `${first} ${value}`.trim();
+                      return updated;
+                    })}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
