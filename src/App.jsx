@@ -359,6 +359,7 @@ const ServiceManagementSystem = () => {
   const [openPercentDropdown, setOpenPercentDropdown] = useState(null);
   const [headerColor, setHeaderColor] = useState('blue');
   const [openHeaderSettings, setOpenHeaderSettings] = useState(false);
+  const [customHeaderIcon, setCustomHeaderIcon] = useState(null); // Store as base64 or URL
   
   const headerColorClasses = {
     blue: 'bg-blue-600',
@@ -397,6 +398,8 @@ const ServiceManagementSystem = () => {
       initialServices: [], // Array of services for Buy section
       additionalServices: [] // Array of { service: string, discountType: 'percentOff' | 'free', percentOff: number }
     },
+    packagePrice: '', // Package price for selected services
+    packageServices: [], // Array of services included in the package deal
     startDate: '',
     endDate: '',
   }]);
@@ -804,9 +807,8 @@ const SourceBadge = ({ source }) => {
   };
 
   const softWashingServices = [
-    'House washing',
+    'Residential Washing',
     'Roof washing (asphalt, metal, tile)',
-    'Pool deck soft wash',
     'Commercial washing',
     'Fence cleaning (wood, vinyl)',
     'Deck cleaning (wood or composite)'
@@ -867,9 +869,8 @@ const SourceBadge = ({ source }) => {
   ];
 
   const pressureWashingServices = [
-    'Driveway cleaning',
-    'Sidewalk cleaning',
-    'Walkways & pathways',
+    'Residential Pressure Washing',
+    'Commercial Cleaning',
     'Patio and porch cleaning',
     'Pool deck (concrete) cleaning',
     'Garage floor cleaning'
@@ -2983,7 +2984,15 @@ const handleEstimateClick = (lead, event) => {
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6 space-y-4 lg:space-y-0">
             <div className="flex items-center space-x-4">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
-                <Building2 className="w-8 h-8 text-white" />
+                {customHeaderIcon ? (
+                  <img 
+                    src={customHeaderIcon} 
+                    alt="Business logo" 
+                    className="w-8 h-8 object-contain"
+                  />
+                ) : (
+                  <Building2 className="w-8 h-8 text-white" />
+                )}
               </div>
             <div>
                 <h1 className="text-3xl font-bold text-white drop-shadow-md">Holy City Clean Co.</h1>
@@ -3023,25 +3032,71 @@ const handleEstimateClick = (lead, event) => {
                   <Settings className="w-9 h-9" />
                 </button>
                 {openHeaderSettings && (
-                  <div className="absolute z-50 right-0 mt-2 w-64 bg-white border border-gray-300 rounded-xl shadow-lg">
-                    <div className="p-4">
-                      <h3 className="text-sm font-semibold text-gray-800 mb-3">Header Color</h3>
-                      <div className="grid grid-cols-5 gap-2">
-                        {headerColorOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => {
-                              setHeaderColor(option.value);
-                              setOpenHeaderSettings(false);
-                            }}
-                            className={`w-10 h-10 rounded-lg ${option.color} border-2 transition-all ${
-                              headerColor === option.value ? 'border-gray-800 scale-110 ring-2 ring-gray-400' : 'border-transparent hover:border-gray-300'
-                            }`}
-                            aria-label={`Select ${option.name} color`}
-                            title={option.name}
-                          />
-                        ))}
+                  <div className="absolute z-50 right-0 mt-2 w-80 bg-white border border-gray-300 rounded-xl shadow-lg">
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-800 mb-3">Header Color</h3>
+                        <div className="grid grid-cols-5 gap-2">
+                          {headerColorOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setHeaderColor(option.value);
+                              }}
+                              className={`w-10 h-10 rounded-lg ${option.color} border-2 transition-all ${
+                                headerColor === option.value ? 'border-gray-800 scale-110 ring-2 ring-gray-400' : 'border-transparent hover:border-gray-300'
+                              }`}
+                              aria-label={`Select ${option.name} color`}
+                              title={option.name}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="border-t border-gray-200 pt-4">
+                        <h3 className="text-sm font-semibold text-gray-800 mb-3">Business Icon</h3>
+                        <div className="space-y-3">
+                          {customHeaderIcon && (
+                            <div className="flex items-center justify-center bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <img 
+                                src={customHeaderIcon} 
+                                alt="Current business icon" 
+                                className="w-16 h-16 object-contain"
+                              />
+                            </div>
+                          )}
+                          <label className="block">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setCustomHeaderIcon(reader.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                            <span className="cursor-pointer inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                              <Upload className="w-4 h-4 mr-2" />
+                              {customHeaderIcon ? 'Change Icon' : 'Upload Custom Icon'}
+                            </span>
+                          </label>
+                          {customHeaderIcon && (
+                            <button
+                              type="button"
+                              onClick={() => setCustomHeaderIcon(null)}
+                              className="w-full px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                            >
+                              Remove Custom Icon
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3049,30 +3104,26 @@ const handleEstimateClick = (lead, event) => {
               </div>
             </div>
           </div>
-          <nav className="flex flex-wrap gap-2 px-2 py-3 border-t border-white/20">
+          <nav className="flex flex-wrap gap-6 px-2 py-3 border-t border-white/20">
             {[
-              { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
-              { id: 'leads', label: 'Leads', icon: Users },
-            { id: 'customers', label: 'Customer Directory', icon: Star },
-            { id: 'aiAgent', label: 'My Agent', icon: Bot },
-            { id: 'calendar', label: 'Calendar', icon: Calendar },
-            { id: 'business', label: 'My Business', icon: Building2 },
-            { id: 'pricingTool', label: 'Pricing Tool', icon: DollarSign }
+              { id: 'dashboard', label: 'Dashboard' },
+              { id: 'leads', label: 'Leads' },
+              { id: 'customers', label: 'Customer Directory' },
+              { id: 'aiAgent', label: 'My Agent' },
+              { id: 'calendar', label: 'Calendar' },
+              { id: 'business', label: 'My Business' },
+              { id: 'pricingTool', label: 'Pricing Tool' }
             ].map(tab => {
-              const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
-                    isActive
-                      ? 'bg-white text-blue-700 shadow-lg transform scale-105'
-                      : 'bg-white/10 text-white hover:bg-white/20 hover:scale-105'
+                  className={`font-medium text-sm text-white transition-all duration-200 hover:underline ${
+                    isActive ? 'underline' : ''
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-white'}`} />
-                  <span>{tab.label}</span>
+                  {tab.label}
                 </button>
               );
             })}
@@ -7960,7 +8011,7 @@ const handleEstimateClick = (lead, event) => {
                         <div className="space-y-6">
                           {/* Collapsible Header */}
                           <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-semibold text-gray-800">Selected Services</h3>
+                            <h3 className="text-lg font-semibold text-gray-800">Pricing Variables</h3>
                             <button
                               type="button"
                               onClick={() => {
@@ -7972,13 +8023,11 @@ const handleEstimateClick = (lead, event) => {
                                   )
                                 );
                               }}
-                              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+                              className="text-gray-600 hover:text-gray-800"
                             >
-                              <span>{format.isPricingPanelsCollapsed ? 'Expand' : 'Collapse'}</span>
                               <ChevronDown className={`w-4 h-4 transition-transform ${format.isPricingPanelsCollapsed ? '' : 'rotate-180'}`} />
                             </button>
                           </div>
-                          <div className="border-b border-gray-300 mb-4"></div>
                           
                           {/* Four Sections in Two Rows - Collapsible */}
                           {!format.isPricingPanelsCollapsed && (
@@ -8106,7 +8155,7 @@ const handleEstimateClick = (lead, event) => {
                                     </div>
                                     
                                     {/* Selected Items Panel */}
-                                    <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 shadow-sm min-h-[240px] min-w-0 max-w-full overflow-x-auto">
+                                    <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm min-h-[240px] min-w-0 max-w-full overflow-x-auto">
                                       {selectedItems.length > 0 ? (
                                         <div className="space-y-3">
                                           {selectedItems.map((item, index) => {
@@ -8515,7 +8564,7 @@ const handleEstimateClick = (lead, event) => {
                                     </div>
                                     
                                     {/* Selected Items Panel */}
-                                    <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 shadow-sm min-h-[240px] min-w-0 max-w-full overflow-x-auto">
+                                    <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm min-h-[240px] min-w-0 max-w-full overflow-x-auto">
                                       {selectedItems.length > 0 ? (
                                         <div className="space-y-3">
                                           {selectedItems.map((item, index) => {
@@ -8766,15 +8815,6 @@ const handleEstimateClick = (lead, event) => {
                           </div>
                           </>
                           )}
-                          
-                          {/* Total Box */}
-                          <div className="mt-6 p-4 bg-gray-200 rounded-lg border-2 border-gray-300 shadow-lg">
-                            <div className="flex items-center justify-between">
-                              <span className="text-lg font-semibold text-gray-700">Total Price</span>
-                              <span className="text-2xl font-bold text-gray-700">$0.00</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">Sum of all selected pricing components</p>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -8879,7 +8919,7 @@ const handleEstimateClick = (lead, event) => {
                       {promotion.promotionType === 'percentOff' ? (
                         <div className="w-full">
                           <label className="block text-xs font-medium text-gray-600 mb-2">Percent Off</label>
-                          <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 shadow-sm">
+                          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
                             <div className="flex gap-8 items-start">
                               {/* Service Selection - Multiple Services Stacked */}
                               <div className="flex flex-col items-start gap-3 flex-1">
@@ -9043,12 +9083,127 @@ const handleEstimateClick = (lead, event) => {
                             </div>
                           </div>
                         </div>
-                      ) : (promotion.promotionType === 'package' || promotion.promotionType === 'buyGet') && (
+                      ) : (promotion.promotionType === 'package' || promotion.promotionType === 'buyGet') ? (
                         <div className="w-full">
                           <label className="block text-xs font-medium text-gray-600 mb-2">
                             {promotion.promotionType === 'buyGet' ? 'Buy/Get Formula' : 'Package Formula'}
                           </label>
-                          <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 shadow-sm">
+                          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
+                            {promotion.promotionType === 'package' ? (
+                              <div className="space-y-4">
+                                {/* Package Deal - Service Selection */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                                    Select Services for Package
+                                  </label>
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const dropdownKey = `${promotion.id}-package-services`;
+                                        setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
+                                      }}
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
+                                    >
+                                      <span className={promotion.packageServices && promotion.packageServices.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                                        {promotion.packageServices && promotion.packageServices.length > 0
+                                          ? `${promotion.packageServices.length} service${promotion.packageServices.length > 1 ? 's' : ''} selected`
+                                          : 'Select services...'}
+                                      </span>
+                                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openPackageFormulaDropdown === `${promotion.id}-package-services` ? 'transform rotate-180' : ''}`} />
+                                    </button>
+                                    {openPackageFormulaDropdown === `${promotion.id}-package-services` && (
+                                      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
+                                        <div className="p-2 space-y-1">
+                                          {[...softWashingServices, ...customSoftWashingServices, ...pressureWashingServices, ...customPressureWashingServices, ...specialtyCleaningServices, ...customSpecialtyCleaningServices, ...(showWindowCleaning ? [...windowCleaningServices, ...customWindowCleaningServices] : []), ...(showPaverSealing ? ['Paver Sealing'] : [])].filter(service => !(promotion.packageServices || []).includes(service)).map((service) => (
+                                            <button
+                                              key={service}
+                                              type="button"
+                                              onClick={() => {
+                                                const currentServices = promotion.packageServices || [];
+                                                setPromotions((prev) =>
+                                                  prev.map((row) =>
+                                                    row.id === promotion.id
+                                                      ? {
+                                                          ...row,
+                                                          packageServices: [...currentServices, service]
+                                                        }
+                                                      : row
+                                                  )
+                                                );
+                                                setOpenPackageFormulaDropdown(null);
+                                              }}
+                                              className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-gray-50 text-gray-700"
+                                            >
+                                              {service}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {/* Selected Services Display */}
+                                  {(promotion.packageServices || []).length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      {(promotion.packageServices || []).map((service, index) => (
+                                        <div key={index} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border-2 border-blue-200 shadow-sm">
+                                          <span>{service}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const updatedServices = (promotion.packageServices || []).filter((_, i) => i !== index);
+                                              setPromotions((prev) =>
+                                                prev.map((row) =>
+                                                  row.id === promotion.id
+                                                    ? {
+                                                        ...row,
+                                                        packageServices: updatedServices
+                                                      }
+                                                    : row
+                                                )
+                                              );
+                                            }}
+                                            className="p-0.5 text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
+                                            aria-label="Remove service"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Package Price Input */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                                    Package Price
+                                  </label>
+                                  <div className="relative">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={promotion.packagePrice || ''}
+                                      onChange={(e) => {
+                                        setPromotions((prev) =>
+                                          prev.map((row) =>
+                                            row.id === promotion.id
+                                              ? { ...row, packagePrice: e.target.value }
+                                              : row
+                                          )
+                                        );
+                                      }}
+                                      placeholder="0.00"
+                                      className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Total price for all selected services in this package
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
                             <div className="flex gap-8 items-start">
                               {/* Buy Label and Initial Services - Multiple Services Stacked */}
                               <div className="flex flex-col items-start gap-3 flex-1">
@@ -9331,8 +9486,10 @@ const handleEstimateClick = (lead, event) => {
                                 </div>
                             </div>
                           </div>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
 
                     {/* Third Row - Date Range */}
@@ -9390,6 +9547,8 @@ const handleEstimateClick = (lead, event) => {
                           initialServices: [],
                           additionalServices: []
                         },
+                        packagePrice: '',
+                        packageServices: [],
                         startDate: '',
                         endDate: '',
                       },
@@ -9640,7 +9799,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -9847,7 +10006,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -9929,7 +10088,7 @@ const handleEstimateClick = (lead, event) => {
                                 type="button"
                                 onClick={() => toggleCompanyQuality(quality)}
                                 disabled={isDisabled}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
                                   isSelected
                                     ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                                     : isDisabled
@@ -9937,7 +10096,6 @@ const handleEstimateClick = (lead, event) => {
                                     : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                                 } shadow-sm hover:shadow-md`}
                               >
-                                {isSelected && <Check className="w-4 h-4 text-blue-600" strokeWidth={3} />}
                                 <span>{quality}</span>
                               </button>
                             );
@@ -9986,7 +10144,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -10096,7 +10254,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -10196,7 +10354,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total && total > 0;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -10295,7 +10453,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -10396,7 +10554,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -10441,7 +10599,7 @@ const handleEstimateClick = (lead, event) => {
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
                           <span>{completed}/{total}</span>
                         </div>
@@ -10723,7 +10881,24 @@ const handleEstimateClick = (lead, event) => {
 
                       {/* Surfaces Section */}
                       <div className="pt-4 border-t border-slate-200">
-                        <label className="block text-base font-semibold text-gray-900 mb-3">Surfaces</label>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="block text-base font-semibold text-gray-900">Surfaces</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allSurfaces = [...softWashingSurfaces, ...customSoftWashingSurfaces];
+                              const allSelected = allSurfaces.every(s => selectedSoftWashingSurfaces.includes(s));
+                              if (allSelected) {
+                                setSelectedSoftWashingSurfaces([]);
+                              } else {
+                                setSelectedSoftWashingSurfaces(allSurfaces);
+                              }
+                            }}
+                            className="text-xs text-gray-500 hover:text-blue-600 underline transition-colors"
+                          >
+                            Select All
+                          </button>
+                        </div>
                         <div className="flex flex-wrap gap-3">
                           {[...softWashingSurfaces, ...customSoftWashingSurfaces].map((surface) => {
                             const isSelected = selectedSoftWashingSurfaces.includes(surface);
@@ -11488,50 +11663,6 @@ const handleEstimateClick = (lead, event) => {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-                          
-                {/* Paver Sealing */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => {
-                    if (showPaverSealing) {
-                      setCollapsedPaverSealing(!collapsedPaverSealing);
-                    } else {
-                      setShowPaverSealing(true);
-                      setCollapsedPaverSealing(false);
-                    }
-                  }}
-                >
-                  <div className={`flex items-center gap-3 ${showPaverSealing && !collapsedPaverSealing ? 'mb-4' : ''}`}>
-                            <input
-                      type="checkbox"
-                      checked={showPaverSealing}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setShowPaverSealing(e.target.checked);
-                        if (e.target.checked) {
-                          setCollapsedPaverSealing(false);
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-lg font-semibold text-gray-900 flex-1">
-                      Paver Sealing
-                    </label>
-                    {showPaverSealing && (
-                      <div className="flex items-center justify-center">
-                        <ChevronDown 
-                          className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedPaverSealing ? 'transform rotate-180' : ''}`}
-                            />
-                          </div>
-                    )}
-                        </div>
-                  {showPaverSealing && !collapsedPaverSealing && (
-                    <div className="mt-4 space-y-6" onClick={(e) => e.stopPropagation()}>
-                      {/* Paver Sealing content can be added here */}
                     </div>
                   )}
                 </div>
