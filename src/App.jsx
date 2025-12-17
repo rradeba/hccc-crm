@@ -650,6 +650,7 @@ const SourceBadge = ({ source }) => {
     zip: '',
     facebook: '',
     instagram: '',
+    tiktok: '',
     nextdoor: '',
     angiesList: '',
     twitter: '',
@@ -713,30 +714,51 @@ const SourceBadge = ({ source }) => {
 
   // Helper functions to calculate completion for each section
   const getContactDetailsCompletion = () => {
-    const requiredFields = [
-      companyInfo.companyName,
-      companyInfo.phone,
-      companyInfo.email,
-      companyInfo.website,
-      companyInfo.street,
-      companyInfo.city,
-      companyInfo.state,
-      companyInfo.zip
-    ];
-    const completed = requiredFields.filter(field => field && field.trim() !== '').length;
-    return { completed, total: requiredFields.length };
+    const hasCompanyName =
+      companyInfo.companyName && companyInfo.companyName.trim() !== '';
+    const hasPhone =
+      companyInfo.phone && companyInfo.phone.trim() !== '';
+    const hasEmail =
+      companyInfo.email && companyInfo.email.trim() !== '';
+    const hasWebsite =
+      companyInfo.website && companyInfo.website.trim() !== '';
+    const hasStreet =
+      companyInfo.street && companyInfo.street.trim() !== '';
+    const hasCity =
+      companyInfo.city && companyInfo.city.trim() !== '';
+    const hasStateZip =
+      companyInfo.state && companyInfo.state.trim() !== '' &&
+      companyInfo.zip && companyInfo.zip.trim() !== '';
+
+    const completed = [
+      hasCompanyName,
+      hasPhone,
+      hasEmail,
+      hasWebsite,
+      hasStreet,
+      hasCity,
+      hasStateZip
+    ].filter(Boolean).length;
+
+    const total = 7;
+    return { completed, total };
   };
 
   const getBrandIdentityCompletion = () => {
-    const requiredFields = [
-      companyInfo.companySlogan,
-      companyInfo.experienceYears,
-      companyInfo.experienceMonths,
-      companyInfo.jobsCompleted,
-      companyInfo.whatMakesDifferent.length >= 3 ? 'completed' : ''
-    ];
-    const completed = requiredFields.filter(field => field && field !== '').length;
-    return { completed, total: requiredFields.length };
+    const hasSlogan =
+      companyInfo.companySlogan && companyInfo.companySlogan.trim() !== '';
+
+    const hasExperience =
+      (companyInfo.experienceYears && companyInfo.experienceYears.trim() !== '') ||
+      (companyInfo.experienceMonths && companyInfo.experienceMonths.trim() !== '') ||
+      (companyInfo.jobsCompleted && companyInfo.jobsCompleted.trim() !== '');
+
+    const hasQualities = companyInfo.whatMakesDifferent.length >= 3;
+
+    const completed = [hasSlogan, hasExperience, hasQualities].filter(Boolean).length;
+    const total = 3;
+
+    return { completed, total };
   };
 
   const getAreasServedCompletion = () => {
@@ -807,7 +829,7 @@ const SourceBadge = ({ source }) => {
   };
 
   const softWashingServices = [
-    'Residential Washing',
+    'Residential washing',
     'Roof washing (asphalt, metal, tile)',
     'Commercial washing',
     'Fence cleaning (wood, vinyl)',
@@ -869,10 +891,10 @@ const SourceBadge = ({ source }) => {
   ];
 
   const pressureWashingServices = [
-    'Residential Pressure Washing',
-    'Commercial Cleaning',
+    'Residential washing',
+    'Commercial washing',
     'Patio and porch cleaning',
-    'Pool deck (concrete) cleaning',
+    'Pool deck cleaning',
     'Garage floor cleaning'
   ];
 
@@ -1184,10 +1206,24 @@ You don't discount because it's dirty — you charge more because it requires mo
   const [serviceChemicals, setServiceChemicals] = useState({});
   // Service-specific PSI values: { serviceName: '1500' }
   const [servicePSI, setServicePSI] = useState({});
+  // Service-specific surfaces: { serviceName: ['surface1', 'surface2'] }
+  const [serviceSurfaces, setServiceSurfaces] = useState({});
+  // Custom chemicals that can be added: string[]
+  const [customChemicals, setCustomChemicals] = useState([]);
+  // State for chemical dropdown search and visibility
+  const [chemicalDropdownOpen, setChemicalDropdownOpen] = useState({});
+  const [chemicalSearchTerm, setChemicalSearchTerm] = useState({});
+  // State for surfaces dropdown
+  const [surfacesDropdownOpen, setSurfacesDropdownOpen] = useState({});
   const [selectedSafetyMeasures, setSelectedSafetyMeasures] = useState([]);
   const [selectedPressureWashingSafetyMeasures, setSelectedPressureWashingSafetyMeasures] = useState([]);
   const [selectedSpecialtyCleaningSafetyMeasures, setSelectedSpecialtyCleaningSafetyMeasures] = useState([]);
   const [selectedWindowCleaningSafetyMeasures, setSelectedWindowCleaningSafetyMeasures] = useState([]);
+  // Combined safety measures for the unified section
+  const [allSafetyMeasures, setAllSafetyMeasures] = useState([]);
+  const [customAllSafetyMeasures, setCustomAllSafetyMeasures] = useState([]);
+  const [newAllSafetyMeasure, setNewAllSafetyMeasure] = useState('');
+  const [safetyMeasuresDropdownOpen, setSafetyMeasuresDropdownOpen] = useState(false);
   const [selectedSoftWashingPricing, setSelectedSoftWashingPricing] = useState('');
   const [selectedPressureWashingPricing, setSelectedPressureWashingPricing] = useState('');
   const [selectedSpecialtyCleaningPricing, setSelectedSpecialtyCleaningPricing] = useState('');
@@ -1302,6 +1338,12 @@ You don't discount because it's dirty — you charge more because it requires mo
         delete newChemicals[service];
         return newChemicals;
       });
+      // Remove service surfaces
+      setServiceSurfaces((prev) => {
+        const newSurfaces = { ...prev };
+        delete newSurfaces[service];
+        return newSurfaces;
+      });
     } else {
       // Add service
       setter((prev) => [...prev, service]);
@@ -1312,6 +1354,11 @@ You don't discount because it's dirty — you charge more because it requires mo
       }));
       // Initialize service chemicals if it doesn't exist
       setServiceChemicals((prev) => ({
+        ...prev,
+        [service]: prev[service] || [],
+      }));
+      // Initialize service surfaces if it doesn't exist
+      setServiceSurfaces((prev) => ({
         ...prev,
         [service]: prev[service] || [],
       }));
@@ -1358,6 +1405,40 @@ You don't discount because it's dirty — you charge more because it requires mo
       ...prev,
       [service]: psi
     }));
+  };
+
+  // Add surface to a specific service
+  const addSurfaceToService = (service, surface) => {
+    setServiceSurfaces((prev) => {
+      const serviceSurfaceList = prev[service] || [];
+      if (!serviceSurfaceList.includes(surface)) {
+        return {
+          ...prev,
+          [service]: [...serviceSurfaceList, surface]
+        };
+      }
+      return prev;
+    });
+  };
+
+  // Remove surface from a specific service
+  const removeSurfaceFromService = (service, surface) => {
+    setServiceSurfaces((prev) => {
+      const serviceSurfaceList = prev[service] || [];
+      return {
+        ...prev,
+        [service]: serviceSurfaceList.filter(s => s !== surface)
+      };
+    });
+  };
+
+  // Add custom chemical to the list
+  const addCustomChemical = (chemicalName) => {
+    if (chemicalName.trim() && !allChemicals.includes(chemicalName.trim()) && !customChemicals.includes(chemicalName.trim())) {
+      setCustomChemicals((prev) => [...prev, chemicalName.trim()]);
+      return true;
+    }
+    return false;
   };
 
   const toggleSoftWashingSurface = (surface) => {
@@ -1601,6 +1682,28 @@ You don't discount because it's dirty — you charge more because it requires mo
     if (newWindowCleaningSafetyMeasure.trim() && !windowCleaningSafetyMeasures.includes(newWindowCleaningSafetyMeasure.trim()) && !customWindowCleaningSafetyMeasures.includes(newWindowCleaningSafetyMeasure.trim())) {
       setCustomWindowCleaningSafetyMeasures([...customWindowCleaningSafetyMeasures, newWindowCleaningSafetyMeasure.trim()]);
       setNewWindowCleaningSafetyMeasure('');
+    }
+  };
+
+  // Combined safety measures functions
+  const toggleAllSafetyMeasure = (measure) => {
+    if (allSafetyMeasures.includes(measure)) {
+      setAllSafetyMeasures((prev) => prev.filter((m) => m !== measure));
+    } else {
+      setAllSafetyMeasures((prev) => [...prev, measure]);
+    }
+  };
+
+  const addCustomAllSafetyMeasure = () => {
+    if (newAllSafetyMeasure.trim()) {
+      // Check if it doesn't exist in any of the base arrays or custom arrays
+      const allBaseMeasures = [...safetyMeasures, ...pressureWashingSafetyMeasures, ...specialtyCleaningSafetyMeasures, ...windowCleaningSafetyMeasures];
+      const allCustomMeasures = [...customSoftWashingSafetyMeasures, ...customPressureWashingSafetyMeasures, ...customSpecialtyCleaningSafetyMeasures, ...customWindowCleaningSafetyMeasures, ...customAllSafetyMeasures];
+      
+      if (!allBaseMeasures.includes(newAllSafetyMeasure.trim()) && !allCustomMeasures.includes(newAllSafetyMeasure.trim())) {
+        setCustomAllSafetyMeasures([...customAllSafetyMeasures, newAllSafetyMeasure.trim()]);
+        setNewAllSafetyMeasure('');
+      }
     }
   };
 
@@ -2991,7 +3094,7 @@ const handleEstimateClick = (lead, event) => {
                     className="w-8 h-8 object-contain"
                   />
                 ) : (
-                  <Building2 className="w-8 h-8 text-white" />
+                <Building2 className="w-8 h-8 text-white" />
                 )}
               </div>
             <div>
@@ -3035,24 +3138,24 @@ const handleEstimateClick = (lead, event) => {
                   <div className="absolute z-50 right-0 mt-2 w-80 bg-white border border-gray-300 rounded-xl shadow-lg">
                     <div className="p-4 space-y-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-800 mb-3">Header Color</h3>
-                        <div className="grid grid-cols-5 gap-2">
-                          {headerColorOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
-                                setHeaderColor(option.value);
-                              }}
-                              className={`w-10 h-10 rounded-lg ${option.color} border-2 transition-all ${
-                                headerColor === option.value ? 'border-gray-800 scale-110 ring-2 ring-gray-400' : 'border-transparent hover:border-gray-300'
-                              }`}
-                              aria-label={`Select ${option.name} color`}
-                              title={option.name}
-                            />
-                          ))}
-                        </div>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-3">Header Color</h3>
+                      <div className="grid grid-cols-5 gap-2">
+                        {headerColorOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setHeaderColor(option.value);
+                            }}
+                            className={`w-10 h-10 rounded-lg ${option.color} border-2 transition-all ${
+                              headerColor === option.value ? 'border-gray-800 scale-110 ring-2 ring-gray-400' : 'border-transparent hover:border-gray-300'
+                            }`}
+                            aria-label={`Select ${option.name} color`}
+                            title={option.name}
+                          />
+                        ))}
                       </div>
+                    </div>
                       
                       <div className="border-t border-gray-200 pt-4">
                         <h3 className="text-sm font-semibold text-gray-800 mb-3">Business Icon</h3>
@@ -3064,8 +3167,8 @@ const handleEstimateClick = (lead, event) => {
                                 alt="Current business icon" 
                                 className="w-16 h-16 object-contain"
                               />
-                            </div>
-                          )}
+                  </div>
+                )}
                           <label className="block">
                             <input
                               type="file"
@@ -3096,9 +3199,9 @@ const handleEstimateClick = (lead, event) => {
                               Remove Custom Icon
                             </button>
                           )}
-                        </div>
-                      </div>
-                    </div>
+              </div>
+            </div>
+          </div>
                   </div>
                 )}
               </div>
@@ -6396,23 +6499,6 @@ const handleEstimateClick = (lead, event) => {
                   </div>
                   
                   <div className="space-y-6">
-                    <div>
-                      <label htmlFor="agentNameSettings" className="block text-sm font-semibold text-gray-700 mb-2">
-                        My Agent Name
-                      </label>
-                      <input
-                        type="text"
-                        id="agentNameSettings"
-                        value={agentName}
-                        onChange={(e) => setAgentName(e.target.value)}
-                        placeholder="Enter agent name..."
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400 bg-white shadow-sm"
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        This is how your agent will introduce itself to your customers.
-                      </p>
-                    </div>
-
                     {/* Agent Tone Selection */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -6478,7 +6564,7 @@ const handleEstimateClick = (lead, event) => {
                     <button
                       onClick={() => {
                         // TODO: Save agent settings
-                        console.log('Saving agent settings:', { agentName, agentTone, emojiIntegration });
+                        console.log('Saving agent settings:', { agentTone, emojiIntegration });
                         setIsAgentSettingsOpen(false);
                       }}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
@@ -6916,7 +7002,7 @@ const handleEstimateClick = (lead, event) => {
                 <div className="border border-slate-200 rounded-2xl p-6 space-y-5 bg-slate-50/50 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
                     <div className="w-1 h-5 bg-slate-400 rounded-full"></div>
-                    <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Crew Capacity</h4>
+                    <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Job Capacity</h4>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Max jobs per day</label>
@@ -8011,7 +8097,7 @@ const handleEstimateClick = (lead, event) => {
                         <div className="space-y-6">
                           {/* Collapsible Header */}
                           <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-semibold text-gray-800">Pricing Variables</h3>
+                            <h3 className="text-lg font-semibold text-gray-800">Pricing Formula</h3>
                             <button
                               type="button"
                               onClick={() => {
@@ -8033,7 +8119,7 @@ const handleEstimateClick = (lead, event) => {
                           {!format.isPricingPanelsCollapsed && (
                             <>
                           {/* First Row: Rates and Expenses */}
-                          <div className="flex items-center gap-4 mb-4 min-w-0 max-w-full overflow-hidden">
+                          <div className="flex items-center gap-4 mb-4 min-w-0 max-w-full">
                             {['rates', 'expenses'].map((sectionType, sectionIndex) => {
                               const sectionLabel = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
                               const sectionOptions = pricingStructureOptions[sectionType];
@@ -8043,7 +8129,7 @@ const handleEstimateClick = (lead, event) => {
                               
                               return (
                                 <React.Fragment key={sectionType}>
-                                  <div className="flex-1 relative min-w-0 max-w-full overflow-hidden">
+                                  <div className="flex-1 relative min-w-0 max-w-full">
                                     {/* Section Label */}
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">{sectionLabel}</label>
                                     
@@ -8466,7 +8552,7 @@ const handleEstimateClick = (lead, event) => {
                           </div>
                           
                           {/* Second Row: Multipliers and Fees */}
-                          <div className="flex items-center gap-4 min-w-0 max-w-full overflow-hidden">
+                          <div className="flex items-center gap-4 min-w-0 max-w-full">
                             {['multipliers', 'fees'].map((sectionType, sectionIndex) => {
                               const sectionLabel = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
                               const sectionOptions = pricingStructureOptions[sectionType];
@@ -8476,7 +8562,7 @@ const handleEstimateClick = (lead, event) => {
                               
                               return (
                                 <React.Fragment key={sectionType}>
-                                  <div className="flex-1 relative min-w-0 max-w-full overflow-hidden">
+                                  <div className="flex-1 relative min-w-0 max-w-full">
                                     {/* Section Label */}
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">{sectionLabel}</label>
                                     
@@ -8817,6 +8903,89 @@ const handleEstimateClick = (lead, event) => {
                           )}
                         </div>
                       </div>
+
+                      {/* Formula Summary */}
+                      {(() => {
+                        const structure = format.pricingStructure || {};
+                        const rates = Array.isArray(structure.rates) ? structure.rates : [];
+                        const expenses = Array.isArray(structure.expenses) ? structure.expenses : [];
+                        const multipliers = Array.isArray(structure.multipliers) ? structure.multipliers : [];
+                        const fees = Array.isArray(structure.fees) ? structure.fees : [];
+
+                      const hasAny =
+                        rates.length > 0 ||
+                        expenses.length > 0 ||
+                        multipliers.length > 0 ||
+                        fees.length > 0;
+
+                      if (!hasAny) return null;
+
+                      const rateText = rates
+                        .map((r) =>
+                          r && typeof r === 'object'
+                            ? `${r.option}${r.value ? ` = $${r.value}` : ''}`
+                            : r
+                        )
+                        .join('  +  ');
+
+                      const expenseText = expenses
+                        .map((e) =>
+                          e && typeof e === 'object'
+                            ? `${e.option}${e.value ? ` = $${e.value}` : ''}${
+                                e.perUnit ? ` / ${e.perUnit}` : ''
+                              }`
+                            : e
+                        )
+                        .join('  +  ');
+
+                      const multiplierText = multipliers
+                        .map((m) =>
+                          m && typeof m === 'object'
+                            ? `${m.option}${m.value ? ` = ${m.value}%` : ''}`
+                            : m
+                        )
+                        .join('  +  ');
+
+                      const feeText = fees
+                        .map((f) =>
+                          f && typeof f === 'object'
+                            ? `${f.option}${f.value ? ` = $${f.value}` : ''}`
+                            : f
+                        )
+                        .join('  +  ');
+
+                      return (
+                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 space-y-1">
+                          <div className="text-sm font-semibold text-slate-900 mb-1">
+                            Formula Overview
+                            </div>
+                          {rateText && (
+                            <div>
+                              <span className="font-medium">Rates:</span>{' '}
+                              <span>{rateText}</span>
+                          </div>
+                          )}
+                          {expenseText && (
+                            <div>
+                              <span className="font-medium">Expenses:</span>{' '}
+                              <span>{expenseText}</span>
+                        </div>
+                          )}
+                          {multiplierText && (
+                            <div>
+                              <span className="font-medium">Multipliers:</span>{' '}
+                              <span>{multiplierText}</span>
+                      </div>
+                          )}
+                          {feeText && (
+                            <div>
+                              <span className="font-medium">Fees:</span>{' '}
+                              <span>{feeText}</span>
+                    </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     </div>
                   ))}
               </div>
@@ -9093,9 +9262,17 @@ const handleEstimateClick = (lead, event) => {
                               <div className="space-y-4">
                                 {/* Package Deal - Service Selection */}
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                                    Select Services for Package
-                                  </label>
+                                  <div className="flex items-center justify-between w-full mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                                        <ShoppingCart className="w-4 h-4 text-gray-600" />
+                                      </div>
+                                      <div>
+                                        <span className="text-sm font-semibold text-gray-800 block">Package Services</span>
+                                        <span className="text-xs text-gray-500">Services included in this package</span>
+                                      </div>
+                                    </div>
+                                  </div>
                                   <div className="relative">
                                     <button
                                       type="button"
@@ -9175,9 +9352,15 @@ const handleEstimateClick = (lead, event) => {
                                 </div>
                                 {/* Package Price Input */}
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                                    Package Price
-                                  </label>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                                      <DollarSign className="w-4 h-4 text-gray-600" />
+                                    </div>
+                                    <div>
+                                      <span className="text-sm font-semibold text-gray-800 block">Package Price</span>
+                                      <span className="text-xs text-gray-500">Flat price for all selected services</span>
+                                    </div>
+                                  </div>
                                   <div className="relative">
                                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
                                     <input
@@ -9485,7 +9668,6 @@ const handleEstimateClick = (lead, event) => {
                                   </div>
                                 </div>
                             </div>
-                          </div>
                             )}
                           </div>
                         </div>
@@ -9954,6 +10136,17 @@ const handleEstimateClick = (lead, event) => {
                           </div>
 
                           <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">TikTok</label>
+                            <input
+                              type="url"
+                              value={companyInfo.tiktok}
+                              onChange={(e) => updateCompanyInfo('tiktok', e.target.value)}
+                              placeholder="https://www.tiktok.com/@yourhandle"
+                              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
+                            />
+                          </div>
+
+                          <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Nextdoor</label>
                             <input
                               type="url"
@@ -10256,7 +10449,7 @@ const handleEstimateClick = (lead, event) => {
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                           isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
-                          <span>{completed}/{total}</span>
+                          <span>{completed}/1</span>
                         </div>
                       );
                     })()}
@@ -10349,17 +10542,6 @@ const handleEstimateClick = (lead, event) => {
                       <Award className="w-5 h-5 text-slate-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 flex-1">Certifications</h3>
-                    {(() => {
-                      const { completed, total } = getCertificationsCompletion();
-                      const isComplete = completed === total && total > 0;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          <span>{completed}/{total}</span>
-                        </div>
-                      );
-                    })()}
                     <div className="flex items-center justify-center">
                       <ChevronDown 
                         className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedCertifications ? 'transform rotate-180' : ''}`}
@@ -10601,7 +10783,7 @@ const handleEstimateClick = (lead, event) => {
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                           isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
-                          <span>{completed}/{total}</span>
+                          <span>{completed}/15</span>
                         </div>
                       );
                     })()}
@@ -10818,23 +11000,85 @@ const handleEstimateClick = (lead, event) => {
                                           )}
                                           <div className="pt-2 border-t border-slate-200">
                                             <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
-                                            <select
-                                              onChange={(e) => {
-                                                if (e.target.value) {
-                                                  addChemicalToService(service, e.target.value);
-                                                  e.target.value = '';
-                                                }
-                                              }}
-                                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                              defaultValue=""
-                                            >
-                                              <option value="">Select a chemical...</option>
-                                              {allChemicals
+                                            <div className="relative">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const dropdownKey = `${service}-chemical`;
+                                                  setChemicalDropdownOpen(prev => ({
+                                                    ...prev,
+                                                    [dropdownKey]: !prev[dropdownKey]
+                                                  }));
+                                                  if (!chemicalDropdownOpen[dropdownKey]) {
+                                                    setChemicalSearchTerm(prev => ({ ...prev, [dropdownKey]: '' }));
+                                                  }
+                                                }}
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
+                                              >
+                                                <span className="text-gray-500">Select or search a chemical...</span>
+                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${chemicalDropdownOpen[`${service}-chemical`] ? 'transform rotate-180' : ''}`} />
+                                              </button>
+                                              {chemicalDropdownOpen[`${service}-chemical`] && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
+                                                  <div className="p-2 border-b border-gray-200">
+                                                    <input
+                                                      type="text"
+                                                      value={chemicalSearchTerm[`${service}-chemical`] || ''}
+                                                      onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
+                                                      placeholder="Search chemicals..."
+                                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      autoFocus
+                                                    />
+                                                  </div>
+                                                  <div className="overflow-y-auto max-h-48">
+                                                    {(() => {
+                                                      const searchTerm = (chemicalSearchTerm[`${service}-chemical`] || '').toLowerCase();
+                                                      const availableChemicals = [...allChemicals, ...customChemicals]
                                                 .filter(chem => !serviceChemList.find(c => c.chemical === chem))
-                                                .map(chemical => (
-                                                  <option key={chemical} value={chemical}>{chemical}</option>
-                                                ))}
-                                            </select>
+                                                        .filter(chem => chem.toLowerCase().includes(searchTerm));
+                                                      return availableChemicals.length > 0 ? (
+                                                        availableChemicals.map(chemical => (
+                                                          <button
+                                                            key={chemical}
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              addChemicalToService(service, chemical);
+                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-700"
+                                                          >
+                                                            {chemical}
+                                                          </button>
+                                                        ))
+                                                      ) : searchTerm ? (
+                                                        <div className="px-3 py-2">
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              if (addCustomChemical(searchTerm)) {
+                                                                addChemicalToService(service, searchTerm);
+                                                              }
+                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                            }}
+                                                            className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+                                                          >
+                                                            + Add "{searchTerm}"
+                                                          </button>
+                                                        </div>
+                                                      ) : (
+                                                        <div className="px-3 py-2 text-xs text-gray-500">No chemicals found</div>
+                                                      );
+                                                    })()}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                           <div className="pt-2 border-t border-slate-200">
                                             <label className="block text-xs font-medium text-gray-700 mb-2">PSI:</label>
@@ -10845,6 +11089,79 @@ const handleEstimateClick = (lead, event) => {
                                               placeholder="Enter PSI (e.g., 1500)"
                                               className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                                             />
+                                          </div>
+                                          <div className="pt-2 border-t border-slate-200">
+                                            <label className="block text-xs font-medium text-gray-700 mb-2">Surfaces:</label>
+                                            <div className="relative">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const dropdownKey = `${service}-surfaces`;
+                                                  setSurfacesDropdownOpen(prev => ({
+                                                    ...prev,
+                                                    [dropdownKey]: !prev[dropdownKey]
+                                                  }));
+                                                }}
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
+                                              >
+                                                <span className="text-gray-500">
+                                                  {(serviceSurfaces[service] || []).length > 0 
+                                                    ? `${(serviceSurfaces[service] || []).length} selected`
+                                                    : 'Select surfaces...'}
+                                                </span>
+                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${surfacesDropdownOpen[`${service}-surfaces`] ? 'transform rotate-180' : ''}`} />
+                                              </button>
+                                              {surfacesDropdownOpen[`${service}-surfaces`] && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                                                  <div className="p-2 space-y-1">
+                                                    {[...softWashingSurfaces, ...customSoftWashingSurfaces].map((surface) => {
+                                                      const isSelected = (serviceSurfaces[service] || []).includes(surface);
+                                                      return (
+                                                        <label
+                                                          key={surface}
+                                                          className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                                                        >
+                                                          <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={(e) => {
+                                                              if (e.target.checked) {
+                                                                addSurfaceToService(service, surface);
+                                                              } else {
+                                                                removeSurfaceFromService(service, surface);
+                                                              }
+                                                            }}
+                                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                          />
+                                                          <span className="ml-2 text-sm text-gray-700">{surface}</span>
+                                                        </label>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                            {(serviceSurfaces[service] || []).length > 0 && (
+                                              <div className="mt-2 flex flex-wrap gap-1">
+                                                {(serviceSurfaces[service] || []).map((surface) => (
+                                                  <div key={surface} className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">
+                                                    <span>{surface}</span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeSurfaceFromService(service, surface);
+                                                      }}
+                                                      className="text-blue-600 hover:text-blue-800"
+                                                    >
+                                                      <X className="w-3 h-3" />
+                                                    </button>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       )}
@@ -10879,125 +11196,6 @@ const handleEstimateClick = (lead, event) => {
                         </div>
                       </div>
 
-                      {/* Surfaces Section */}
-                      <div className="pt-4 border-t border-slate-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-base font-semibold text-gray-900">Surfaces</label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const allSurfaces = [...softWashingSurfaces, ...customSoftWashingSurfaces];
-                              const allSelected = allSurfaces.every(s => selectedSoftWashingSurfaces.includes(s));
-                              if (allSelected) {
-                                setSelectedSoftWashingSurfaces([]);
-                              } else {
-                                setSelectedSoftWashingSurfaces(allSurfaces);
-                              }
-                            }}
-                            className="text-xs text-gray-500 hover:text-blue-600 underline transition-colors"
-                          >
-                            Select All
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          {[...softWashingSurfaces, ...customSoftWashingSurfaces].map((surface) => {
-                            const isSelected = selectedSoftWashingSurfaces.includes(surface);
-                            return (
-                              <button
-                                key={surface}
-                                type="button"
-                                onClick={() => toggleSoftWashingSurface(surface)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                  isSelected
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                } shadow-sm hover:shadow-md`}
-                              >
-                                {isSelected && <Check className="w-4 h-4 text-blue-600" strokeWidth={3} />}
-                                <span>{surface}</span>
-                              </button>
-                            );
-                          })}
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
-                            <input
-                              type="text"
-                              value={newSoftWashingSurface}
-                              onChange={(e) => setNewSoftWashingSurface(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && addCustomSoftWashingSurface()}
-                              placeholder="Add surface..."
-                              className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-32"
-                            />
-                            <button
-                              type="button"
-                              onClick={addCustomSoftWashingSurface}
-                              className="text-blue-600 hover:text-blue-700"
-                              disabled={!newSoftWashingSurface.trim()}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Safety and Preventative Measures Section */}
-                      <div className="pt-4 border-t border-slate-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-base font-semibold text-gray-900">Safety and Preventative Measures</label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const allMeasures = [...safetyMeasures, ...customSoftWashingSafetyMeasures];
-                              const allSelected = allMeasures.every(m => selectedSafetyMeasures.includes(m));
-                              if (allSelected) {
-                                setSelectedSafetyMeasures([]);
-                              } else {
-                                setSelectedSafetyMeasures(allMeasures);
-                              }
-                            }}
-                            className="text-xs text-gray-500 hover:text-blue-600 underline transition-colors"
-                          >
-                            Select All
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          {[...safetyMeasures, ...customSoftWashingSafetyMeasures].map((measure) => {
-                            const isSelected = selectedSafetyMeasures.includes(measure);
-                            return (
-                              <button
-                                key={measure}
-                                type="button"
-                                onClick={() => toggleSafetyMeasure(measure)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                  isSelected
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                } shadow-sm hover:shadow-md`}
-                              >
-                                {isSelected && <Check className="w-4 h-4 text-blue-600" strokeWidth={3} />}
-                                <span>{measure}</span>
-                              </button>
-                            );
-                          })}
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
-                            <input
-                              type="text"
-                              value={newSoftWashingSafetyMeasure}
-                              onChange={(e) => setNewSoftWashingSafetyMeasure(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && addCustomSoftWashingSafetyMeasure()}
-                              placeholder="Add measure..."
-                              className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-40"
-                            />
-                            <button
-                              type="button"
-                              onClick={addCustomSoftWashingSafetyMeasure}
-                              className="text-blue-600 hover:text-blue-700"
-                              disabled={!newSoftWashingSafetyMeasure.trim()}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -11103,23 +11301,85 @@ const handleEstimateClick = (lead, event) => {
                                           )}
                                           <div className="pt-2 border-t border-slate-200">
                                             <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
-                                            <select
-                                              onChange={(e) => {
-                                                if (e.target.value) {
-                                                  addChemicalToService(service, e.target.value);
-                                                  e.target.value = '';
-                                                }
-                                              }}
-                                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                              defaultValue=""
-                                            >
-                                              <option value="">Select a chemical...</option>
-                                              {allChemicals
+                                            <div className="relative">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const dropdownKey = `${service}-chemical`;
+                                                  setChemicalDropdownOpen(prev => ({
+                                                    ...prev,
+                                                    [dropdownKey]: !prev[dropdownKey]
+                                                  }));
+                                                  if (!chemicalDropdownOpen[dropdownKey]) {
+                                                    setChemicalSearchTerm(prev => ({ ...prev, [dropdownKey]: '' }));
+                                                  }
+                                                }}
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
+                                              >
+                                                <span className="text-gray-500">Select or search a chemical...</span>
+                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${chemicalDropdownOpen[`${service}-chemical`] ? 'transform rotate-180' : ''}`} />
+                                              </button>
+                                              {chemicalDropdownOpen[`${service}-chemical`] && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
+                                                  <div className="p-2 border-b border-gray-200">
+                                                    <input
+                                                      type="text"
+                                                      value={chemicalSearchTerm[`${service}-chemical`] || ''}
+                                                      onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
+                                                      placeholder="Search chemicals..."
+                                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      autoFocus
+                                                    />
+                                                  </div>
+                                                  <div className="overflow-y-auto max-h-48">
+                                                    {(() => {
+                                                      const searchTerm = (chemicalSearchTerm[`${service}-chemical`] || '').toLowerCase();
+                                                      const availableChemicals = [...allChemicals, ...customChemicals]
                                                 .filter(chem => !serviceChemList.find(c => c.chemical === chem))
-                                                .map(chemical => (
-                                                  <option key={chemical} value={chemical}>{chemical}</option>
-                                                ))}
-                                            </select>
+                                                        .filter(chem => chem.toLowerCase().includes(searchTerm));
+                                                      return availableChemicals.length > 0 ? (
+                                                        availableChemicals.map(chemical => (
+                                                          <button
+                                                            key={chemical}
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              addChemicalToService(service, chemical);
+                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-700"
+                                                          >
+                                                            {chemical}
+                                                          </button>
+                                                        ))
+                                                      ) : searchTerm ? (
+                                                        <div className="px-3 py-2">
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              if (addCustomChemical(searchTerm)) {
+                                                                addChemicalToService(service, searchTerm);
+                                                              }
+                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                            }}
+                                                            className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+                                                          >
+                                                            + Add "{searchTerm}"
+                                                          </button>
+                                                        </div>
+                                                      ) : (
+                                                        <div className="px-3 py-2 text-xs text-gray-500">No chemicals found</div>
+                                                      );
+                                                    })()}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                           <div className="pt-2 border-t border-slate-200">
                                             <label className="block text-xs font-medium text-gray-700 mb-2">PSI:</label>
@@ -11130,6 +11390,79 @@ const handleEstimateClick = (lead, event) => {
                                               placeholder="Enter PSI (e.g., 1500)"
                                               className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                                             />
+                                          </div>
+                                          <div className="pt-2 border-t border-slate-200">
+                                            <label className="block text-xs font-medium text-gray-700 mb-2">Surfaces:</label>
+                                            <div className="relative">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const dropdownKey = `${service}-surfaces`;
+                                                  setSurfacesDropdownOpen(prev => ({
+                                                    ...prev,
+                                                    [dropdownKey]: !prev[dropdownKey]
+                                                  }));
+                                                }}
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
+                                              >
+                                                <span className="text-gray-500">
+                                                  {(serviceSurfaces[service] || []).length > 0 
+                                                    ? `${(serviceSurfaces[service] || []).length} selected`
+                                                    : 'Select surfaces...'}
+                                                </span>
+                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${surfacesDropdownOpen[`${service}-surfaces`] ? 'transform rotate-180' : ''}`} />
+                                              </button>
+                                              {surfacesDropdownOpen[`${service}-surfaces`] && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                                                  <div className="p-2 space-y-1">
+                                                    {[...softWashingSurfaces, ...customSoftWashingSurfaces].map((surface) => {
+                                                      const isSelected = (serviceSurfaces[service] || []).includes(surface);
+                                                      return (
+                                                        <label
+                                                          key={surface}
+                                                          className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                                                        >
+                                                          <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={(e) => {
+                                                              if (e.target.checked) {
+                                                                addSurfaceToService(service, surface);
+                                                              } else {
+                                                                removeSurfaceFromService(service, surface);
+                                                              }
+                                                            }}
+                                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                          />
+                                                          <span className="ml-2 text-sm text-gray-700">{surface}</span>
+                                                        </label>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                            {(serviceSurfaces[service] || []).length > 0 && (
+                                              <div className="mt-2 flex flex-wrap gap-1">
+                                                {(serviceSurfaces[service] || []).map((surface) => (
+                                                  <div key={surface} className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">
+                                                    <span>{surface}</span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeSurfaceFromService(service, surface);
+                                                      }}
+                                                      className="text-blue-600 hover:text-blue-800"
+                                                    >
+                                                      <X className="w-3 h-3" />
+                                                    </button>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       )}
@@ -11164,65 +11497,6 @@ const handleEstimateClick = (lead, event) => {
                         </div>
                       </div>
 
-                      {/* Safety and Preventative Measures Section */}
-                      <div className="pt-4 border-t border-slate-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-base font-semibold text-gray-900">Safety and Preventative Measures</label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const allMeasures = [...pressureWashingSafetyMeasures, ...customPressureWashingSafetyMeasures];
-                              const allSelected = allMeasures.every(m => selectedPressureWashingSafetyMeasures.includes(m));
-                              if (allSelected) {
-                                setSelectedPressureWashingSafetyMeasures([]);
-                              } else {
-                                setSelectedPressureWashingSafetyMeasures(allMeasures);
-                              }
-                            }}
-                            className="text-xs text-gray-500 hover:text-blue-600 underline transition-colors"
-                          >
-                            Select All
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          {[...pressureWashingSafetyMeasures, ...customPressureWashingSafetyMeasures].map((measure) => {
-                            const isSelected = selectedPressureWashingSafetyMeasures.includes(measure);
-                            return (
-                              <button
-                                key={measure}
-                                type="button"
-                                onClick={() => togglePressureWashingSafetyMeasure(measure)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                  isSelected
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                } shadow-sm hover:shadow-md`}
-                              >
-                                {isSelected && <Check className="w-4 h-4 text-blue-600" strokeWidth={3} />}
-                                <span>{measure}</span>
-                              </button>
-                            );
-                          })}
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
-                            <input
-                              type="text"
-                              value={newPressureWashingSafetyMeasure}
-                              onChange={(e) => setNewPressureWashingSafetyMeasure(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && addCustomPressureWashingSafetyMeasure()}
-                              placeholder="Add measure..."
-                              className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-40"
-                            />
-                            <button
-                              type="button"
-                              onClick={addCustomPressureWashingSafetyMeasure}
-                              className="text-blue-600 hover:text-blue-700"
-                              disabled={!newPressureWashingSafetyMeasure.trim()}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -11328,23 +11602,85 @@ const handleEstimateClick = (lead, event) => {
                                           )}
                                           <div className="pt-2 border-t border-slate-200">
                                             <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
-                                            <select
-                                              onChange={(e) => {
-                                                if (e.target.value) {
-                                                  addChemicalToService(service, e.target.value);
-                                                  e.target.value = '';
-                                                }
-                                              }}
-                                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                              defaultValue=""
-                                            >
-                                              <option value="">Select a chemical...</option>
-                                              {allChemicals
+                                            <div className="relative">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const dropdownKey = `${service}-chemical`;
+                                                  setChemicalDropdownOpen(prev => ({
+                                                    ...prev,
+                                                    [dropdownKey]: !prev[dropdownKey]
+                                                  }));
+                                                  if (!chemicalDropdownOpen[dropdownKey]) {
+                                                    setChemicalSearchTerm(prev => ({ ...prev, [dropdownKey]: '' }));
+                                                  }
+                                                }}
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
+                                              >
+                                                <span className="text-gray-500">Select or search a chemical...</span>
+                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${chemicalDropdownOpen[`${service}-chemical`] ? 'transform rotate-180' : ''}`} />
+                                              </button>
+                                              {chemicalDropdownOpen[`${service}-chemical`] && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
+                                                  <div className="p-2 border-b border-gray-200">
+                                                    <input
+                                                      type="text"
+                                                      value={chemicalSearchTerm[`${service}-chemical`] || ''}
+                                                      onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
+                                                      placeholder="Search chemicals..."
+                                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      autoFocus
+                                                    />
+                                                  </div>
+                                                  <div className="overflow-y-auto max-h-48">
+                                                    {(() => {
+                                                      const searchTerm = (chemicalSearchTerm[`${service}-chemical`] || '').toLowerCase();
+                                                      const availableChemicals = [...allChemicals, ...customChemicals]
                                                 .filter(chem => !serviceChemList.find(c => c.chemical === chem))
-                                                .map(chemical => (
-                                                  <option key={chemical} value={chemical}>{chemical}</option>
-                                                ))}
-                                            </select>
+                                                        .filter(chem => chem.toLowerCase().includes(searchTerm));
+                                                      return availableChemicals.length > 0 ? (
+                                                        availableChemicals.map(chemical => (
+                                                          <button
+                                                            key={chemical}
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              addChemicalToService(service, chemical);
+                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-700"
+                                                          >
+                                                            {chemical}
+                                                          </button>
+                                                        ))
+                                                      ) : searchTerm ? (
+                                                        <div className="px-3 py-2">
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              if (addCustomChemical(searchTerm)) {
+                                                                addChemicalToService(service, searchTerm);
+                                                              }
+                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                            }}
+                                                            className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+                                                          >
+                                                            + Add "{searchTerm}"
+                                                          </button>
+                                                        </div>
+                                                      ) : (
+                                                        <div className="px-3 py-2 text-xs text-gray-500">No chemicals found</div>
+                                                      );
+                                                    })()}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                           <div className="pt-2 border-t border-slate-200">
                                             <label className="block text-xs font-medium text-gray-700 mb-2">PSI:</label>
@@ -11355,6 +11691,79 @@ const handleEstimateClick = (lead, event) => {
                                               placeholder="Enter PSI (e.g., 1500)"
                                               className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                                             />
+                                          </div>
+                                          <div className="pt-2 border-t border-slate-200">
+                                            <label className="block text-xs font-medium text-gray-700 mb-2">Surfaces:</label>
+                                            <div className="relative">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const dropdownKey = `${service}-surfaces`;
+                                                  setSurfacesDropdownOpen(prev => ({
+                                                    ...prev,
+                                                    [dropdownKey]: !prev[dropdownKey]
+                                                  }));
+                                                }}
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
+                                              >
+                                                <span className="text-gray-500">
+                                                  {(serviceSurfaces[service] || []).length > 0 
+                                                    ? `${(serviceSurfaces[service] || []).length} selected`
+                                                    : 'Select surfaces...'}
+                                                </span>
+                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${surfacesDropdownOpen[`${service}-surfaces`] ? 'transform rotate-180' : ''}`} />
+                                              </button>
+                                              {surfacesDropdownOpen[`${service}-surfaces`] && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                                                  <div className="p-2 space-y-1">
+                                                    {[...specialtyCleaningSurfaces].map((surface) => {
+                                                      const isSelected = (serviceSurfaces[service] || []).includes(surface);
+                                                      return (
+                                                        <label
+                                                          key={surface}
+                                                          className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                                                        >
+                                                          <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={(e) => {
+                                                              if (e.target.checked) {
+                                                                addSurfaceToService(service, surface);
+                                                              } else {
+                                                                removeSurfaceFromService(service, surface);
+                                                              }
+                                                            }}
+                                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                          />
+                                                          <span className="ml-2 text-sm text-gray-700">{surface}</span>
+                                                        </label>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                            {(serviceSurfaces[service] || []).length > 0 && (
+                                              <div className="mt-2 flex flex-wrap gap-1">
+                                                {(serviceSurfaces[service] || []).map((surface) => (
+                                                  <div key={surface} className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">
+                                                    <span>{surface}</span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeSurfaceFromService(service, surface);
+                                                      }}
+                                                      className="text-blue-600 hover:text-blue-800"
+                                                    >
+                                                      <X className="w-3 h-3" />
+                                                    </button>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       )}
@@ -11389,65 +11798,6 @@ const handleEstimateClick = (lead, event) => {
                         </div>
                       </div>
 
-                      {/* Safety and Preventative Measures Section */}
-                      <div className="pt-4 border-t border-slate-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-base font-semibold text-gray-900">Safety and Preventative Measures</label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const allMeasures = [...specialtyCleaningSafetyMeasures, ...customSpecialtyCleaningSafetyMeasures];
-                              const allSelected = allMeasures.every(m => selectedSpecialtyCleaningSafetyMeasures.includes(m));
-                              if (allSelected) {
-                                setSelectedSpecialtyCleaningSafetyMeasures([]);
-                              } else {
-                                setSelectedSpecialtyCleaningSafetyMeasures(allMeasures);
-                              }
-                            }}
-                            className="text-xs text-gray-500 hover:text-blue-600 underline transition-colors"
-                          >
-                            Select All
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          {[...specialtyCleaningSafetyMeasures, ...customSpecialtyCleaningSafetyMeasures].map((measure) => {
-                            const isSelected = selectedSpecialtyCleaningSafetyMeasures.includes(measure);
-                            return (
-                              <button
-                                key={measure}
-                                type="button"
-                                onClick={() => toggleSpecialtyCleaningSafetyMeasure(measure)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                  isSelected
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                } shadow-sm hover:shadow-md`}
-                              >
-                                {isSelected && <Check className="w-4 h-4 text-blue-600" strokeWidth={3} />}
-                                <span>{measure}</span>
-                              </button>
-                            );
-                          })}
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
-                            <input
-                              type="text"
-                              value={newSpecialtyCleaningSafetyMeasure}
-                              onChange={(e) => setNewSpecialtyCleaningSafetyMeasure(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && addCustomSpecialtyCleaningSafetyMeasure()}
-                              placeholder="Add measure..."
-                              className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-40"
-                            />
-                            <button
-                              type="button"
-                              onClick={addCustomSpecialtyCleaningSafetyMeasure}
-                              className="text-blue-600 hover:text-blue-700"
-                              disabled={!newSpecialtyCleaningSafetyMeasure.trim()}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -11604,68 +11954,111 @@ const handleEstimateClick = (lead, event) => {
                         </div>
                           </div>
                           
-                      {/* Safety and Preventative Measures Section */}
-                      <div className="pt-4 border-t border-slate-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-base font-semibold text-gray-900">Safety and Preventative Measures</label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Safety and Preventative Measures Section */}
+              <div className="bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6 mt-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Safety and Preventative Measures</h2>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSafetyMeasuresDropdownOpen(!safetyMeasuresDropdownOpen)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
+                  >
+                    <span className={allSafetyMeasures.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                      {allSafetyMeasures.length > 0
+                        ? `${allSafetyMeasures.length} selected`
+                        : 'Select safety and preventative measures...'}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${safetyMeasuresDropdownOpen ? 'transform rotate-180' : ''}`} />
+                  </button>
+                  {safetyMeasuresDropdownOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                      <div className="p-2 space-y-1">
+                        {(() => {
+                          // Combine all safety measures from all categories
+                          const combinedMeasures = [
+                            ...safetyMeasures,
+                            ...pressureWashingSafetyMeasures,
+                            ...specialtyCleaningSafetyMeasures,
+                            ...windowCleaningSafetyMeasures,
+                            ...customSoftWashingSafetyMeasures,
+                            ...customPressureWashingSafetyMeasures,
+                            ...customSpecialtyCleaningSafetyMeasures,
+                            ...customWindowCleaningSafetyMeasures,
+                            ...customAllSafetyMeasures
+                          ];
+                          // Remove duplicates
+                          const uniqueMeasures = [...new Set(combinedMeasures)];
+                          
+                          return uniqueMeasures.map((measure) => {
+                            const isSelected = allSafetyMeasures.includes(measure);
+                            return (
+                              <label
+                                key={measure}
+                                className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    toggleAllSafetyMeasure(measure);
+                                  }}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <span className="ml-2 text-sm text-gray-700">{measure}</span>
+                              </label>
+                            );
+                          });
+                        })()}
+                      </div>
+                      <div className="p-2 border-t border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={newAllSafetyMeasure}
+                            onChange={(e) => setNewAllSafetyMeasure(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && addCustomAllSafetyMeasure()}
+                            placeholder="Add custom measure..."
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          />
                           <button
                             type="button"
-                            onClick={() => {
-                              const allMeasures = [...windowCleaningSafetyMeasures, ...customWindowCleaningSafetyMeasures];
-                              const allSelected = allMeasures.every(m => selectedWindowCleaningSafetyMeasures.includes(m));
-                              if (allSelected) {
-                                setSelectedWindowCleaningSafetyMeasures([]);
-                              } else {
-                                setSelectedWindowCleaningSafetyMeasures(allMeasures);
-                              }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addCustomAllSafetyMeasure();
                             }}
-                            className="text-xs text-gray-500 hover:text-blue-600 underline transition-colors"
+                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                            disabled={!newAllSafetyMeasure.trim()}
                           >
-                            Select All
+                            <Plus className="w-4 h-4" />
                           </button>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          {[...windowCleaningSafetyMeasures, ...customWindowCleaningSafetyMeasures].map((measure) => {
-                            const isSelected = selectedWindowCleaningSafetyMeasures.includes(measure);
-                            return (
-                              <button
-                                key={measure}
-                                type="button"
-                                onClick={() => toggleWindowCleaningSafetyMeasure(measure)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                  isSelected
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                } shadow-sm hover:shadow-md`}
-                              >
-                                {isSelected && <Check className="w-4 h-4 text-blue-600" strokeWidth={3} />}
-                                <span>{measure}</span>
-                              </button>
-                            );
-                          })}
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
-                            <input
-                              type="text"
-                              value={newWindowCleaningSafetyMeasure}
-                              onChange={(e) => setNewWindowCleaningSafetyMeasure(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && addCustomWindowCleaningSafetyMeasure()}
-                              placeholder="Add measure..."
-                              className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-40"
-                            />
-                            <button
-                              type="button"
-                              onClick={addCustomWindowCleaningSafetyMeasure}
-                              className="text-blue-600 hover:text-blue-700"
-                              disabled={!newWindowCleaningSafetyMeasure.trim()}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
+                {allSafetyMeasures.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {allSafetyMeasures.map((measure) => (
+                      <div key={measure} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">
+                        <span>{measure}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleAllSafetyMeasure(measure)}
+                          className="text-blue-600 hover:text-blue-800 ml-1"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               {/* Save Button for Services Offered */}
