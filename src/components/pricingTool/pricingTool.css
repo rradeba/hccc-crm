@@ -1,0 +1,473 @@
+/* Pricing Tool Component Styles */
+
+/* Main Container */
+.pricing-tool-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.pricing-tool-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .pricing-tool-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.pricing-tool-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  color: rgb(17 24 39);
+}
+
+/* Pricing Format Section */
+.pricing-format-section {
+  background-color: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  padding: 1.5rem;
+}
+
+/* Format Row */
+.format-row {
+  border: 1px solid rgb(226 232 240);
+  border-radius: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background-color: rgb(248 250 252 / 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+}
+
+/* Delete Button */
+.format-delete-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.375rem;
+  color: rgb(156 163 175);
+  transition-property: color, background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  border-radius: 0.375rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.format-delete-button:hover {
+  color: rgb(75 85 99);
+  background-color: rgb(243 244 246);
+}
+
+.format-delete-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Service Header */
+.service-header {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgb(203 213 225);
+}
+
+.service-tags-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.service-tag {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  background-color: rgb(239 246 255);
+  color: rgb(29 78 216);
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgb(191 219 254);
+  font-weight: 500;
+}
+
+/* Add Service Button */
+.add-service-button-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.add-service-button {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background-color: rgb(239 246 255);
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  border: 1px solid rgb(191 219 254);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+}
+
+.add-service-button:hover {
+  background-color: rgb(219 234 254);
+}
+
+.add-service-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: rgb(29 78 216);
+}
+
+/* Dropdown Menu */
+.pricing-dropdown {
+  position: absolute;
+  z-index: 50;
+  width: 16rem;
+  margin-top: 0.25rem;
+  background-color: white;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  max-height: 24rem;
+  overflow-y: auto;
+  left: 0;
+}
+
+.dropdown-content {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Service Group */
+.service-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-group-header {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  background-color: rgb(241 245 249);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  color: rgb(55 65 81);
+  position: sticky;
+  top: 0;
+}
+
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.service-item-label {
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.service-item-label:hover {
+  background-color: rgb(248 250 252);
+}
+
+.service-checkbox {
+  width: 1rem;
+  height: 1rem;
+  color: rgb(37 99 235);
+  border-color: rgb(209 213 219);
+  border-radius: 0.25rem;
+}
+
+.service-checkbox:focus {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: rgb(59 130 246);
+}
+
+.service-label-text {
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgb(55 65 81);
+}
+
+/* Pricing Structure */
+.pricing-structure-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.structure-label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: rgb(55 65 81);
+  white-space: nowrap;
+}
+
+.structure-select-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.structure-select-button {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.5rem;
+  background-color: white;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgb(55 65 81);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition-property: border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  border: none;
+  cursor: pointer;
+}
+
+.structure-select-button:hover {
+  border-color: rgb(148 163 184);
+}
+
+.structure-select-button:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: rgb(59 130 246);
+  border-color: transparent;
+}
+
+.structure-select-text {
+  flex: 1;
+  text-align: left;
+}
+
+.structure-select-chevron {
+  width: 1rem;
+  height: 1rem;
+  color: rgb(107 114 128);
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.structure-select-chevron-open {
+  transform: rotate(180deg);
+}
+
+.structure-dropdown {
+  position: absolute;
+  z-index: 50;
+  width: 100%;
+  margin-top: 0.25rem;
+  background-color: white;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.structure-option {
+  width: 100%;
+  text-align: left;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgb(55 65 81);
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-bottom: 1px solid rgb(243 244 246);
+}
+
+.structure-option:last-child {
+  border-bottom: none;
+}
+
+.structure-option:hover {
+  background-color: rgb(249 250 251);
+}
+
+.structure-option-selected {
+  background-color: rgb(239 246 255);
+  color: rgb(29 78 216);
+  font-weight: 600;
+}
+
+/* Pricing Inputs Section */
+.pricing-inputs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pricing-input-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pricing-input-label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: rgb(55 65 81);
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.pricing-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.pricing-input {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background-color: white;
+  min-width: 100px;
+  flex: 1;
+}
+
+.pricing-input:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: rgb(59 130 246);
+  border-color: transparent;
+}
+
+.pricing-select {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background-color: white;
+  min-width: 120px;
+}
+
+.pricing-select:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: rgb(59 130 246);
+  border-color: transparent;
+}
+
+.pricing-unit-separator {
+  color: rgb(107 114 128);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+/* Add Format Button */
+.add-format-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+  background-color: rgb(37 99 235);
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  border: none;
+  cursor: pointer;
+}
+
+.add-format-button:hover {
+  background-color: rgb(29 78 216);
+}
+
+.add-format-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Section Spacing */
+.section-spacing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}

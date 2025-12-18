@@ -1,0 +1,470 @@
+/* Header Component Styles */
+
+/* Header Container with Dynamic Color Background */
+.header-container {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.header-container.blue {
+  background-color: rgb(37 99 235);
+}
+
+.header-container.red {
+  background-color: rgb(220 38 38);
+}
+
+.header-container.green {
+  background-color: rgb(22 163 74);
+}
+
+.header-container.purple {
+  background-color: rgb(147 51 234);
+}
+
+.header-container.orange {
+  background-color: rgb(234 88 12);
+}
+
+.header-container.teal {
+  background-color: rgb(20 184 166);
+}
+
+.header-container.pink {
+  background-color: rgb(236 72 153);
+}
+
+.header-container.indigo {
+  background-color: rgb(99 102 241);
+}
+
+.header-container.gray {
+  background-color: rgb(75 85 99);
+}
+
+.header-container.yellow {
+  background-color: rgb(234 179 8);
+}
+
+/* Header Inner Container */
+.header-inner {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .header-inner {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header-inner {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Header Content Layout */
+.header-content {
+  display: flex;
+  flex-direction: column;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .header-content {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+  }
+}
+
+/* Header Logo Section */
+.header-logo-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Logo Container */
+.logo-container {
+  background-color: rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(4px);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}
+
+/* Logo Image */
+.logo-image {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+/* Logo Icon */
+.logo-icon {
+  width: 2rem;
+  height: 2rem;
+  color: white;
+}
+
+/* Header Title Section */
+.header-title-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Title */
+.header-title {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  color: white;
+  filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));
+}
+
+/* Header Subtitle */
+.header-subtitle {
+  color: rgb(219 234 254);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+}
+
+/* Header Actions Section */
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .header-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+}
+
+/* Info Card */
+.info-card {
+  background-color: rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(4px);
+  border-radius: 0.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  text-align: right;
+}
+
+/* Info Label */
+.info-label {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgb(219 234 254);
+  font-weight: 500;
+}
+
+/* Info Value */
+.info-value {
+  font-weight: 700;
+  color: white;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* Weather Display */
+.weather-display {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.weather-icon {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.weather-temp {
+  font-weight: 700;
+  color: white;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.weather-desc {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgb(219 234 254);
+}
+
+.weather-error {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgb(191 219 254);
+}
+
+.weather-loading {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgb(191 219 254);
+}
+
+/* Relative Container */
+.relative {
+  position: relative;
+}
+
+/* Settings Button */
+.settings-button {
+  color: white;
+  transition-property: color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+}
+
+.settings-button:hover {
+  color: rgb(219 234 254);
+}
+
+.settings-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+/* Settings Dropdown */
+.settings-dropdown {
+  position: absolute;
+  z-index: 50;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 20rem;
+  background-color: white;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.settings-dropdown-content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Settings Section Title */
+.settings-section-title {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  color: rgb(31 41 55);
+  margin-bottom: 0.75rem;
+}
+
+/* Color Grid */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+/* Color Button */
+.color-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  border-width: 2px;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.color-button.selected {
+  border-color: rgb(31 41 55);
+  transform: scale(1.1);
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: rgb(156 163 175);
+}
+
+.color-button:not(.selected) {
+  border-color: transparent;
+}
+
+.color-button:not(.selected):hover {
+  border-color: rgb(209 213 219);
+}
+
+.color-blue {
+  background-color: rgb(37 99 235);
+}
+
+.color-red {
+  background-color: rgb(220 38 38);
+}
+
+.color-green {
+  background-color: rgb(22 163 74);
+}
+
+.color-purple {
+  background-color: rgb(147 51 234);
+}
+
+.color-orange {
+  background-color: rgb(234 88 12);
+}
+
+.color-teal {
+  background-color: rgb(20 184 166);
+}
+
+.color-pink {
+  background-color: rgb(236 72 153);
+}
+
+.color-indigo {
+  background-color: rgb(99 102 241);
+}
+
+.color-gray {
+  background-color: rgb(75 85 99);
+}
+
+.color-yellow {
+  background-color: rgb(234 179 8);
+}
+
+/* Divider */
+.settings-divider {
+  border-top: 1px solid rgb(229 231 235);
+  padding-top: 1rem;
+}
+
+/* Icon Preview */
+.icon-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(249 250 251);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(229 231 235);
+}
+
+.icon-preview-image {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+}
+
+/* Icon Upload Label */
+.icon-upload-label {
+  display: block;
+}
+
+.icon-upload-input {
+  display: none;
+}
+
+.icon-upload-button {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: rgb(55 65 81);
+  background-color: white;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.5rem;
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.icon-upload-button:hover {
+  background-color: rgb(249 250 251);
+}
+
+.icon-upload-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+}
+
+/* Remove Icon Button */
+.remove-icon-button {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: rgb(220 38 38);
+  background-color: white;
+  border: 1px solid rgb(252 165 165);
+  border-radius: 0.5rem;
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.remove-icon-button:hover {
+  background-color: rgb(254 242 242);
+}
+
+/* Navigation */
+.header-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-top: 1px solid rgb(255 255 255 / 0.2);
+}
+
+/* Nav Button */
+.nav-button {
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: white;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  text-decoration: underline;
+}
+
+.nav-button.active {
+  text-decoration: underline;
+}
