@@ -589,8 +589,8 @@
 }
 
 .chat-medium-button-active {
-  background-color: rgb(75 85 99);
-  color: white;
+  background-color: rgb(229 231 235);
+  color: rgb(31 41 55);
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
 
@@ -651,7 +651,7 @@
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.025em;
-  color: rgb(71 85 105);
+  color: rgb(156 163 175);
   font-weight: 700;
   padding-right: 0.25rem;
   padding-bottom: 0.25rem;
@@ -672,7 +672,7 @@
   transition-duration: 150ms;
   border: 1px solid rgb(209 213 219);
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  color: rgb(71 85 105);
+  color: rgb(156 163 175);
   border: none;
   cursor: pointer;
 }
@@ -689,7 +689,7 @@
 
 .pause-button:hover {
   background-color: rgb(249 250 251);
-  color: rgb(51 65 85);
+  color: rgb(107 114 128);
 }
 
 .pause-icon {
@@ -710,7 +710,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 9999px;
-  background-color: rgb(100 116 139);
+  background-color: rgb(156 163 175);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -863,7 +863,7 @@
 .typing-indicator {
   font-size: 0.75rem;
   line-height: 1rem;
-  color: rgb(71 85 105);
+  color: rgb(156 163 175);
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -878,7 +878,7 @@
   height: 0.5rem;
   width: 0.5rem;
   border-radius: 9999px;
-  background-color: rgb(100 116 139);
+  background-color: rgb(156 163 175);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 

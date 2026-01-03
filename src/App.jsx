@@ -275,7 +275,16 @@ const ServiceManagementSystem = () => {
     { id: 2, type: 'customer', message: 'Ivy Sullivan completed service', time: '1 hour ago', read: false },
     { id: 3, type: 'payment', message: 'Payment received from Jared Lopez', time: '3 hours ago', read: true },
     { id: 4, type: 'reminder', message: 'Follow up with Sarah Martinez scheduled', time: '5 hours ago', read: false },
-    { id: 5, type: 'lead', message: 'New lead from Michael Chen', time: '1 day ago', read: true }
+    { id: 5, type: 'lead', message: 'New lead from Michael Chen', time: '1 day ago', read: true },
+    { id: 6, type: 'customer', message: 'Robert Williams requested quote update', time: '1 day ago', read: false },
+    { id: 7, type: 'payment', message: 'Payment received from Lisa Anderson', time: '2 days ago', read: true },
+    { id: 8, type: 'reminder', message: 'Schedule follow-up call with David Brown', time: '2 days ago', read: false },
+    { id: 9, type: 'lead', message: 'New lead from Jennifer Taylor', time: '3 days ago', read: true },
+    { id: 10, type: 'customer', message: 'Service completed for Mark Johnson', time: '3 days ago', read: false },
+    { id: 11, type: 'payment', message: 'Payment received from Amanda White', time: '4 days ago', read: true },
+    { id: 12, type: 'reminder', message: 'Review estimate for Thomas Davis', time: '4 days ago', read: false },
+    { id: 13, type: 'lead', message: 'New lead from Patricia Wilson', time: '5 days ago', read: true },
+    { id: 14, type: 'customer', message: 'Follow-up needed for Christopher Moore', time: '5 days ago', read: false }
   ]);
   const [campaignView, setCampaignView] = useState('live'); // 'live' or 'ended'
   const [pricingTimeframe, setPricingTimeframe] = useState('30'); // days
@@ -286,6 +295,12 @@ const ServiceManagementSystem = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [isAvailabilityCollapsed, setIsAvailabilityCollapsed] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(() => {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    return startOfWeek.toISOString().split('T')[0];
+  });
+  const [dashboardWeek, setDashboardWeek] = useState(() => {
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
@@ -320,13 +335,29 @@ const ServiceManagementSystem = () => {
     }
   }]);
 
-  // Pricing structure options
+  // Pricing structure options - alphabetized
   const pricingStructureOptions = {
-    rates: ['Hourly', 'Per Square Foot', 'Per Linear Foot', 'Per Job', 'Per Item'],
-    expenses: ['Chemicals and detergents', 'Water and Filtration', 'Vehicle and Fuel', 'Travel'],
-    multipliers: ['Per Building Story', 'Commercial Job', 'Taxes'],
-    fees: ['Urgent Job/Day Of Multiplier', 'Waste Disposal Fee', 'Administrative', 'High Risk', 'Unique Surface']
+    rates: ['Hourly', 'Per Item', 'Per Job', 'Per Linear Foot', 'Per Square Foot'].sort(),
+    expenses: ['Chemicals and detergents', 'Travel', 'Vehicle and Fuel', 'Water and Filtration'].sort(),
+    multipliers: ['Commercial Job', 'Per Building Story', 'Taxes'].sort(),
+    fees: ['Administrative', 'High Risk', 'Unique Surface', 'Urgent Job/Day Of Multiplier', 'Waste Disposal Fee'].sort()
   };
+
+  // Custom pricing structure options state
+  const [customPricingStructureOptions, setCustomPricingStructureOptions] = useState({
+    rates: [],
+    expenses: [],
+    multipliers: [],
+    fees: []
+  });
+  
+  // State for custom input values in pricing dropdowns
+  const [customPricingInputValues, setCustomPricingInputValues] = useState({
+    rates: '',
+    expenses: '',
+    multipliers: '',
+    fees: ''
+  });
 
   const unitOptions = [
     'Square Foot',
@@ -434,7 +465,7 @@ const ServiceManagementSystem = () => {
       if (openPercentDropdown !== null && !event.target.closest('.percent-dropdown-container')) {
         setOpenPercentDropdown(null);
       }
-      if (openHeaderSettings && !event.target.closest('button[aria-label="Header settings"]') && !event.target.closest('.absolute')) {
+      if (openHeaderSettings && !event.target.closest('button[aria-label="Header settings"]') && !event.target.closest('.header-settings-dropdown')) {
         setOpenHeaderSettings(false);
       }
       // Close pricing structure dropdowns when clicking outside
@@ -452,6 +483,13 @@ const ServiceManagementSystem = () => {
       };
     }
   }, [openPricingDropdown, openPromotionDropdown, openPackageFormulaDropdown, openPercentDropdown, openHeaderSettings, openPricingStructureDropdown]);
+
+  // Close pricing structure dropdowns when navigating to pricing tool tab
+  useEffect(() => {
+    if (activeTab === 'pricingTool') {
+      setOpenPricingStructureDropdown({});
+    }
+  }, [activeTab]);
 
   const [, setSelectedJob] = useState(null);
   const [, setIsJobDetailModalOpen] = useState(false);
@@ -625,13 +663,13 @@ const SourceBadge = ({ source }) => {
     whatMakesDifferent: [],
     areasServed: [],
     operatingHours: [
-      { day: 'Monday', open: '', close: '', closed: false },
-      { day: 'Tuesday', open: '', close: '', closed: false },
-      { day: 'Wednesday', open: '', close: '', closed: false },
-      { day: 'Thursday', open: '', close: '', closed: false },
-      { day: 'Friday', open: '', close: '', closed: false },
-      { day: 'Saturday', open: '', close: '', closed: false },
-      { day: 'Sunday', open: '', close: '', closed: false },
+      { day: 'Monday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Tuesday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Wednesday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Thursday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Friday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Saturday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Sunday', open: '', close: '', closed: false, open24hr: false },
     ],
     certifications: '',
     certificationsList: [],
@@ -683,6 +721,63 @@ const SourceBadge = ({ source }) => {
   const handleEditCompanyInfo = () => {
     setIsEditingCompanyInfo(true);
   };
+
+  const resetCompanyInfo = () => {
+    setCompanyInfo({
+      companyName: '',
+      aboutBusiness: '',
+      companySlogan: '',
+      experienceYears: '',
+      experienceMonths: '',
+      jobsCompleted: '',
+      whatMakesDifferent: [],
+      areasServed: [],
+      operatingHours: [
+        { day: 'Monday', open: '', close: '', closed: false, open24hr: false },
+        { day: 'Tuesday', open: '', close: '', closed: false, open24hr: false },
+        { day: 'Wednesday', open: '', close: '', closed: false, open24hr: false },
+        { day: 'Thursday', open: '', close: '', closed: false, open24hr: false },
+        { day: 'Friday', open: '', close: '', closed: false, open24hr: false },
+        { day: 'Saturday', open: '', close: '', closed: false, open24hr: false },
+        { day: 'Sunday', open: '', close: '', closed: false, open24hr: false },
+      ],
+      certifications: '',
+      certificationsList: [],
+      insuranceStatus: '',
+      insuranceCompany: '',
+      insurancePolicyNumber: '',
+      insuranceCoverageLimits: '',
+      guaranteeWarranty: '',
+      phone: '',
+      email: '',
+      website: '',
+      street: '',
+      street2: '',
+      city: '',
+      state: '',
+      zip: '',
+      facebook: '',
+      instagram: '',
+      tiktok: '',
+      nextdoor: '',
+      angiesList: '',
+      twitter: '',
+      onlineReviews: {
+        google: { averageRating: '', totalReviews: '', fiveStarReviews: '' },
+        facebook: { averageRating: '', totalReviews: '', fiveStarReviews: '' },
+        nextdoor: { averageRating: '', totalReviews: '', fiveStarReviews: '' },
+        yelp: { averageRating: '', totalReviews: '', fiveStarReviews: '' },
+        homeadvisor: { averageRating: '', totalReviews: '', fiveStarReviews: '' }
+      }
+    });
+    setSavedCompanyInfo({});
+  };
+
+  // Reset company information on component mount to clear all data
+  useEffect(() => {
+    resetCompanyInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Helper function to get the appropriate action button for a lead
   const getLeadActionButton = (lead) => {
@@ -745,14 +840,18 @@ const SourceBadge = ({ source }) => {
   };
 
   const getBrandIdentityCompletion = () => {
+    // Track 3 categories:
+    // 1. Company slogan
     const hasSlogan =
       companyInfo.companySlogan && companyInfo.companySlogan.trim() !== '';
 
+    // 2. At least one experience input (years, months, or jobsCompleted)
     const hasExperience =
       (companyInfo.experienceYears && companyInfo.experienceYears.trim() !== '') ||
       (companyInfo.experienceMonths && companyInfo.experienceMonths.trim() !== '') ||
       (companyInfo.jobsCompleted && companyInfo.jobsCompleted.trim() !== '');
 
+    // 3. 3 company qualities selected
     const hasQualities = companyInfo.whatMakesDifferent.length >= 3;
 
     const completed = [hasSlogan, hasExperience, hasQualities].filter(Boolean).length;
@@ -1004,18 +1103,21 @@ const SourceBadge = ({ source }) => {
   ];
 
   const safetyMeasures = [
-    'Pre-wet all plants and landscaping',
-    'Protect electrical outlets, meters, and fixtures',
-    'Close all windows and doors',
-    'Move or cover outdoor items',
-    'Use correct SH concentration',
-    'Use low pressure only',
-    'Protect painted surfaces',
-    'Avoid overspray on adjacent surfaces',
-    'Protect metals',
-    'Monitor downspouts and runoff',
-    'Protect windows and doors',
-    'Perform a post-cleaning inspection of property'
+    'Pre-inspect all surfaces',
+    'Use safe pressure settings',
+    'Pre-wet plants and soil',
+    'Cover outlets and fixtures',
+    'Test spots before washing',
+    'Use proper chemical ratios',
+    'Control hose placement',
+    'Avoid spraying under siding',
+    'Protect windows and seals',
+    'Rinse thoroughly after cleaning',
+    'Direct runoff safely away',
+    'Avoid aged or damaged surfaces',
+    'Softwash home sidings',
+    'Secure ladders and equipment',
+    'Perform final walkthrough inspection'
   ];
 
   const pressureWashingSafetyMeasures = [
@@ -1265,6 +1367,7 @@ You don't discount because it's dirty — you charge more because it requires mo
   const [collapsedPaverSealing, setCollapsedPaverSealing] = useState(true);
   const [collapsedBrandIdentity, setCollapsedBrandIdentity] = useState(true);
   const [collapsedAreasServed, setCollapsedAreasServed] = useState(true);
+  const [collapsedSafetyMeasures, setCollapsedSafetyMeasures] = useState(true);
   const [collapsedOperatingHours, setCollapsedOperatingHours] = useState(true);
   const [collapsedContactDetails, setCollapsedContactDetails] = useState(true);
   const [collapsedOnlineReviews, setCollapsedOnlineReviews] = useState(true);
@@ -1591,6 +1694,22 @@ You don't discount because it's dirty — you charge more because it requires mo
     }
   }, [isCitySearchOpen]);
 
+  // Close safety measures dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (safetyMeasuresDropdownOpen && !event.target.closest('.safety-measures-dropdown-container')) {
+        setSafetyMeasuresDropdownOpen(false);
+      }
+    };
+
+    if (safetyMeasuresDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [safetyMeasuresDropdownOpen]);
+
   const selectCity = (city) => {
     const cityString = city.fullName;
     if (!companyInfo.areasServed.includes(cityString)) {
@@ -1687,11 +1806,18 @@ You don't discount because it's dirty — you charge more because it requires mo
 
   // Combined safety measures functions
   const toggleAllSafetyMeasure = (measure) => {
-    if (allSafetyMeasures.includes(measure)) {
-      setAllSafetyMeasures((prev) => prev.filter((m) => m !== measure));
-    } else {
-      setAllSafetyMeasures((prev) => [...prev, measure]);
-    }
+    setAllSafetyMeasures((prev) => {
+      const isCurrentlySelected = prev.includes(measure);
+      if (isCurrentlySelected) {
+        const updated = prev.filter((m) => m !== measure);
+        console.log('Removed measure:', measure, 'New list:', updated);
+        return updated;
+      } else {
+        const updated = [...prev, measure];
+        console.log('Added measure:', measure, 'New list:', updated);
+        return updated;
+      }
+    });
   };
 
   const addCustomAllSafetyMeasure = () => {
@@ -2569,6 +2695,14 @@ You don't discount because it's dirty — you charge more because it requires mo
     // useEffect will handle loading the hours for the new week
   };
 
+  const navigateDashboardWeek = (direction) => {
+    const currentWeekStart = new Date(dashboardWeek);
+    const newWeekStart = new Date(currentWeekStart);
+    newWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+    const newWeekStr = newWeekStart.toISOString().split('T')[0];
+    setDashboardWeek(newWeekStr);
+  };
+
   const handleWeekHoursChange = (dayIndex, field, value) => {
     const updatedHours = [...currentWeekHours];
     if (field === 'enabled') {
@@ -3135,8 +3269,8 @@ const handleEstimateClick = (lead, event) => {
                   <Settings className="w-9 h-9" />
                 </button>
                 {openHeaderSettings && (
-                  <div className="absolute z-50 right-0 mt-2 w-80 bg-white border border-gray-300 rounded-xl shadow-lg">
-                    <div className="p-4 space-y-4">
+                  <div className="header-settings-dropdown absolute z-50 right-0 mt-2 w-80 bg-white border border-gray-300 rounded-xl shadow-lg" onMouseDown={(e) => e.stopPropagation()}>
+                    <div className="p-4 space-y-4" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                       <div>
                       <h3 className="text-sm font-semibold text-gray-800 mb-3">Header Color</h3>
                       <div className="grid grid-cols-5 gap-2">
@@ -3144,8 +3278,12 @@ const handleEstimateClick = (lead, event) => {
                           <button
                             key={option.value}
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setHeaderColor(option.value);
+                            }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
                             }}
                             className={`w-10 h-10 rounded-lg ${option.color} border-2 transition-all ${
                               headerColor === option.value ? 'border-gray-800 scale-110 ring-2 ring-gray-400' : 'border-transparent hover:border-gray-300'
@@ -3169,11 +3307,12 @@ const handleEstimateClick = (lead, event) => {
                               />
                   </div>
                 )}
-                          <label className="block">
+                          <label className="block" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                             <input
                               type="file"
                               accept="image/*"
                               onChange={(e) => {
+                                e.stopPropagation();
                                 const file = e.target.files?.[0];
                                 if (file) {
                                   const reader = new FileReader();
@@ -3183,6 +3322,7 @@ const handleEstimateClick = (lead, event) => {
                                   reader.readAsDataURL(file);
                                 }
                               }}
+                              onMouseDown={(e) => e.stopPropagation()}
                               className="hidden"
                             />
                             <span className="cursor-pointer inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -3193,7 +3333,13 @@ const handleEstimateClick = (lead, event) => {
                           {customHeaderIcon && (
                             <button
                               type="button"
-                              onClick={() => setCustomHeaderIcon(null)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomHeaderIcon(null);
+                              }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                              }}
                               className="w-full px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
                             >
                               Remove Custom Icon
@@ -3260,7 +3406,7 @@ const handleEstimateClick = (lead, event) => {
                 return total;
               }, 0);
 
-              // Calculate Active Jobs (scheduled this week)
+              // Calculate New Leads (added this week)
               const today = new Date();
               const currentDay = today.getDay();
               const startOfWeek = new Date(today);
@@ -3270,49 +3416,25 @@ const handleEstimateClick = (lead, event) => {
               endOfWeek.setDate(startOfWeek.getDate() + 6);
               endOfWeek.setHours(23, 59, 59, 999);
               
-              const activeJobs = jobs.filter(job => {
-                if (!job.date) return false;
-                const jobDate = new Date(job.date);
-                return jobDate >= startOfWeek && jobDate <= endOfWeek;
-              }).length;
-
-              // Calculate New Leads (added this week)
               const newLeads = leads.filter(lead => {
                 if (!lead.dateAdded) return false;
                 const leadDate = new Date(lead.dateAdded);
                 return leadDate >= startOfWeek && leadDate <= endOfWeek;
               }).length;
 
-              // Calculate Conversion Rate
-              const totalLeads = leads.length;
-              const totalCustomers = customers.length;
-              const conversionRate = totalLeads > 0 ? ((totalCustomers / totalLeads) * 100).toFixed(1) : '0.0';
+              // Calculate Ready Jobs (jobs ready to be completed - scheduled for today or earlier, not completed)
+              today.setHours(0, 0, 0, 0);
+              
+              const readyJobs = jobs.filter(job => {
+                if (!job.date) return false;
+                const jobDate = new Date(job.date);
+                jobDate.setHours(0, 0, 0, 0);
+                // Job is ready if it's scheduled for today or earlier and not completed
+                return jobDate <= today && job.status !== 'Completed';
+              }).length;
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Monthly Revenue Card */}
-                  <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="p-2 bg-blue-100 rounded-xl">
-                        <DollarSign className="w-5 h-5 text-blue-600" />
-                </div>
-                        </div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-1">Monthly Revenue</h4>
-                    <p className="text-2xl font-bold text-gray-900">${monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      </div>
-
-                  {/* Active Jobs Card */}
-                  <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="p-2 bg-emerald-100 rounded-xl">
-                        <Calendar className="w-5 h-5 text-emerald-600" />
-                  </div>
-                </div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-1">Active Jobs</h4>
-                    <p className="text-2xl font-bold text-gray-900">{activeJobs}</p>
-                    <p className="text-xs text-gray-500 mt-1">Scheduled this week</p>
-              </div>
-
                   {/* New Leads Card */}
                   <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
                     <div className="flex items-center justify-between mb-2">
@@ -3325,16 +3447,37 @@ const handleEstimateClick = (lead, event) => {
                     <p className="text-xs text-gray-500 mt-1">Added this week</p>
                         </div>
 
-                  {/* Conversion Rate Card */}
+                  {/* Ready Jobs Card */}
                   <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="p-2 bg-amber-100 rounded-xl">
-                        <TrendingUp className="w-5 h-5 text-amber-600" />
+                      <div className="p-2 bg-emerald-100 rounded-xl">
+                        <Calendar className="w-5 h-5 text-emerald-600" />
+                  </div>
+                </div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-1">Ready Jobs</h4>
+                    <p className="text-2xl font-bold text-gray-900">{readyJobs}</p>
+              </div>
+
+                  {/* Revenue This Month Card */}
+                  <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="p-2 bg-blue-100 rounded-xl">
+                        <DollarSign className="w-5 h-5 text-blue-600" />
+                </div>
+                        </div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-1">Revenue This Month</h4>
+                    <p className="text-2xl font-bold text-gray-900">${monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+
+                  {/* Blank Fourth Stat Card */}
+                  <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="p-2 bg-gray-100 rounded-xl">
+                        <div className="w-5 h-5"></div>
                       </div>
                   </div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-1">Conversion Rate</h4>
-                    <p className="text-2xl font-bold text-gray-900">{conversionRate}%</p>
-                    <p className="text-xs text-gray-500 mt-1">Lead to customer</p>
+                    <h4 className="text-sm font-medium text-gray-600 mb-1"></h4>
+                    <p className="text-2xl font-bold text-gray-900"></p>
                 </div>
               </div>
               );
@@ -3345,8 +3488,8 @@ const handleEstimateClick = (lead, event) => {
               <div className="p-6 border-b border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-3xl">
-                      <Bell className="w-5 h-5 text-blue-600" />
+                    <div className="p-2 bg-gray-100 rounded-3xl">
+                      <Bell className="w-5 h-5 text-gray-600" />
           </div>
                     <h3 className="text-lg font-bold text-gray-900">Notifications</h3>
                     {notifications.filter(n => !n.read).length > 0 && (
@@ -3358,7 +3501,7 @@ const handleEstimateClick = (lead, event) => {
                 </div>
               </div>
               <div className="p-6">
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                   {notifications.length === 0 ? (
                     <div className="text-center text-gray-500 py-8">
                       <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -3394,7 +3537,7 @@ const handleEstimateClick = (lead, event) => {
                       return (
                         <div
                           key={notification.id}
-                          className="flex items-start gap-4 p-4 rounded-3xl border-2 border-slate-200 bg-slate-50/60 transition-all cursor-pointer hover:shadow-md"
+                          className="flex items-center gap-4 p-4 rounded-3xl border-2 border-slate-200 bg-slate-50/60 transition-all cursor-pointer hover:shadow-md"
                           onClick={() => {
                             setNotifications(notifications.map(n => 
                               n.id === notification.id ? { ...n, read: true } : n
@@ -3403,25 +3546,13 @@ const handleEstimateClick = (lead, event) => {
                         >
                           {/* Green circle icon on far left */}
                           {!notification.read && (
-                            <div className="w-3 h-3 rounded-full bg-green-500 shrink-0 mt-2"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-500 shrink-0"></div>
                           )}
                           {notification.read && (
-                            <div className="w-3 h-3 shrink-0 mt-2"></div>
+                            <div className="w-3 h-3 shrink-0"></div>
                           )}
                           
-                          <div className={`p-2 rounded-3xl ${
-                            notification.read 
-                              ? 'bg-slate-200 text-slate-600' 
-                              : notification.type === 'lead' 
-                                ? 'bg-blue-200 text-blue-700'
-                                : notification.type === 'customer'
-                                ? 'bg-emerald-200 text-emerald-700'
-                                : notification.type === 'payment'
-                                ? 'bg-amber-200 text-amber-700'
-                                : notification.type === 'reminder'
-                                ? 'bg-purple-200 text-purple-700'
-                                : 'bg-slate-200 text-slate-600'
-                          }`}>
+                          <div className="p-2 rounded-3xl shrink-0 bg-gray-100 text-gray-600">
                             <Icon className="w-5 h-5" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -3439,7 +3570,7 @@ const handleEstimateClick = (lead, event) => {
                                 e.stopPropagation();
                                 // Handle action button click
                               }}
-                              className={`px-3 py-1.5 text-[0.75rem] font-medium rounded-md transition-colors border whitespace-nowrap ${action.color}`}
+                              className={`px-3 py-1.5 text-[0.75rem] font-medium rounded-md transition-colors border whitespace-nowrap shrink-0 ${action.color}`}
                               title={action.label}
                               aria-label={action.label}
                             >
@@ -3456,11 +3587,8 @@ const handleEstimateClick = (lead, event) => {
             
             {/* Week of Section */}
             {(() => {
-              // Get current week (Sunday to Saturday)
-              const today = new Date();
-              const currentDay = today.getDay(); // 0 = Sunday, 6 = Saturday
-              const startOfWeek = new Date(today);
-              startOfWeek.setDate(today.getDate() - currentDay);
+              // Get selected week (Sunday to Saturday)
+              const startOfWeek = new Date(dashboardWeek);
               startOfWeek.setHours(0, 0, 0, 0);
               
               const weekDays = [];
@@ -3486,11 +3614,41 @@ const handleEstimateClick = (lead, event) => {
               const weekStartStr = startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               const weekEndStr = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
               
+              // Check if current week
+              const today = new Date();
+              const currentWeekStart = new Date(today);
+              currentWeekStart.setDate(today.getDate() - today.getDay());
+              currentWeekStart.setHours(0, 0, 0, 0);
+              const isCurrentWeek = startOfWeek.getTime() === currentWeekStart.getTime();
+              
               return (
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200">
                   <div className="p-6 border-b border-slate-200">
-                    <h3 className="text-lg font-bold text-gray-900">Week of {weekStartStr} - {weekEndStr}</h3>
-          </div>
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => navigateDashboardWeek(-1)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 hover:border-gray-300"
+                        title="Previous Week"
+                      >
+                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                      </button>
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-bold text-gray-900">Week of {weekStartStr} - {weekEndStr}</h3>
+                        {isCurrentWeek && (
+                          <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-md">
+                            Current Week
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => navigateDashboardWeek(1)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 hover:border-gray-300"
+                        title="Next Week"
+                      >
+                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
                   <div className="p-6">
                     <div className="grid grid-cols-7 gap-3">
                       {weekDays.map((day, index) => (
@@ -3770,10 +3928,10 @@ const handleEstimateClick = (lead, event) => {
                                 <div key={stage} className="flex flex-col items-center w-full">
                                   <div className={`w-full py-2 px-3 rounded-full text-center transition-all duration-200 relative ${
                                     isActive 
-                                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 text-blue-800 font-bold shadow-md shadow-blue-200/50' 
+                                      ? 'bg-blue-50 border-2 border-blue-600 text-blue-800 font-bold' 
                                       : isCompleted
-                                      ? 'bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-300 text-slate-700 font-semibold shadow-sm'
-                                      : 'bg-white border border-slate-300 text-slate-400 font-medium shadow-sm'
+                                      ? 'bg-slate-50/60 border-2 border-slate-200 text-slate-700 font-semibold shadow-sm'
+                                      : 'bg-slate-50/60 border-2 border-slate-200 text-slate-400 font-medium shadow-sm'
                                   }`}>
                                     <div className={`flex items-center justify-center gap-1.5 ${isActive ? 'text-xs' : 'text-[10px]'} leading-tight`}>
                                       {isCompleted && (
@@ -3917,7 +4075,7 @@ const handleEstimateClick = (lead, event) => {
                             e.stopPropagation();
                             handleServiceFileClick('Convert', lead, null);
                           }}
-                          className="mt-4 w-full px-6 py-3 bg-blue-50 border-2 border-blue-300 rounded-full text-blue-700 font-bold text-sm hover:bg-blue-100 transition-colors"
+                          className="mt-4 w-full px-6 py-3 bg-green-50 border-2 border-green-600 rounded-full text-green-700 font-bold text-sm hover:bg-green-100 transition-colors"
                           type="button"
                           title="Convert"
                           aria-label="Convert"
@@ -4127,10 +4285,10 @@ const handleEstimateClick = (lead, event) => {
                                     <div key={stage} className="flex flex-col items-center w-full">
                                       <div className={`w-full py-2 px-3 rounded-full text-center transition-all duration-200 relative ${
                                         isActive 
-                                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 text-blue-800 font-bold shadow-md shadow-blue-200/50' 
+                                          ? 'bg-blue-50 border-2 border-blue-600 text-blue-800 font-bold' 
                                           : isCompleted
-                                          ? 'bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-300 text-slate-700 font-semibold shadow-sm'
-                                          : 'bg-white border border-slate-300 text-slate-400 font-medium shadow-sm'
+                                          ? 'bg-slate-50/60 border-2 border-slate-200 text-slate-700 font-semibold shadow-sm'
+                                          : 'bg-slate-50/60 border-2 border-slate-200 text-slate-400 font-medium shadow-sm'
                                       }`}>
                                         <div className={`flex items-center justify-center gap-1.5 ${isActive ? 'text-xs' : 'text-[10px]'} leading-tight`}>
                                           {isCompleted && (
@@ -4274,7 +4432,7 @@ const handleEstimateClick = (lead, event) => {
                                   e.stopPropagation();
                                   handleServiceFileClick('Convert', lead, null);
                                 }}
-                                className="mt-4 w-full px-6 py-3 bg-blue-50 border-2 border-blue-300 rounded-full text-blue-700 font-bold text-sm hover:bg-blue-100 transition-colors"
+                                className="mt-4 w-full px-6 py-3 bg-green-50 border-2 border-green-600 rounded-full text-green-700 font-bold text-sm hover:bg-green-100 transition-colors"
                                 type="button"
                                 title="Convert"
                                 aria-label="Convert"
@@ -4482,10 +4640,10 @@ const handleEstimateClick = (lead, event) => {
                                     <div key={stage} className="flex flex-col items-center w-full">
                                       <div className={`w-full py-2 px-3 rounded-full text-center transition-all duration-200 relative ${
                                         isActive 
-                                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 text-blue-800 font-bold shadow-md shadow-blue-200/50' 
+                                          ? 'bg-blue-50 border-2 border-blue-600 text-blue-800 font-bold' 
                                           : isCompleted
-                                          ? 'bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-300 text-slate-700 font-semibold shadow-sm'
-                                          : 'bg-white border border-slate-300 text-slate-400 font-medium shadow-sm'
+                                          ? 'bg-slate-50/60 border-2 border-slate-200 text-slate-700 font-semibold shadow-sm'
+                                          : 'bg-slate-50/60 border-2 border-slate-200 text-slate-400 font-medium shadow-sm'
                                       }`}>
                                         <div className={`flex items-center justify-center gap-1.5 ${isActive ? 'text-xs' : 'text-[10px]'} leading-tight`}>
                                           {isCompleted && (
@@ -4629,7 +4787,7 @@ const handleEstimateClick = (lead, event) => {
                                   e.stopPropagation();
                                   handleServiceFileClick('Convert', lead, null);
                                 }}
-                                className="mt-4 w-full px-6 py-3 bg-blue-50 border-2 border-blue-300 rounded-full text-blue-700 font-bold text-sm hover:bg-blue-100 transition-colors"
+                                className="mt-4 w-full px-6 py-3 bg-green-50 border-2 border-green-600 rounded-full text-green-700 font-bold text-sm hover:bg-green-100 transition-colors"
                                 type="button"
                                 title="Convert"
                                 aria-label="Convert"
@@ -4829,10 +4987,10 @@ const handleEstimateClick = (lead, event) => {
                                     <div key={stage} className="flex flex-col items-center w-full">
                                       <div className={`w-full py-2 px-3 rounded-full text-center transition-all duration-200 relative ${
                                         isActive 
-                                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 text-blue-800 font-bold shadow-md shadow-blue-200/50' 
+                                          ? 'bg-blue-50 border-2 border-blue-600 text-blue-800 font-bold' 
                                           : isCompleted
-                                          ? 'bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-300 text-slate-700 font-semibold shadow-sm'
-                                          : 'bg-white border border-slate-300 text-slate-400 font-medium shadow-sm'
+                                          ? 'bg-slate-50/60 border-2 border-slate-200 text-slate-700 font-semibold shadow-sm'
+                                          : 'bg-slate-50/60 border-2 border-slate-200 text-slate-400 font-medium shadow-sm'
                                       }`}>
                                         <div className={`flex items-center justify-center gap-1.5 ${isActive ? 'text-xs' : 'text-[10px]'} leading-tight`}>
                                           {isCompleted && (
@@ -5270,33 +5428,33 @@ const handleEstimateClick = (lead, event) => {
                 {/* Facebook */}
                 <button
                   type="button"
-                  className="relative flex flex-col items-center justify-center gap-3 p-5 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50 hover:shadow-md transition-all duration-200 group bg-white"
+                  className="relative flex flex-col items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50 hover:shadow-md transition-all duration-200 group bg-white"
                 >
                   {connectedAccounts.facebook && (
-                    <div className="absolute top-2 left-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
-                      <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                    <div className="absolute top-1.5 left-1.5 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
+                      <Check className="w-5 h-5 text-white" strokeWidth={3} />
                     </div>
                   )}
                   <div className="w-12 h-12 flex items-center justify-center rounded-xl group-hover:scale-110 transition-transform shadow-sm bg-white">
-                    <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none">
+                    <svg className="w-[42px] h-[42px]" viewBox="0 0 24 24" fill="none">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
                     </svg>
                   </div>
-                  <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-700 transition-colors">Facebook</span>
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-blue-700 transition-colors">Facebook</span>
                 </button>
 
                 {/* Instagram */}
                 <button
                   type="button"
-                  className="relative flex flex-col items-center justify-center gap-3 p-5 border-2 border-slate-200 rounded-2xl hover:border-pink-500 hover:bg-pink-50 hover:shadow-md transition-all duration-200 group bg-white"
+                  className="relative flex flex-col items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-2xl hover:border-pink-500 hover:bg-pink-50 hover:shadow-md transition-all duration-200 group bg-white"
                 >
                   {connectedAccounts.instagram && (
-                    <div className="absolute top-2 left-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
-                      <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                    <div className="absolute top-1.5 left-1.5 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
+                      <Check className="w-5 h-5 text-white" strokeWidth={3} />
                     </div>
                   )}
                   <div className="w-12 h-12 flex items-center justify-center rounded-xl group-hover:scale-110 transition-transform shadow-sm bg-white p-1">
-                    <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none">
+                    <svg className="w-[42px] h-[42px]" viewBox="0 0 24 24" fill="none">
                       <defs>
                         <linearGradient id="instagram-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" stopColor="#833AB4"/>
@@ -5307,57 +5465,57 @@ const handleEstimateClick = (lead, event) => {
                       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" fill="url(#instagram-gradient)"/>
                     </svg>
                   </div>
-                  <span className="text-sm font-semibold text-gray-700 group-hover:text-pink-700 transition-colors">Instagram</span>
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-pink-700 transition-colors">Instagram</span>
                 </button>
 
                 {/* TikTok */}
                 <button
                   type="button"
-                  className="relative flex flex-col items-center justify-center gap-3 p-5 border-2 border-slate-200 rounded-2xl hover:border-black hover:bg-slate-50 hover:shadow-md transition-all duration-200 group bg-white"
+                  className="relative flex flex-col items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-2xl hover:border-black hover:bg-slate-50 hover:shadow-md transition-all duration-200 group bg-white"
                 >
                   {connectedAccounts.tiktok && (
-                    <div className="absolute top-2 left-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
-                      <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                    <div className="absolute top-1.5 left-1.5 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
+                      <Check className="w-5 h-5 text-white" strokeWidth={3} />
                     </div>
                   )}
-                  <div className="w-12 h-12 flex items-center justify-center rounded-xl group-hover:scale-110 transition-transform shadow-sm bg-black p-2">
-                    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none">
+                  <div className="w-12 h-12 flex items-center justify-center rounded-xl group-hover:scale-110 transition-transform shadow-sm bg-black p-1.5">
+                    <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none">
                       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" fill="#FFFFFF"/>
                     </svg>
                   </div>
-                  <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">TikTok</span>
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">TikTok</span>
                 </button>
 
                 {/* Website */}
                 <button
                   type="button"
-                  className="relative flex flex-col items-center justify-center gap-3 p-5 border-2 border-slate-200 rounded-2xl hover:border-emerald-500 hover:bg-emerald-50 hover:shadow-md transition-all duration-200 group bg-white"
+                  className="relative flex flex-col items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-2xl hover:border-emerald-500 hover:bg-emerald-50 hover:shadow-md transition-all duration-200 group bg-white"
                 >
                   {connectedAccounts.website && (
-                    <div className="absolute top-2 left-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
-                      <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                    <div className="absolute top-1.5 left-1.5 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
+                      <Check className="w-5 h-5 text-white" strokeWidth={3} />
                     </div>
                   )}
                   <div className="w-12 h-12 flex items-center justify-center bg-emerald-600 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
-                    <Building2 className="w-6 h-6 text-white" />
+                    <Building2 className="w-[30px] h-[30px] text-white" />
                   </div>
-                  <span className="text-sm font-semibold text-gray-700 group-hover:text-emerald-700 transition-colors">Website</span>
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-emerald-700 transition-colors">Website</span>
                 </button>
 
-                {/* SMS via Twilio */}
+                {/* SMS and Call */}
                 <button
                   type="button"
-                  className="relative flex flex-col items-center justify-center gap-3 p-5 border-2 border-slate-200 rounded-2xl hover:border-red-500 hover:bg-red-50 hover:shadow-md transition-all duration-200 group bg-white"
+                  className="relative flex flex-col items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-2xl hover:border-red-500 hover:bg-red-50 hover:shadow-md transition-all duration-200 group bg-white"
                 >
                   {connectedAccounts.sms && (
-                    <div className="absolute top-2 left-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
-                      <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                    <div className="absolute top-1.5 left-1.5 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
+                      <Check className="w-5 h-5 text-white" strokeWidth={3} />
                     </div>
                   )}
                   <div className="w-12 h-12 flex items-center justify-center bg-red-600 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
-                    <Phone className="w-6 h-6 text-white" />
+                    <Phone className="w-[30px] h-[30px] text-white" />
                   </div>
-                  <span className="text-sm font-semibold text-gray-700 group-hover:text-red-700 transition-colors">SMS via Twilio</span>
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-red-700 transition-colors">SMS and Call</span>
                 </button>
               </div>
             </div>
@@ -7527,10 +7685,10 @@ const handleEstimateClick = (lead, event) => {
                                     <div key={stage} className="flex flex-col items-center w-full">
                                       <div className={`w-full py-2 px-3 rounded-full text-center transition-all duration-200 relative ${
                                         isActive 
-                                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 text-blue-800 font-bold shadow-md shadow-blue-200/50' 
+                                          ? 'bg-blue-50 border-2 border-blue-600 text-blue-800 font-bold' 
                                           : isCompleted
-                                          ? 'bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-300 text-slate-700 font-semibold shadow-sm'
-                                          : 'bg-white border border-slate-300 text-slate-400 font-medium shadow-sm'
+                                          ? 'bg-slate-50/60 border-2 border-slate-200 text-slate-700 font-semibold shadow-sm'
+                                          : 'bg-slate-50/60 border-2 border-slate-200 text-slate-400 font-medium shadow-sm'
                                       }`}>
                                         <div className={`flex items-center justify-center gap-1.5 ${isActive ? 'text-xs' : 'text-[10px]'} leading-tight`}>
                                           {isCompleted && (
@@ -8097,7 +8255,7 @@ const handleEstimateClick = (lead, event) => {
                         <div className="space-y-6">
                           {/* Collapsible Header */}
                           <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-semibold text-gray-800">Pricing Formula</h3>
+                            <h3 className="text-lg font-semibold text-gray-800">Pricing Inputs</h3>
                             <button
                               type="button"
                               onClick={() => {
@@ -8119,10 +8277,12 @@ const handleEstimateClick = (lead, event) => {
                           {!format.isPricingPanelsCollapsed && (
                             <>
                           {/* First Row: Rates and Expenses */}
-                          <div className="flex items-center gap-4 mb-4 min-w-0 max-w-full">
+                          <div className="flex items-start gap-4 mb-4 min-w-0 max-w-full">
                             {['rates', 'expenses'].map((sectionType, sectionIndex) => {
                               const sectionLabel = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
-                              const sectionOptions = pricingStructureOptions[sectionType];
+                              const baseOptions = pricingStructureOptions[sectionType] || [];
+                              const customOptions = customPricingStructureOptions[sectionType] || [];
+                              const sectionOptions = [...baseOptions, ...customOptions].sort();
                               const selectedItems = format.pricingStructure?.[sectionType] || [];
                               const dropdownKey = `${format.id}-${sectionType}`;
                               const isDropdownOpen = openPricingStructureDropdown[dropdownKey];
@@ -8151,7 +8311,7 @@ const handleEstimateClick = (lead, event) => {
                                         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
                                       </button>
                                       {isDropdownOpen && (
-                                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto pricing-structure-dropdown-container">
+                                        <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto pricing-structure-dropdown-container">
                                           <div className="p-2 space-y-1">
                                             {sectionOptions.map((option) => {
                                               // For rates, expenses, multipliers, and fees, check if option exists as object
@@ -8241,7 +8401,7 @@ const handleEstimateClick = (lead, event) => {
                                     </div>
                                     
                                     {/* Selected Items Panel */}
-                                    <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm min-h-[240px] min-w-0 max-w-full overflow-x-auto">
+                                    <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm h-[350px] overflow-x-auto overflow-y-auto">
                                       {selectedItems.length > 0 ? (
                                         <div className="space-y-3">
                                           {selectedItems.map((item, index) => {
@@ -8552,7 +8712,7 @@ const handleEstimateClick = (lead, event) => {
                           </div>
                           
                           {/* Second Row: Multipliers and Fees */}
-                          <div className="flex items-center gap-4 min-w-0 max-w-full">
+                          <div className="flex items-start gap-4 min-w-0 max-w-full">
                             {['multipliers', 'fees'].map((sectionType, sectionIndex) => {
                               const sectionLabel = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
                               const sectionOptions = pricingStructureOptions[sectionType];
@@ -8584,7 +8744,7 @@ const handleEstimateClick = (lead, event) => {
                                         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
                                       </button>
                                       {isDropdownOpen && (
-                                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto pricing-structure-dropdown-container">
+                                        <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto pricing-structure-dropdown-container">
                                           <div className="p-2 space-y-1">
                                             {sectionOptions.map((option) => {
                                               const needsValue = sectionType === 'multipliers' || sectionType === 'fees';
@@ -8650,7 +8810,7 @@ const handleEstimateClick = (lead, event) => {
                                     </div>
                                     
                                     {/* Selected Items Panel */}
-                                    <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm min-h-[240px] min-w-0 max-w-full overflow-x-auto">
+                                    <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm h-[350px] overflow-x-auto overflow-y-auto">
                                       {selectedItems.length > 0 ? (
                                         <div className="space-y-3">
                                           {selectedItems.map((item, index) => {
@@ -8920,68 +9080,217 @@ const handleEstimateClick = (lead, event) => {
 
                       if (!hasAny) return null;
 
-                      const rateText = rates
-                        .map((r) =>
-                          r && typeof r === 'object'
-                            ? `${r.option}${r.value ? ` = $${r.value}` : ''}`
-                            : r
-                        )
-                        .join('  +  ');
+                      // Calculate totals and build formula display
+                      const rateValues = rates
+                        .filter(r => r && typeof r === 'object' && r.value)
+                        .map(r => parseFloat(r.value) || 0);
+                      const rateTotal = rateValues.reduce((sum, val) => sum + val, 0);
 
-                      const expenseText = expenses
-                        .map((e) =>
-                          e && typeof e === 'object'
-                            ? `${e.option}${e.value ? ` = $${e.value}` : ''}${
-                                e.perUnit ? ` / ${e.perUnit}` : ''
-                              }`
-                            : e
-                        )
-                        .join('  +  ');
+                      const expenseValues = expenses
+                        .filter(e => e && typeof e === 'object' && e.value)
+                        .map(e => parseFloat(e.value) || 0);
+                      const expenseTotal = expenseValues.reduce((sum, val) => sum + val, 0);
 
-                      const multiplierText = multipliers
-                        .map((m) =>
-                          m && typeof m === 'object'
-                            ? `${m.option}${m.value ? ` = ${m.value}%` : ''}`
-                            : m
-                        )
-                        .join('  +  ');
+                      const multiplierValues = multipliers
+                        .filter(m => m && typeof m === 'object' && m.value)
+                        .map(m => parseFloat(m.value) || 0);
+                      const multiplierTotal = multiplierValues.reduce((sum, val) => sum + val, 0);
+                      const multiplierFactor = multiplierTotal > 0 ? (1 + multiplierTotal / 100) : 1;
 
-                      const feeText = fees
-                        .map((f) =>
-                          f && typeof f === 'object'
-                            ? `${f.option}${f.value ? ` = $${f.value}` : ''}`
-                            : f
-                        )
-                        .join('  +  ');
+                      const feeValues = fees
+                        .filter(f => f && typeof f === 'object' && f.value)
+                        .map(f => parseFloat(f.value) || 0);
+                      const feeTotal = feeValues.reduce((sum, val) => sum + val, 0);
+
+                      const baseTotal = rateTotal + expenseTotal;
+                      const adjustedTotal = baseTotal * multiplierFactor;
+                      const finalPrice = adjustedTotal + feeTotal;
+
+                      // Build all formula elements
+                      const allFormulaElements = [];
+                      
+                      // Add rates
+                      rates.forEach((r) => {
+                        const rateObj = r && typeof r === 'object' ? r : { option: r, value: null };
+                        allFormulaElements.push({
+                          type: 'rate',
+                          label: rateObj.option,
+                          value: rateObj.value ? parseFloat(rateObj.value) : 0,
+                          display: rateObj.value ? `$${parseFloat(rateObj.value).toFixed(2)}` : '$0.00',
+                          hasValue: !!rateObj.value,
+                          inputValue: rateObj.value ? parseFloat(rateObj.value) : null,
+                          inputUnit: null
+                        });
+                      });
+
+                      // Add expenses
+                      expenses.forEach((e) => {
+                        const expObj = e && typeof e === 'object' ? e : { option: e, value: null, perUnit: null };
+                        allFormulaElements.push({
+                          type: 'expense',
+                          label: expObj.option,
+                          value: expObj.value ? parseFloat(expObj.value) : 0,
+                          display: expObj.value ? `$${parseFloat(expObj.value).toFixed(2)}${expObj.perUnit ? `/${expObj.perUnit}` : ''}` : '$0.00',
+                          perUnit: expObj.perUnit,
+                          hasValue: !!expObj.value,
+                          inputValue: expObj.value ? parseFloat(expObj.value) : null,
+                          inputUnit: expObj.perUnit || null
+                        });
+                      });
+
+                      // Add multipliers (as percentage additions)
+                      multipliers.forEach((m) => {
+                        const multObj = m && typeof m === 'object' ? m : { option: m, value: null };
+                        const multValue = multObj.value ? parseFloat(multObj.value) : 0;
+                        const multAmount = baseTotal > 0 ? (baseTotal * multValue / 100) : 0;
+                        allFormulaElements.push({
+                          type: 'multiplier',
+                          label: multObj.option,
+                          value: multAmount,
+                          display: multObj.value ? `$${multAmount.toFixed(2)}` : '$0.00',
+                          percentage: multValue,
+                          hasValue: !!multObj.value,
+                          inputValue: multValue > 0 ? multValue : null
+                        });
+                      });
+
+                      // Add fees
+                      fees.forEach((f) => {
+                        const feeObj = f && typeof f === 'object' ? f : { option: f, value: null };
+                        allFormulaElements.push({
+                          type: 'fee',
+                          label: feeObj.option,
+                          value: feeObj.value ? parseFloat(feeObj.value) : 0,
+                          display: feeObj.value ? `$${parseFloat(feeObj.value).toFixed(2)}` : '$0.00',
+                          hasValue: !!feeObj.value,
+                          inputValue: feeObj.value ? parseFloat(feeObj.value) : null
+                        });
+                      });
 
                       return (
-                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 space-y-1">
-                          <div className="text-sm font-semibold text-slate-900 mb-1">
-                            Formula Overview
-                            </div>
-                          {rateText && (
-                            <div>
-                              <span className="font-medium">Rates:</span>{' '}
-                              <span>{rateText}</span>
+                        <div className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-lg">
+                          <div className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
+                            <span>📐</span>
+                            <span>Formula Overview</span>
                           </div>
-                          )}
-                          {expenseText && (
-                            <div>
-                              <span className="font-medium">Expenses:</span>{' '}
-                              <span>{expenseText}</span>
-                        </div>
-                          )}
-                          {multiplierText && (
-                            <div>
-                              <span className="font-medium">Multipliers:</span>{' '}
-                              <span>{multiplierText}</span>
-                      </div>
-                          )}
-                          {feeText && (
-                            <div>
-                              <span className="font-medium">Fees:</span>{' '}
-                              <span>{feeText}</span>
-                    </div>
+                          
+                          {allFormulaElements.length > 0 ? (
+                            <div className="space-y-4">
+                              {/* Single Unified Formula */}
+                              <div className="bg-white rounded-lg p-6 border-2 border-gray-300 shadow-lg">
+                                <div className="text-base font-bold text-gray-800 mb-4">Formula</div>
+                                <div className="flex flex-wrap items-center gap-3 text-base">
+                                  {allFormulaElements.map((element, idx) => {
+                                    const bgColor = {
+                                      rate: 'bg-blue-100 border-blue-300',
+                                      expense: 'bg-green-100 border-green-300',
+                                      multiplier: 'bg-purple-100 border-purple-300',
+                                      fee: 'bg-orange-100 border-orange-300'
+                                    }[element.type] || 'bg-gray-100 border-gray-300';
+                                    
+                                    const textColor = {
+                                      rate: 'text-blue-800',
+                                      expense: 'text-green-800',
+                                      multiplier: 'text-purple-800',
+                                      fee: 'text-orange-800'
+                                    }[element.type] || 'text-gray-800';
+
+                                    const typeLabel = {
+                                      rate: 'Rate',
+                                      expense: 'Expense',
+                                      multiplier: 'Multiplier',
+                                      fee: 'Fee'
+                                    }[element.type] || '';
+
+                                    // Build input display string
+                                    let inputDisplay = '';
+                                    if (element.inputValue !== null && element.inputValue !== undefined) {
+                                      if (element.type === 'multiplier' && element.percentage !== undefined) {
+                                        inputDisplay = `${element.percentage}%`;
+                                      } else if (element.inputUnit) {
+                                        inputDisplay = `$${element.inputValue.toFixed(2)}/${element.inputUnit}`;
+                                      } else if (element.type === 'rate' || element.type === 'fee') {
+                                        inputDisplay = `$${element.inputValue.toFixed(2)}`;
+                                      } else {
+                                        inputDisplay = `$${element.inputValue.toFixed(2)}`;
+                                      }
+                                    }
+
+                                    return (
+                                      <span key={idx} className="flex items-center gap-2">
+                                        <div className={`px-4 py-2.5 rounded-lg border-2 ${bgColor} ${textColor} font-medium shadow-md min-w-[140px] ${!element.hasValue ? 'opacity-60 border-dashed' : ''}`}>
+                                          <div className="font-bold text-sm mb-1">
+                                            {element.label}
+                                            {typeLabel && ` ${typeLabel}`}
+                                          </div>
+                                          {inputDisplay && (
+                                            <div className="text-xs font-normal opacity-80 mb-1">
+                                              {inputDisplay}
+                                            </div>
+                                          )}
+                                          <div className={`text-sm font-semibold ${element.hasValue ? '' : 'text-gray-400'}`}>
+                                            {element.display}
+                                            {element.percentage !== undefined && element.percentage > 0 && (
+                                              <span className="text-xs ml-1 opacity-75">({element.percentage}%)</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        {idx < allFormulaElements.length - 1 && (
+                                          <span className="text-3xl font-bold text-gray-600 mx-2">+</span>
+                                        )}
+                                      </span>
+                                    );
+                                  })}
+                                  <span className="text-4xl font-bold text-gray-800 mx-3">=</span>
+                                  <div className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-xl">
+                                    <div className="text-sm text-blue-100 font-semibold mb-1 uppercase tracking-wide">Final Price</div>
+                                    <div className="text-4xl font-bold text-white">
+                                      ${finalPrice.toFixed(2)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Breakdown by Category */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                {rateTotal > 0 && (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="font-semibold text-blue-700 mb-1">Rates Total</div>
+                                    <div className="text-lg font-bold text-blue-900">${rateTotal.toFixed(2)}</div>
+                                  </div>
+                                )}
+                                {expenseTotal > 0 && (
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <div className="font-semibold text-green-700 mb-1">Expenses Total</div>
+                                    <div className="text-lg font-bold text-green-900">${expenseTotal.toFixed(2)}</div>
+                                  </div>
+                                )}
+                                {multiplierTotal > 0 && (
+                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                    <div className="font-semibold text-purple-700 mb-1">Multipliers</div>
+                                    <div className="text-lg font-bold text-purple-900">
+                                      {multiplierTotal > 0 ? `+${multiplierTotal.toFixed(1)}%` : '0%'}
+                                    </div>
+                                    {baseTotal > 0 && (
+                                      <div className="text-xs text-purple-600 mt-1">
+                                        = ${(adjustedTotal - baseTotal).toFixed(2)}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {feeTotal > 0 && (
+                                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                    <div className="font-semibold text-orange-700 mb-1">Fees Total</div>
+                                    <div className="text-lg font-bold text-orange-900">${feeTotal.toFixed(2)}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">
+                              <p className="text-sm">No pricing elements selected yet.</p>
+                              <p className="text-xs mt-1">Add rates, expenses, multipliers, or fees to see the formula.</p>
+                            </div>
                           )}
                         </div>
                       );
@@ -9115,26 +9424,161 @@ const handleEstimateClick = (lead, event) => {
                                       <Plus className="w-4 h-4" />
                                     </button>
                                     {openPackageFormulaDropdown === `${promotion.id}-percent-service` && (
-                                      <div className="absolute z-50 mt-1 right-0 w-64 bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
-                                        <div className="p-2 space-y-1">
-                                          {[...softWashingServices, ...customSoftWashingServices, ...pressureWashingServices, ...customPressureWashingServices, ...specialtyCleaningServices, ...customSpecialtyCleaningServices, ...(showWindowCleaning ? [...windowCleaningServices, ...customWindowCleaningServices] : []), ...(showPaverSealing ? ['Paver Sealing'] : [])].filter(service => !(promotion.percentOffServices || []).includes(service)).map((service) => (
-                                            <button
-                                              key={service}
-                                              type="button"
-                                              onClick={() => {
-                                                const currentServices = promotion.percentOffServices || [];
-                                                setPromotions((prev) =>
-                                                  prev.map((row) =>
-                                                    row.id === promotion.id ? { ...row, percentOffServices: [...currentServices, service] } : row
-                                                  )
+                                      <div className="absolute z-50 mt-1 right-0 w-80 bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
+                                        <div className="p-3 space-y-4" onClick={(e) => e.stopPropagation()}>
+                                          {/* Soft Washing Section */}
+                                          <div>
+                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Soft Washing</h4>
+                                            <div className="space-y-1">
+                                              {[...softWashingServices, ...customSoftWashingServices].map((service) => {
+                                                const isSelected = (promotion.percentOffServices || []).includes(service);
+                                                return (
+                                                  <label
+                                                    key={service}
+                                                    className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        const currentServices = promotion.percentOffServices || [];
+                                                        setPromotions((prev) =>
+                                                          prev.map((row) =>
+                                                            row.id === promotion.id
+                                                              ? {
+                                                                  ...row,
+                                                                  percentOffServices: isSelected
+                                                                    ? currentServices.filter((s) => s !== service)
+                                                                    : [...currentServices, service]
+                                                                }
+                                                              : row
+                                                          )
+                                                        );
+                                                      }}
+                                                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-gray-700">{service}</span>
+                                                  </label>
                                                 );
-                                                setOpenPackageFormulaDropdown(null);
-                                              }}
-                                              className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-gray-50 text-gray-700"
-                                            >
-                                              {service}
-                                            </button>
-                                          ))}
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Pressure Washing Section */}
+                                          <div>
+                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Pressure Washing</h4>
+                                            <div className="space-y-1">
+                                              {[...pressureWashingServices, ...customPressureWashingServices].map((service) => {
+                                                const isSelected = (promotion.percentOffServices || []).includes(service);
+                                                return (
+                                                  <label
+                                                    key={service}
+                                                    className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        const currentServices = promotion.percentOffServices || [];
+                                                        setPromotions((prev) =>
+                                                          prev.map((row) =>
+                                                            row.id === promotion.id
+                                                              ? {
+                                                                  ...row,
+                                                                  percentOffServices: isSelected
+                                                                    ? currentServices.filter((s) => s !== service)
+                                                                    : [...currentServices, service]
+                                                                }
+                                                              : row
+                                                          )
+                                                        );
+                                                      }}
+                                                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-gray-700">{service}</span>
+                                                  </label>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Specialty Cleaning Section */}
+                                          <div>
+                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Specialty Cleaning</h4>
+                                            <div className="space-y-1">
+                                              {[...specialtyCleaningServices, ...customSpecialtyCleaningServices, ...(showPaverSealing ? ['Paver Sealing'] : [])].map((service) => {
+                                                const isSelected = (promotion.percentOffServices || []).includes(service);
+                                                return (
+                                                  <label
+                                                    key={service}
+                                                    className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        const currentServices = promotion.percentOffServices || [];
+                                                        setPromotions((prev) =>
+                                                          prev.map((row) =>
+                                                            row.id === promotion.id
+                                                              ? {
+                                                                  ...row,
+                                                                  percentOffServices: isSelected
+                                                                    ? currentServices.filter((s) => s !== service)
+                                                                    : [...currentServices, service]
+                                                                }
+                                                              : row
+                                                          )
+                                                        );
+                                                      }}
+                                                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-gray-700">{service}</span>
+                                                  </label>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Window Cleaning Section */}
+                                          {showWindowCleaning && (
+                                            <div>
+                                              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Window Cleaning</h4>
+                                              <div className="space-y-1">
+                                                {[...windowCleaningServices, ...customWindowCleaningServices].map((service) => {
+                                                  const isSelected = (promotion.percentOffServices || []).includes(service);
+                                                  return (
+                                                    <label
+                                                      key={service}
+                                                      className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                    >
+                                                      <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => {
+                                                          const currentServices = promotion.percentOffServices || [];
+                                                          setPromotions((prev) =>
+                                                            prev.map((row) =>
+                                                              row.id === promotion.id
+                                                                ? {
+                                                                    ...row,
+                                                                    percentOffServices: isSelected
+                                                                      ? currentServices.filter((s) => s !== service)
+                                                                      : [...currentServices, service]
+                                                                  }
+                                                                : row
+                                                            )
+                                                          );
+                                                        }}
+                                                        className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                      />
+                                                      <span className="text-gray-700">{service}</span>
+                                                    </label>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     )}
@@ -9291,30 +9735,160 @@ const handleEstimateClick = (lead, event) => {
                                     </button>
                                     {openPackageFormulaDropdown === `${promotion.id}-package-services` && (
                                       <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg max-h-96 overflow-y-auto">
-                                        <div className="p-2 space-y-1">
-                                          {[...softWashingServices, ...customSoftWashingServices, ...pressureWashingServices, ...customPressureWashingServices, ...specialtyCleaningServices, ...customSpecialtyCleaningServices, ...(showWindowCleaning ? [...windowCleaningServices, ...customWindowCleaningServices] : []), ...(showPaverSealing ? ['Paver Sealing'] : [])].filter(service => !(promotion.packageServices || []).includes(service)).map((service) => (
-                                            <button
-                                              key={service}
-                                              type="button"
-                                              onClick={() => {
-                                                const currentServices = promotion.packageServices || [];
-                                                setPromotions((prev) =>
-                                                  prev.map((row) =>
-                                                    row.id === promotion.id
-                                                      ? {
-                                                          ...row,
-                                                          packageServices: [...currentServices, service]
-                                                        }
-                                                      : row
-                                                  )
+                                        <div className="p-3 space-y-4" onClick={(e) => e.stopPropagation()}>
+                                          {/* Soft Washing Section */}
+                                          <div>
+                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Soft Washing</h4>
+                                            <div className="space-y-1">
+                                              {[...softWashingServices, ...customSoftWashingServices].map((service) => {
+                                                const isSelected = (promotion.packageServices || []).includes(service);
+                                                return (
+                                                  <label
+                                                    key={service}
+                                                    className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        const currentServices = promotion.packageServices || [];
+                                                        setPromotions((prev) =>
+                                                          prev.map((row) =>
+                                                            row.id === promotion.id
+                                                              ? {
+                                                                  ...row,
+                                                                  packageServices: isSelected
+                                                                    ? currentServices.filter((s) => s !== service)
+                                                                    : [...currentServices, service]
+                                                                }
+                                                              : row
+                                                          )
+                                                        );
+                                                      }}
+                                                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-gray-700">{service}</span>
+                                                  </label>
                                                 );
-                                                setOpenPackageFormulaDropdown(null);
-                                              }}
-                                              className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-gray-50 text-gray-700"
-                                            >
-                                              {service}
-                                            </button>
-                                          ))}
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Pressure Washing Section */}
+                                          <div>
+                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Pressure Washing</h4>
+                                            <div className="space-y-1">
+                                              {[...pressureWashingServices, ...customPressureWashingServices].map((service) => {
+                                                const isSelected = (promotion.packageServices || []).includes(service);
+                                                return (
+                                                  <label
+                                                    key={service}
+                                                    className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        const currentServices = promotion.packageServices || [];
+                                                        setPromotions((prev) =>
+                                                          prev.map((row) =>
+                                                            row.id === promotion.id
+                                                              ? {
+                                                                  ...row,
+                                                                  packageServices: isSelected
+                                                                    ? currentServices.filter((s) => s !== service)
+                                                                    : [...currentServices, service]
+                                                                }
+                                                              : row
+                                                          )
+                                                        );
+                                                      }}
+                                                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-gray-700">{service}</span>
+                                                  </label>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Specialty Cleaning Section */}
+                                          <div>
+                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Specialty Cleaning</h4>
+                                            <div className="space-y-1">
+                                              {[...specialtyCleaningServices, ...customSpecialtyCleaningServices, ...(showPaverSealing ? ['Paver Sealing'] : [])].map((service) => {
+                                                const isSelected = (promotion.packageServices || []).includes(service);
+                                                return (
+                                                  <label
+                                                    key={service}
+                                                    className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        const currentServices = promotion.packageServices || [];
+                                                        setPromotions((prev) =>
+                                                          prev.map((row) =>
+                                                            row.id === promotion.id
+                                                              ? {
+                                                                  ...row,
+                                                                  packageServices: isSelected
+                                                                    ? currentServices.filter((s) => s !== service)
+                                                                    : [...currentServices, service]
+                                                                }
+                                                              : row
+                                                          )
+                                                        );
+                                                      }}
+                                                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-gray-700">{service}</span>
+                                                  </label>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Window Cleaning Section */}
+                                          {showWindowCleaning && (
+                                            <div>
+                                              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Window Cleaning</h4>
+                                              <div className="space-y-1">
+                                                {[...windowCleaningServices, ...customWindowCleaningServices].map((service) => {
+                                                  const isSelected = (promotion.packageServices || []).includes(service);
+                                                  return (
+                                                    <label
+                                                      key={service}
+                                                      className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                                    >
+                                                      <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => {
+                                                          const currentServices = promotion.packageServices || [];
+                                                          setPromotions((prev) =>
+                                                            prev.map((row) =>
+                                                              row.id === promotion.id
+                                                                ? {
+                                                                    ...row,
+                                                                    packageServices: isSelected
+                                                                      ? currentServices.filter((s) => s !== service)
+                                                                      : [...currentServices, service]
+                                                                  }
+                                                                : row
+                                                            )
+                                                          );
+                                                        }}
+                                                        className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                      />
+                                                      <span className="text-gray-700">{service}</span>
+                                                    </label>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     )}
@@ -10427,6 +11001,171 @@ const handleEstimateClick = (lead, event) => {
                           </div>
                         </div>
                       )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Safety and Preventative Measures */}
+                <div 
+                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+                  onClick={() => setCollapsedSafetyMeasures(!collapsedSafetyMeasures)}
+                >
+                  <div className={`flex items-center gap-3 ${!collapsedSafetyMeasures ? 'mb-6' : ''}`}>
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Safety and Preventative Measures</h3>
+                    {(() => {
+                      const completed = allSafetyMeasures.length;
+                      const isComplete = completed > 0;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          <span>{completed}</span>
+                        </div>
+                      );
+                    })()}
+                    <div className="flex items-center justify-center">
+                      <ChevronDown 
+                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedSafetyMeasures ? 'transform rotate-180' : ''}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {!collapsedSafetyMeasures && (
+                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                      {/* Debug: Show state */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-gray-400 mb-2">
+                          Debug: {allSafetyMeasures.length} items selected
+                        </div>
+                      )}
+                      <div className="relative safety-measures-dropdown-container">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSafetyMeasuresDropdownOpen(!safetyMeasuresDropdownOpen);
+                          }}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
+                        >
+                          <span className={allSafetyMeasures.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                            {allSafetyMeasures.length > 0
+                              ? `${allSafetyMeasures.length} selected`
+                              : 'Select safety and preventative measures...'}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${safetyMeasuresDropdownOpen ? 'transform rotate-180' : ''}`} />
+                        </button>
+                        {safetyMeasuresDropdownOpen && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto safety-measures-dropdown-container">
+                            <div className="p-4" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex flex-wrap gap-2">
+                                {(() => {
+                                  // Combine all safety measures from all categories
+                                  const combinedMeasures = [
+                                    ...safetyMeasures,
+                                    ...pressureWashingSafetyMeasures,
+                                    ...specialtyCleaningSafetyMeasures,
+                                    ...windowCleaningSafetyMeasures,
+                                    ...customSoftWashingSafetyMeasures,
+                                    ...customPressureWashingSafetyMeasures,
+                                    ...customSpecialtyCleaningSafetyMeasures,
+                                    ...customWindowCleaningSafetyMeasures,
+                                    ...customAllSafetyMeasures
+                                  ];
+                                  // Remove duplicates
+                                  const uniqueMeasures = [...new Set(combinedMeasures)];
+                                  
+                                  return uniqueMeasures.map((measure) => {
+                                    const isSelected = allSafetyMeasures.includes(measure);
+                                    return (
+                                      <button
+                                        key={measure}
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleAllSafetyMeasure(measure);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                                          isSelected
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                        } shadow-sm hover:shadow-md`}
+                                      >
+                                        {measure}
+                                      </button>
+                                    );
+                                  });
+                                })()}
+                              </div>
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={newAllSafetyMeasure}
+                                    onChange={(e) => setNewAllSafetyMeasure(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && addCustomAllSafetyMeasure()}
+                                    placeholder="Add custom measure..."
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      addCustomAllSafetyMeasure();
+                                    }}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                                    disabled={!newAllSafetyMeasure.trim()}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {/* Selected Safety Measures Display - Always visible when section is expanded */}
+                      <div className="mt-6 pt-6 border-t-2 border-gray-300 bg-gray-50 rounded-xl p-5">
+                        <h4 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          Selected Safety Measures
+                          {allSafetyMeasures && allSafetyMeasures.length > 0 && (
+                            <span className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-bold">
+                              {allSafetyMeasures.length}
+                            </span>
+                          )}
+                        </h4>
+                        {allSafetyMeasures && allSafetyMeasures.length > 0 ? (
+                          <div className="flex flex-wrap gap-3">
+                            {allSafetyMeasures.map((measure, index) => (
+                              <div 
+                                key={`selected-${measure}-${index}`}
+                                className="flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-100 text-blue-900 border-2 border-blue-400 rounded-lg shadow-md font-semibold"
+                              >
+                                <span>{measure}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleAllSafetyMeasure(measure);
+                                  }}
+                                  className="text-blue-700 hover:text-blue-900 ml-1 transition-colors p-1 rounded-full hover:bg-blue-200"
+                                  title="Remove"
+                                  aria-label={`Remove ${measure}`}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-600 italic py-2">
+                            No safety measures selected. Click the dropdown above to select measures.
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}

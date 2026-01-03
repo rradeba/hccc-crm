@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { Bot, Phone, ChevronDown, Plus, X, Check, FileText, FileSignature, Receipt, HeartHandshake, Clock, Award, Shield, ShieldCheck, MapPin, Star } from 'lucide-react';
+﻿import React, { useState, useEffect } from 'react';
+import { Phone, ChevronDown, Plus, X, Check, FileText, FileSignature, Receipt, HeartHandshake, Clock, Award, Shield, ShieldCheck, MapPin, Star, Search, Trash2 } from 'lucide-react';
 import './myBusiness.css';
 
 const MyBusiness = ({
@@ -16,19 +16,651 @@ const MyBusiness = ({
   getGuaranteeWarrantyCompletion,
   getOnlineReviewsCompletion,
 }) => {
+  // Company qualities constant array
+  const companyQualities = [
+    'Safety above everything',
+    'Professional service always',
+    'Quality you can see',
+    'Honest, transparent pricing',
+    'We show up',
+    'Respect for your home',
+    'Clean, careful work',
+    'No-damage guarantee',
+    'Customer-first mindset',
+    'Reliable scheduling',
+    'Fast, efficient service',
+    'Pride in workmanship',
+    'Job done right',
+    'Clear communication',
+    'Local community focused',
+    'Environmentally responsible practices',
+    'Licensed and insured',
+    'Attention to detail',
+    'Results that last',
+    'Integrity in every job'
+  ];
+
+  // Collapsed section states
+  const [collapsedBrandIdentity, setCollapsedBrandIdentity] = useState(true);
+  const [collapsedAreasServed, setCollapsedAreasServed] = useState(true);
+  const [collapsedOperatingHours, setCollapsedOperatingHours] = useState(true);
+  const [collapsedCertifications, setCollapsedCertifications] = useState(true);
+  const [collapsedInsurance, setCollapsedInsurance] = useState(true);
+  const [collapsedGuaranteeWarranty, setCollapsedGuaranteeWarranty] = useState(true);
+  const [collapsedOnlineReviews, setCollapsedOnlineReviews] = useState(true);
+  const [savedGuaranteeWarranty, setSavedGuaranteeWarranty] = useState('');
+
+  // Company qualities state
+  const [customCompanyQualities, setCustomCompanyQualities] = useState([]);
+  const [newCompanyQuality, setNewCompanyQuality] = useState('');
+
+  // City search state
+  const [citySearchTerm, setCitySearchTerm] = useState('');
+  const [citySearchResults, setCitySearchResults] = useState([]);
+  const [isCitySearchOpen, setIsCitySearchOpen] = useState(false);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
+  const [citySearchError, setCitySearchError] = useState(null);
+
+  // Services state
+  const [showSoftWashing, setShowSoftWashing] = useState(false);
+  const [showPressureWashing, setShowPressureWashing] = useState(false);
+  const [showSpecialtyCleaning, setShowSpecialtyCleaning] = useState(false);
+  const [showWindowCleaning, setShowWindowCleaning] = useState(false);
+  const [collapsedSoftWashing, setCollapsedSoftWashing] = useState(true);
+  const [collapsedPressureWashing, setCollapsedPressureWashing] = useState(true);
+  const [collapsedSpecialtyCleaning, setCollapsedSpecialtyCleaning] = useState(true);
+  const [collapsedWindowCleaning, setCollapsedWindowCleaning] = useState(true);
+
+  // Service selection state
+  const [selectedSoftWashing, setSelectedSoftWashing] = useState([]);
+  const [selectedPressureWashing, setSelectedPressureWashing] = useState([]);
+  const [selectedSpecialtyCleaning, setSelectedSpecialtyCleaning] = useState([]);
+  const [selectedWindowCleaning, setSelectedWindowCleaning] = useState([]);
+
+  // Service configuration state
+  const [serviceChemicals, setServiceChemicals] = useState({});
+  const [servicePSI, setServicePSI] = useState({});
+  const [serviceSurfaces, setServiceSurfaces] = useState({});
+
+  // Chemical dropdown state
+  const [chemicalDropdownOpen, setChemicalDropdownOpen] = useState({});
+  const [chemicalSearchTerm, setChemicalSearchTerm] = useState({});
+
+  // Surface dropdown state
+  const [surfacesDropdownOpen, setSurfacesDropdownOpen] = useState({});
+
+  // Safety measures state
+  const [safetyMeasuresDropdownOpen, setSafetyMeasuresDropdownOpen] = useState(false);
+  const [allSafetyMeasures, setAllSafetyMeasures] = useState([]);
+  const [newAllSafetyMeasure, setNewAllSafetyMeasure] = useState('');
+  const [customAllSafetyMeasures, setCustomAllSafetyMeasures] = useState([]);
+  
+  // Services dropdown state
+  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [customServices, setCustomServices] = useState([]);
+  const [newService, setNewService] = useState('');
+  
+  // Custom chemical input state for each service
+  const [newCustomChemical, setNewCustomChemical] = useState({});
+  
+  // Safety measures arrays - 15 most important measures
+  const safetyMeasures = [
+    'Pre-inspect all surfaces',
+    'Use safe pressure settings',
+    'Pre-wet plants and soil',
+    'Cover outlets and fixtures',
+    'Test spots before washing',
+    'Use proper chemical ratios',
+    'Control hose placement',
+    'Avoid spraying under siding',
+    'Protect windows and seals',
+    'Rinse thoroughly after cleaning',
+    'Direct runoff safely away',
+    'Avoid aged or damaged surfaces',
+    'Softwash home sidings',
+    'Secure ladders and equipment',
+    'Perform final walkthrough inspection'
+  ];
+  const pressureWashingSafetyMeasures = [];
+  const specialtyCleaningSafetyMeasures = [];
+  const windowCleaningSafetyMeasures = [];
+  const customSoftWashingSafetyMeasures = [];
+  const customPressureWashingSafetyMeasures = [];
+  const customSpecialtyCleaningSafetyMeasures = [];
+  const customWindowCleaningSafetyMeasures = [];
+
+  // Custom services state
+  const [newSoftWashingService, setNewSoftWashingService] = useState('');
+  const [newPressureWashingService, setNewPressureWashingService] = useState('');
+  const [newSpecialtyCleaningService, setNewSpecialtyCleaningService] = useState('');
+  const [newWindowCleaningService, setNewWindowCleaningService] = useState('');
+
+  // Service arrays (these should ideally come from props or a config)
+  const softWashingServices = [
+    'Residential washing',
+    'Roof washing (asphalt, metal, tile)',
+    'Commercial washing',
+    'Fence cleaning (wood, vinyl)',
+    'Deck cleaning (wood or composite)'
+  ];
+  const customSoftWashingServices = [];
+  const pressureWashingServices = [
+    'Residential washing',
+    'Commercial washing',
+    'Patio and porch cleaning',
+    'Pool deck cleaning',
+    'Garage floor cleaning'
+  ];
+  const customPressureWashingServices = [];
+  const specialtyCleaningServices = [
+    'Rust removal',
+    'Efflorescence removal',
+    'Oil stain treatment',
+    'Oxidation removal on siding',
+    'Trash Bin/Dumpster Cleaning',
+    'Solar panel cleaning',
+    'Gutter cleaning & gutter whitening',
+    'Soffit & fascia cleaning'
+  ];
+  const customSpecialtyCleaningServices = [];
+  const windowCleaningServices = [
+    'Exterior window cleaning',
+    'Interior window cleaning',
+    'Screen cleaning',
+    'Window track cleaning',
+    'Window sill cleaning',
+    'Hard water stain removal',
+    'Oxidation removal',
+    'Skylight cleaning',
+    'High-rise window cleaning',
+    'Screen enclosure cleaning',
+    'Pool cage cleaning'
+  ];
+  const customWindowCleaningServices = [];
+  const softWashingSurfaces = [];
+  const customSoftWashingSurfaces = [];
+  const specialtyCleaningSurfaces = [];
+  const allChemicals = [
+    'Algaecides / mold and mildew inhibitors',
+    'Citric Acid',
+    'Degreasers',
+    'Foaming Agents',
+    'Hydrochloric Acid (muriatic acid)',
+    'Non-abrasive cleaners for solar panels',
+    'Oxidation removers',
+    'Oxalic Acid',
+    'Paver joint sand',
+    'Paver sealers',
+    'Phosphoric Acid',
+    'Plant Protectants / Neutralizers',
+    'Rust removers',
+    'Scent Maskers',
+    'Sodium bicarbonate',
+    'Sodium Hypochlorite (SH / bleach)',
+    'Sodium Hydroxide (caustic soda)',
+    'Sodium Percarbonate',
+    'Surfactants / detergents',
+    'Vinegar (acetic acid)'
+  ];
+  const [customChemicals, setCustomChemicals] = useState([]);
+  const windowCleaningChemicals = [];
+
+  // Handler functions
+  const getCompanyDetailsCompletion = () => {
+    let completed = 0;
+    const total = 4;
+    
+    // 1. Company Name
+    if (companyInfo.companyName && companyInfo.companyName.trim()) {
+      completed++;
+    }
+    
+    // 2. Phone
+    if (companyInfo.phone && companyInfo.phone.trim()) {
+      completed++;
+    }
+    
+    // 3. Email
+    if (companyInfo.email && companyInfo.email.trim()) {
+      completed++;
+    }
+    
+    // 4. Address (street, city, state, zip all required)
+    if (companyInfo.street && companyInfo.street.trim() &&
+        companyInfo.city && companyInfo.city.trim() &&
+        companyInfo.state && companyInfo.state.trim() &&
+        companyInfo.zip && companyInfo.zip.trim()) {
+      completed++;
+    }
+    
+    return { completed, total };
+  };
+
+  const getBrandIdentityCompletionLocal = () => {
+    // Track 3 categories:
+    // 1. Company slogan
+    const hasSlogan =
+      companyInfo.companySlogan && companyInfo.companySlogan.trim() !== '';
+
+    // 2. At least one experience input (years, months, or jobsCompleted)
+    const hasExperience =
+      (companyInfo.experienceYears && companyInfo.experienceYears.trim() !== '') ||
+      (companyInfo.experienceMonths && companyInfo.experienceMonths.trim() !== '') ||
+      (companyInfo.jobsCompleted && companyInfo.jobsCompleted.trim() !== '');
+
+    // 3. 3 company qualities selected
+    const hasQualities = companyInfo.whatMakesDifferent.length >= 3;
+
+    const completed = [hasSlogan, hasExperience, hasQualities].filter(Boolean).length;
+    const total = 3;
+
+    return { completed, total };
+  };
+
+  const getAreasServedCompletionLocal = () => {
+    // Track 1 category: at least one area selected
+    const completed = companyInfo.areasServed.length > 0 ? 1 : 0;
+    const total = 1;
+    return { completed, total };
+  };
+
+  const getOperatingHoursCompletionLocal = () => {
+    // Track 7 days - each day must have either:
+    // 1. closed: true, OR
+    // 2. open24hr: true, OR
+    // 3. open and close times filled
+    const total = 7;
+    let completed = 0;
+    
+    companyInfo.operatingHours.forEach((hours) => {
+      const isComplete = 
+        hours.closed === true ||
+        hours.open24hr === true ||
+        (hours.open && hours.open.trim() !== '' && hours.close && hours.close.trim() !== '');
+      
+      if (isComplete) {
+        completed++;
+      }
+    });
+    
+    return { completed, total };
+  };
+
+  const getCertificationsCompletionLocal = () => {
+    // Track 1 category: at least one certification with both name and organization
+    const hasCompleteCertification = companyInfo.certificationsList.some(cert => 
+      cert.certificationName && cert.certificationName.trim() !== '' &&
+      cert.certifyingOrganization && cert.certifyingOrganization.trim() !== ''
+    );
+    
+    const completed = hasCompleteCertification ? 1 : 0;
+    const total = 1;
+    return { completed, total };
+  };
+
+  const getInsuranceCompletionLocal = () => {
+    // Track 1 category:
+    // - If "Uninsured" is selected, it's complete
+    // - If "Insured" is selected, it's complete only if both company and policy number are filled
+    const total = 1;
+    let completed = 0;
+    
+    if (companyInfo.insuranceStatus === 'Uninsured') {
+      completed = 1;
+    } else if (companyInfo.insuranceStatus === 'Insured') {
+      const hasCompany = companyInfo.insuranceCompany && companyInfo.insuranceCompany.trim() !== '';
+      const hasPolicyNumber = companyInfo.insurancePolicyNumber && companyInfo.insurancePolicyNumber.trim() !== '';
+      if (hasCompany && hasPolicyNumber) {
+        completed = 1;
+      }
+    }
+    
+    return { completed, total };
+  };
+
+  const getGuaranteeWarrantyCompletionLocal = () => {
+    // Track 1 category: guarantee/warranty text has been saved
+    const completed = savedGuaranteeWarranty && savedGuaranteeWarranty.trim() !== '' ? 1 : 0;
+    const total = 1;
+    return { completed, total };
+  };
+
+  const handleSaveGuaranteeWarranty = () => {
+    setSavedGuaranteeWarranty(companyInfo.guaranteeWarranty || '');
+  };
+
+  const getOnlineReviewsCompletionLocal = () => {
+    // Track 5 platforms - each row is complete when all 3 inputs are filled:
+    // 1. Avg Rating (averageRating)
+    // 2. Total Reviews (totalReviews)
+    // 3. 5-Star Reviews (fiveStarReviews)
+    const platforms = ['google', 'facebook', 'nextdoor', 'yelp', 'homeadvisor'];
+    const total = 5;
+    let completed = 0;
+    
+    platforms.forEach((platform) => {
+      const review = companyInfo.onlineReviews?.[platform];
+      if (review) {
+        const hasRating = review.averageRating && review.averageRating.toString().trim() !== '';
+        const hasTotalReviews = review.totalReviews && review.totalReviews.toString().trim() !== '';
+        const hasFiveStarReviews = review.fiveStarReviews && review.fiveStarReviews.toString().trim() !== '';
+        
+        if (hasRating && hasTotalReviews && hasFiveStarReviews) {
+          completed++;
+        }
+      }
+    });
+    
+    return { completed, total };
+  };
+
+  const toggleCompanyQuality = (quality) => {
+    if (companyInfo.whatMakesDifferent.includes(quality)) {
+      updateCompanyInfo('whatMakesDifferent', companyInfo.whatMakesDifferent.filter((q) => q !== quality));
+    } else {
+      if (companyInfo.whatMakesDifferent.length < 3) {
+        updateCompanyInfo('whatMakesDifferent', [...companyInfo.whatMakesDifferent, quality]);
+      }
+    }
+  };
+
+  const addCustomCompanyQuality = () => {
+    if (newCompanyQuality.trim() && !companyQualities.includes(newCompanyQuality.trim()) && !customCompanyQualities.includes(newCompanyQuality.trim())) {
+      setCustomCompanyQualities([...customCompanyQualities, newCompanyQuality.trim()]);
+      setNewCompanyQuality('');
+    }
+  };
+
+  const handleCitySearchChange = (e) => {
+    const value = e.target.value;
+    setCitySearchTerm(value);
+    // City search logic would go here
+  };
+
+  const selectCity = (city) => {
+    if (city && !companyInfo.areasServed.includes(city)) {
+      updateCompanyInfo('areasServed', [...companyInfo.areasServed, city]);
+    }
+    setCitySearchTerm('');
+    setIsCitySearchOpen(false);
+  };
+
+  const removeArea = (area) => {
+    updateCompanyInfo('areasServed', companyInfo.areasServed.filter(a => a !== area));
+  };
+
+  // Service arrays - combined list
+  const toggleService = (service) => {
+    const isSelected = selectedServices.includes(service);
+    
+    if (isSelected) {
+      // Remove service
+      setSelectedServices((prev) => prev.filter(s => s !== service));
+      // Remove service chemicals
+      setServiceChemicals((prev) => {
+        const newChemicals = { ...prev };
+        delete newChemicals[service];
+        return newChemicals;
+      });
+      // Remove service PSI
+      setServicePSI((prev) => {
+        const newPSI = { ...prev };
+        delete newPSI[service];
+        return newPSI;
+      });
+    } else {
+      // Add service
+      setSelectedServices((prev) => [...prev, service]);
+      // Initialize service chemicals if it doesn't exist
+      setServiceChemicals((prev) => ({
+        ...prev,
+        [service]: prev[service] || [],
+      }));
+      // Initialize service PSI if it doesn't exist
+      setServicePSI((prev) => ({
+        ...prev,
+        [service]: prev[service] || '',
+      }));
+    }
+  };
+
+  const addChemicalToService = (service, chemical) => {
+    setServiceChemicals((prev) => {
+      const serviceChemList = prev[service] || [];
+      if (!serviceChemList.find(c => c.chemical === chemical)) {
+        return {
+          ...prev,
+          [service]: [...serviceChemList, { chemical, concentration: '1%' }]
+        };
+      }
+      return prev;
+    });
+  };
+
+  const removeChemicalFromService = (service, chemical) => {
+    setServiceChemicals((prev) => {
+      const serviceChemList = prev[service] || [];
+      return {
+        ...prev,
+        [service]: serviceChemList.filter(c => c.chemical !== chemical)
+      };
+    });
+  };
+
+  const updateChemicalConcentration = (service, chemical, concentration) => {
+    setServiceChemicals((prev) => {
+      const serviceChemList = prev[service] || [];
+      return {
+        ...prev,
+        [service]: serviceChemList.map(c => 
+          c.chemical === chemical ? { ...c, concentration } : c
+        )
+      };
+    });
+  };
+
+  const updateServicePSI = (service, psi) => {
+    setServicePSI((prev) => ({
+      ...prev,
+      [service]: psi
+    }));
+  };
+
+  const addCustomChemical = (chemicalName) => {
+    if (chemicalName.trim() && !allChemicals.includes(chemicalName.trim()) && !customChemicals.includes(chemicalName.trim())) {
+      setCustomChemicals([...customChemicals, chemicalName.trim()]);
+      return true;
+    }
+    return false;
+  };
+
+  const addCustomService = () => {
+    const trimmedService = newService.trim();
+    if (trimmedService) {
+      // Check if it doesn't exist in any of the service arrays
+      const allBaseServices = [
+        ...softWashingServices,
+        ...pressureWashingServices,
+        ...specialtyCleaningServices,
+        ...windowCleaningServices
+      ];
+      const allCustomServices = [
+        ...customSoftWashingServices,
+        ...customPressureWashingServices,
+        ...customSpecialtyCleaningServices,
+        ...customWindowCleaningServices,
+        ...customServices
+      ];
+      
+      if (!allBaseServices.includes(trimmedService) && !allCustomServices.includes(trimmedService)) {
+        // Determine which category to add it to based on user input or default to specialty cleaning
+        // For now, we'll add it to customServices and let the user see it in the appropriate section
+        setCustomServices((prev) => [...prev, trimmedService]);
+        setSelectedServices((prev) => {
+          if (!prev.includes(trimmedService)) {
+            return [...prev, trimmedService];
+          }
+          return prev;
+        });
+        setNewService('');
+      }
+    }
+  };
+
+  const removeCustomService = (service) => {
+    setCustomServices((prev) => prev.filter(s => s !== service));
+    setSelectedServices((prev) => prev.filter(s => s !== service));
+  };
+
+  const toggleAllSafetyMeasure = (measure) => {
+    setAllSafetyMeasures((prev) => {
+      if (prev.includes(measure)) {
+        return prev.filter(m => m !== measure);
+    } else {
+        return [...prev, measure];
+    }
+    });
+  };
+
+  const addCustomAllSafetyMeasure = () => {
+    const trimmedMeasure = newAllSafetyMeasure.trim();
+    if (trimmedMeasure) {
+      // Check if it doesn't exist in any of the base arrays or custom arrays
+      const allBaseMeasures = [
+        ...safetyMeasures,
+        ...pressureWashingSafetyMeasures,
+        ...specialtyCleaningSafetyMeasures,
+        ...windowCleaningSafetyMeasures
+      ];
+      const allCustomMeasures = [
+        ...customSoftWashingSafetyMeasures,
+        ...customPressureWashingSafetyMeasures,
+        ...customSpecialtyCleaningSafetyMeasures,
+        ...customWindowCleaningSafetyMeasures,
+        ...customAllSafetyMeasures
+      ];
+      
+      if (!allBaseMeasures.includes(trimmedMeasure) && !allCustomMeasures.includes(trimmedMeasure)) {
+        setCustomAllSafetyMeasures((prev) => [...prev, trimmedMeasure]);
+        // Also add it to selected measures
+        setAllSafetyMeasures((prev) => {
+          if (!prev.includes(trimmedMeasure)) {
+            return [...prev, trimmedMeasure];
+          }
+          return prev;
+        });
+      setNewAllSafetyMeasure('');
+      }
+    }
+  };
+
+  const removeCustomAllSafetyMeasure = (measure) => {
+    // Remove from custom list
+    setCustomAllSafetyMeasures((prev) => prev.filter(m => m !== measure));
+    // Remove from selected measures
+    setAllSafetyMeasures((prev) => prev.filter(m => m !== measure));
+  };
+
+  const selectAllSafetyMeasures = () => {
+    const combinedMeasures = [
+      ...safetyMeasures,
+      ...pressureWashingSafetyMeasures,
+      ...specialtyCleaningSafetyMeasures,
+      ...windowCleaningSafetyMeasures,
+      ...customSoftWashingSafetyMeasures,
+      ...customPressureWashingSafetyMeasures,
+      ...customSpecialtyCleaningSafetyMeasures,
+      ...customWindowCleaningSafetyMeasures,
+      ...customAllSafetyMeasures.filter(
+        m => m.toLowerCase() !== 'bed' && m.toLowerCase() !== 'test'
+      )
+    ];
+    const uniqueMeasures = [...new Set(combinedMeasures)];
+    setAllSafetyMeasures(uniqueMeasures);
+  };
+
+  const deselectAllSafetyMeasures = () => {
+    setAllSafetyMeasures([]);
+  };
+
+  // Remove "bed" and "test" from custom measures on mount
+  useEffect(() => {
+    setCustomAllSafetyMeasures((prev) => 
+      prev.filter(m => m.toLowerCase() !== 'bed' && m.toLowerCase() !== 'test')
+    );
+    setAllSafetyMeasures((prev) => 
+      prev.filter(m => m.toLowerCase() !== 'bed' && m.toLowerCase() !== 'test')
+    );
+  }, []);
+
+  // Close safety measures dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (safetyMeasuresDropdownOpen && !event.target.closest('.safety-measures-dropdown-container')) {
+        setSafetyMeasuresDropdownOpen(false);
+      }
+    };
+
+    if (safetyMeasuresDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [safetyMeasuresDropdownOpen]);
+
+  // Close services dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (servicesDropdownOpen && !event.target.closest('.services-dropdown-container')) {
+        setServicesDropdownOpen(false);
+      }
+    };
+
+    if (servicesDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [servicesDropdownOpen]);
+
+  // Close chemical dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if any chemical dropdown is open
+      const hasOpenDropdown = Object.values(chemicalDropdownOpen).some(isOpen => isOpen);
+      
+      if (hasOpenDropdown) {
+        // Check if click is outside any chemical dropdown
+        const clickedInsideDropdown = event.target.closest('.chemical-dropdown-container');
+        if (!clickedInsideDropdown) {
+          // Close all open chemical dropdowns
+          setChemicalDropdownOpen({});
+        }
+      }
+    };
+
+    const hasOpenDropdown = Object.values(chemicalDropdownOpen).some(isOpen => isOpen);
+    if (hasOpenDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [chemicalDropdownOpen]);
+
+  const handleSaveCompanyInfo = () => {
+    // Implementation would go here
+  };
+
+  const handleSaveServicesOffered = () => {
+    // Implementation would go here
+  };
+
   return (<div className="my-business-container">
             {/* Quote Section */}
-            <div className="quote-section">
-              <div className="quote-content">
-                <div className="quote-icon-wrapper">
-                  <Bot className="quote-icon" />
-                </div>
-                <p className="quote-text">
-                  <span className="quote-bold">Note:</span> The details you enter in the My Business section will be used to train your AI Sales Agent. Please provide complete and accurate information for the best performance.
-                </p>
-              </div>
-            </div>
-
             {/* Company Information Section */}
             <div className="company-info-section">
               <div className="company-info-header">
@@ -45,12 +677,12 @@ const MyBusiness = ({
                     <div className="section-icon-wrapper">
                       <Phone className="section-icon" />
                     </div>
-                    <h3 className="section-title">Contact Details</h3>
+                    <h3 className="section-title">Contact Details <span className="text-gray-500 text-sm">*</span></h3>
                     {(() => {
-                      const { completed, total } = getContactDetailsCompletion();
+                      const { completed, total } = getCompanyDetailsCompletion();
                       const isComplete = completed === total;
                       return (
-                        <div className={`completion-badge ${isComplete ? 'completion-badge-complete' : 'completion-badge-incomplete'}`}>
+                        <div className={`completion-badge ${isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                           <span>{completed}/{total}</span>
                         </div>
                       );
@@ -69,35 +701,47 @@ const MyBusiness = ({
                         <h4 className="content-box-title">Company Details</h4>
                         <div className="section-content">
                       <div className="form-field">
-                        <label className="form-label">Company Name</label>
+                        <label className="form-label flex items-center gap-1">
+                          Company Name
+                          <span className="text-red-500 text-sm">*</span>
+                        </label>
                         <input
                           type="text"
                           value={companyInfo.companyName}
                           onChange={(e) => updateCompanyInfo('companyName', e.target.value)}
                           placeholder="Enter company name"
                           className="form-input"
+                          required
                         />
                       </div>
 
                       <div className="form-field">
-                        <label className="form-label">Phone Number</label>
+                        <label className="form-label flex items-center gap-1">
+                          Phone Number
+                          <span className="text-red-500 text-sm">*</span>
+                        </label>
                         <input
                           type="tel"
                           value={companyInfo.phone}
                           onChange={(e) => updateCompanyInfo('phone', e.target.value)}
                           placeholder="(555) 123-4567"
                           className="form-input"
+                          required
                         />
                       </div>
 
                       <div className="form-field">
-                        <label className="form-label">Email</label>
+                        <label className="form-label flex items-center gap-1">
+                          Email
+                          <span className="text-red-500 text-sm">*</span>
+                        </label>
                         <input
                           type="email"
                           value={companyInfo.email}
                           onChange={(e) => updateCompanyInfo('email', e.target.value)}
                           placeholder="contact@company.com"
                           className="form-input"
+                          required
                         />
                       </div>
 
@@ -119,13 +763,17 @@ const MyBusiness = ({
                         <h4 className="content-box-title">Address</h4>
                         <div className="section-content">
                           <div className="form-field">
-                            <label className="form-label">Street Address</label>
+                            <label className="form-label flex items-center gap-1">
+                              Street Address
+                              <span className="text-red-500 text-sm">*</span>
+                            </label>
                             <input
                               type="text"
                               value={companyInfo.street}
                               onChange={(e) => updateCompanyInfo('street', e.target.value)}
                               placeholder="123 Main Street"
                               className="form-input"
+                              required
                             />
                           </div>
 
@@ -142,36 +790,48 @@ const MyBusiness = ({
 
                           <div className="form-grid-2">
                             <div className="form-field">
-                              <label className="form-label">City</label>
+                              <label className="form-label flex items-center gap-1">
+                                City
+                                <span className="text-red-500 text-sm">*</span>
+                              </label>
                               <input
                                 type="text"
                                 value={companyInfo.city}
                                 onChange={(e) => updateCompanyInfo('city', e.target.value)}
                                 placeholder="City"
                                 className="form-input"
+                                required
                               />
                             </div>
 
                             <div className="form-field">
-                              <label className="form-label">State</label>
+                              <label className="form-label flex items-center gap-1">
+                                State
+                                <span className="text-red-500 text-sm">*</span>
+                              </label>
                               <input
                                 type="text"
                                 value={companyInfo.state}
                                 onChange={(e) => updateCompanyInfo('state', e.target.value)}
                                 placeholder="State"
                                 className="form-input"
+                                required
                               />
                             </div>
                           </div>
 
                           <div className="form-field">
-                            <label className="form-label">ZIP Code</label>
+                            <label className="form-label flex items-center gap-1">
+                              ZIP Code
+                              <span className="text-red-500 text-sm">*</span>
+                            </label>
                             <input
                               type="text"
                               value={companyInfo.zip}
                               onChange={(e) => updateCompanyInfo('zip', e.target.value)}
                               placeholder="12345"
                               className="form-input"
+                              required
                             />
                           </div>
                         </div>
@@ -252,6 +912,250 @@ const MyBusiness = ({
                   )}
                 </div>
 
+                {/* Areas Served */}
+                <div 
+                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+                  onClick={() => setCollapsedAreasServed(!collapsedAreasServed)}
+                >
+                  <div className={`flex items-center gap-3 ${!collapsedAreasServed ? 'mb-6' : ''}`}>
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Areas Served <span className="text-gray-500 text-sm">*</span></h3>
+                    {(() => {
+                      const { completed, total } = getAreasServedCompletionLocal();
+                      const isComplete = completed === total;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
+                    <div className="flex items-center justify-center">
+                      <ChevronDown 
+                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedAreasServed ? 'transform rotate-180' : ''}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {!collapsedAreasServed && (
+                    <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
+                      {/* Areas Served Content - Gray Box */}
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Search and Add Cities</label>
+                        <div className="relative city-search-container">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                          <input
+                            type="text"
+                            value={citySearchTerm}
+                            onChange={handleCitySearchChange}
+                            onFocus={() => {
+                              if (citySearchTerm.length >= 2 && citySearchResults.length > 0) {
+                                setIsCitySearchOpen(true);
+                              }
+                            }}
+                            placeholder="Search for a US city..."
+                            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
+                          />
+                          {isLoadingCities && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                            </div>
+                          )}
+                          {isCitySearchOpen && citySearchResults.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                              {citySearchResults.map((city, index) => (
+                                <button
+                                  key={index}
+                                  type="button"
+                                  onClick={() => selectCity(city)}
+                                  className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors text-sm text-gray-700 border-b border-slate-100 last:border-b-0"
+                                >
+                                  <div className="font-medium">{city.name}</div>
+                                  <div className="text-xs text-gray-500">{city.state}</div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {isCitySearchOpen && !isLoadingCities && citySearchTerm.length >= 2 && citySearchResults.length === 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-xl p-4">
+                              {citySearchError ? (
+                                <p className="text-sm text-gray-400 text-center">Connection Error</p>
+                              ) : (
+                                <p className="text-sm text-gray-500 text-center">No cities found. Try a different search term.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Start typing to see city recommendations
+                        </p>
+                      </div>
+
+                      {companyInfo.areasServed.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-3">Selected Areas</label>
+                          <div className="flex flex-wrap gap-3">
+                            {companyInfo.areasServed.map((area) => (
+                              <div
+                                key={area}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200 shadow-sm"
+                              >
+                                <span>{area}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeArea(area)}
+                                  className="text-blue-600 hover:text-blue-800 transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Operating Hours */}
+                <div 
+                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+                  onClick={() => setCollapsedOperatingHours(!collapsedOperatingHours)}
+                >
+                  <div className={`flex items-center gap-3 ${!collapsedOperatingHours ? 'mb-6' : ''}`}>
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Operating Hours <span className="text-gray-500 text-sm">*</span></h3>
+                    {(() => {
+                      const { completed, total } = getOperatingHoursCompletionLocal();
+                      const isComplete = completed === total;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
+                    <div className="flex items-center justify-center">
+                      <ChevronDown 
+                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedOperatingHours ? 'transform rotate-180' : ''}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {!collapsedOperatingHours && (
+                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Set your default hours of operation
+                      </p>
+                      <div className="space-y-3">
+                        {companyInfo.operatingHours.map((hours, index) => (
+                          <div key={index} className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="w-24 font-medium text-gray-900 text-sm">
+                              {hours.day}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={hours.closed || false}
+                                onChange={(e) => {
+                                  const updatedHours = [...companyInfo.operatingHours];
+                                  updatedHours[index] = {
+                                    ...updatedHours[index],
+                                    closed: e.target.checked,
+                                    open24hr: e.target.checked ? false : updatedHours[index].open24hr || false,
+                                    open: e.target.checked ? '' : (updatedHours[index].open || ''),
+                                    close: e.target.checked ? '' : (updatedHours[index].close || '')
+                                  };
+                                  updateCompanyInfo('operatingHours', updatedHours);
+                                }}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <label className="text-sm text-gray-700">Closed</label>
+                            </div>
+                            {!hours.closed && (
+                              <>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={hours.open24hr || false}
+                                    onChange={(e) => {
+                                      const updatedHours = [...companyInfo.operatingHours];
+                                      updatedHours[index] = {
+                                        ...updatedHours[index],
+                                        open24hr: e.target.checked,
+                                        open: e.target.checked ? '' : (updatedHours[index].open || ''),
+                                        close: e.target.checked ? '' : (updatedHours[index].close || '')
+                                      };
+                                      updateCompanyInfo('operatingHours', updatedHours);
+                                    }}
+                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <label className="text-sm text-gray-700">Open 24hr</label>
+                                </div>
+                                {!hours.open24hr && (
+                                  <>
+                                    <div className="flex items-center gap-2">
+                                      <label className="text-xs text-gray-600">Open:</label>
+                                      <input
+                                        type="text"
+                                        value={hours.open || ''}
+                                        onChange={(e) => {
+                                          const updatedHours = [...companyInfo.operatingHours];
+                                          updatedHours[index] = { 
+                                            ...updatedHours[index], 
+                                            open: e.target.value,
+                                            open24hr: false
+                                          };
+                                          updateCompanyInfo('operatingHours', updatedHours);
+                                        }}
+                                        placeholder="8:00 AM"
+                                        className="w-24 px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                      />
+                                    </div>
+                                    <span className="text-gray-400">-</span>
+                                    <div className="flex items-center gap-2">
+                                      <label className="text-xs text-gray-600">Close:</label>
+                                      <input
+                                        type="text"
+                                        value={hours.close || ''}
+                                        onChange={(e) => {
+                                          const updatedHours = [...companyInfo.operatingHours];
+                                          updatedHours[index] = { 
+                                            ...updatedHours[index], 
+                                            close: e.target.value,
+                                            open24hr: false
+                                          };
+                                          updateCompanyInfo('operatingHours', updatedHours);
+                                        }}
+                                        placeholder="6:00 PM"
+                                        className="w-24 px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                                {hours.open24hr && (
+                                  <span className="text-sm text-gray-500 italic">Open 24 Hours</span>
+                                )}
+                              </>
+                            )}
+                            {hours.closed && (
+                              <span className="text-sm text-gray-500 italic">Closed</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Brand Identity */}
                 <div 
                   className="collapsible-section"
@@ -263,10 +1167,10 @@ const MyBusiness = ({
                     </div>
                     <h3 className="section-title">Brand Identity</h3>
                     {(() => {
-                      const { completed, total } = getBrandIdentityCompletion();
+                      const { completed, total } = getBrandIdentityCompletionLocal();
                       const isComplete = completed === total;
                       return (
-                        <div className={`completion-badge ${isComplete ? 'completion-badge-complete' : 'completion-badge-incomplete'}`}>
+                        <div className={`completion-badge ${isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                           <span>{completed}/{total}</span>
                         </div>
                       );
@@ -388,216 +1292,6 @@ const MyBusiness = ({
                   )}
                 </div>
 
-                {/* Areas Served */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedAreasServed(!collapsedAreasServed)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedAreasServed ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Areas Served</h3>
-                    {(() => {
-                      const { completed, total } = getAreasServedCompletion();
-                      const isComplete = completed === total;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          <span>{completed}/{total}</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedAreasServed ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!collapsedAreasServed && (
-                    <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
-                      {/* Areas Served Content - Gray Box */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Search and Add Cities</label>
-                        <div className="relative city-search-container">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
-                          <input
-                            type="text"
-                            value={citySearchTerm}
-                            onChange={handleCitySearchChange}
-                            onFocus={() => {
-                              if (citySearchTerm.length >= 2 && citySearchResults.length > 0) {
-                                setIsCitySearchOpen(true);
-                              }
-                            }}
-                            placeholder="Search for a US city..."
-                            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                          />
-                          {isLoadingCities && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10">
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                            </div>
-                          )}
-                          {isCitySearchOpen && citySearchResults.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                              {citySearchResults.map((city, index) => (
-                                <button
-                                  key={index}
-                                  type="button"
-                                  onClick={() => selectCity(city)}
-                                  className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors text-sm text-gray-700 border-b border-slate-100 last:border-b-0"
-                                >
-                                  <div className="font-medium">{city.name}</div>
-                                  <div className="text-xs text-gray-500">{city.state}</div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          {isCitySearchOpen && !isLoadingCities && citySearchTerm.length >= 2 && citySearchResults.length === 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-xl p-4">
-                              {citySearchError ? (
-                                <p className="text-sm text-gray-400 text-center">Connection Error</p>
-                              ) : (
-                                <p className="text-sm text-gray-500 text-center">No cities found. Try a different search term.</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <p className="mt-2 text-xs text-slate-500">
-                          Start typing to see city recommendations
-                        </p>
-                      </div>
-
-                      {companyInfo.areasServed.length > 0 && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-3">Selected Areas</label>
-                          <div className="flex flex-wrap gap-3">
-                            {companyInfo.areasServed.map((area) => (
-                              <div
-                                key={area}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200 shadow-sm"
-                              >
-                                <span>{area}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeArea(area)}
-                                  className="text-blue-600 hover:text-blue-800 transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Operating Hours */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedOperatingHours(!collapsedOperatingHours)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedOperatingHours ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Operating Hours</h3>
-                    {(() => {
-                      const { completed, total } = getOperatingHoursCompletion();
-                      const isComplete = completed === total;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          <span>{completed}/1</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedOperatingHours ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!collapsedOperatingHours && (
-                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Set your default hours of operation
-                      </p>
-                      <div className="space-y-3">
-                        {companyInfo.operatingHours.map((hours, index) => (
-                          <div key={index} className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                            <div className="w-24 font-medium text-gray-900 text-sm">
-                              {hours.day}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={hours.closed}
-                                onChange={(e) => {
-                                  const updatedHours = [...companyInfo.operatingHours];
-                                  updatedHours[index] = {
-                                    ...updatedHours[index],
-                                    closed: e.target.checked,
-                                    open: e.target.checked ? 'Closed' : updatedHours[index].open || '8:00 AM',
-                                    close: e.target.checked ? 'Closed' : updatedHours[index].close || '6:00 PM'
-                                  };
-                                  updateCompanyInfo('operatingHours', updatedHours);
-                                }}
-                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <label className="text-sm text-gray-700">Closed</label>
-                            </div>
-                            {!hours.closed && (
-                              <>
-                                <div className="flex items-center gap-2">
-                                  <label className="text-xs text-gray-600">Open:</label>
-                                  <input
-                                    type="text"
-                                    value={hours.open}
-                                    onChange={(e) => {
-                                      const updatedHours = [...companyInfo.operatingHours];
-                                      updatedHours[index] = { ...updatedHours[index], open: e.target.value };
-                                      updateCompanyInfo('operatingHours', updatedHours);
-                                    }}
-                                    placeholder="8:00 AM"
-                                    className="w-24 px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                  />
-                                </div>
-                                <span className="text-gray-400">-</span>
-                                <div className="flex items-center gap-2">
-                                  <label className="text-xs text-gray-600">Close:</label>
-                                  <input
-                                    type="text"
-                                    value={hours.close}
-                                    onChange={(e) => {
-                                      const updatedHours = [...companyInfo.operatingHours];
-                                      updatedHours[index] = { ...updatedHours[index], close: e.target.value };
-                                      updateCompanyInfo('operatingHours', updatedHours);
-                                    }}
-                                    placeholder="6:00 PM"
-                                    className="w-24 px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                  />
-                                </div>
-                              </>
-                            )}
-                            {hours.closed && (
-                              <span className="text-sm text-gray-500 italic">Closed</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 {/* Certifications */}
                 <div 
                   className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
@@ -608,6 +1302,17 @@ const MyBusiness = ({
                       <Award className="w-5 h-5 text-slate-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 flex-1">Certifications</h3>
+                    {(() => {
+                      const { completed, total } = getCertificationsCompletionLocal();
+                      const isComplete = completed === total;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center justify-center">
                       <ChevronDown 
                         className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedCertifications ? 'transform rotate-180' : ''}`}
@@ -697,7 +1402,7 @@ const MyBusiness = ({
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 flex-1">Insurance</h3>
                     {(() => {
-                      const { completed, total } = getInsuranceCompletion();
+                      const { completed, total } = getInsuranceCompletionLocal();
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
@@ -798,7 +1503,7 @@ const MyBusiness = ({
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 flex-1">Guarantee/Warranty</h3>
                     {(() => {
-                      const { completed, total } = getGuaranteeWarrantyCompletion();
+                      const { completed, total } = getGuaranteeWarrantyCompletionLocal();
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
@@ -818,14 +1523,29 @@ const MyBusiness = ({
                   {!collapsedGuaranteeWarranty && (
                     <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
                       <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                        <div>
+                        <div className="space-y-4">
                           <textarea
-                            rows={2}
+                            rows={4}
                             value={companyInfo.guaranteeWarranty}
                             onChange={(e) => updateCompanyInfo('guaranteeWarranty', e.target.value)}
                             placeholder="Describe your guarantee or warranty policy..."
                             className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm resize-y bg-white shadow-sm"
                           />
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={handleSaveGuaranteeWarranty}
+                              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                            >
+                              Save
+                            </button>
+                          </div>
+                          {savedGuaranteeWarranty && savedGuaranteeWarranty.trim() !== '' && (
+                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <p className="text-xs font-medium text-green-700 mb-1">Saved:</p>
+                              <p className="text-sm text-green-800">{savedGuaranteeWarranty}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -843,13 +1563,13 @@ const MyBusiness = ({
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 flex-1">Online Reviews</h3>
                     {(() => {
-                      const { completed, total } = getOnlineReviewsCompletion();
+                      const { completed, total } = getOnlineReviewsCompletionLocal();
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                           isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
-                          <span>{completed}/15</span>
+                          <span>{completed}/{total}</span>
                         </div>
                       );
                     })()}
@@ -962,1091 +1682,529 @@ const MyBusiness = ({
 
             {/* Services Offered Section */}
             <div className="bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Services Offered</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Services Offered</h2>
+                {selectedServices.length === 0 && (
+                  <span className="text-sm text-red-600 font-medium">
+                    * At least one service required
+                  </span>
+                )}
+              </div>
               
-              <div className="space-y-4">
-                {/* Soft Washing */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => {
-                    if (showSoftWashing) {
-                      setCollapsedSoftWashing(!collapsedSoftWashing);
-                    } else {
-                      setShowSoftWashing(true);
-                      setCollapsedSoftWashing(false);
-                    }
+              <div className="relative services-dropdown-container">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setServicesDropdownOpen(!servicesDropdownOpen);
                   }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
                 >
-                  <div className={`flex items-center gap-3 ${showSoftWashing && !collapsedSoftWashing ? 'mb-4' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={showSoftWashing}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setShowSoftWashing(e.target.checked);
-                        if (e.target.checked) {
-                          setCollapsedSoftWashing(false);
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-lg font-semibold text-gray-900 flex-1">
-                      Soft Washing
-                    </label>
-                    {showSoftWashing && (
-                      <div className="flex items-center justify-center">
-                        <ChevronDown 
-                          className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedSoftWashing ? 'transform rotate-180' : ''}`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  {showSoftWashing && !collapsedSoftWashing && (
-                    <div className="mt-4 space-y-6" onClick={(e) => e.stopPropagation()}>
-                      {/* Services as Cards */}
+                  <span className="text-gray-500">
+                    Add service...
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${servicesDropdownOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                {servicesDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto services-dropdown-container">
+                    <div className="p-3 space-y-4" onClick={(e) => e.stopPropagation()}>
+                      {/* Soft Washing Section */}
                       <div>
-                        <label className="block text-base font-semibold text-gray-900 mb-3">Services</label>
-                        <div className="flex flex-col md:flex-row gap-4">
-                          {[0, 1].map(columnIndex => (
-                            <div key={columnIndex} className="flex-1 space-y-4">
-                              {[...softWashingServices, ...customSoftWashingServices]
-                                .filter((_, index) => index % 2 === columnIndex)
-                                .map((service) => {
-                                  const isSelected = selectedSoftWashing.includes(service);
-                                  const serviceChemList = serviceChemicals[service] || [];
-                                  return (
-                                    <div
-                                      key={service}
-                                      className={`border-2 rounded-lg p-4 transition-all shadow-sm hover:shadow-md ${
-                                        isSelected
-                                          ? 'border-blue-400 bg-blue-50 shadow-md'
-                                          : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <input
-                                          type="checkbox"
-                                          checked={isSelected}
-                                          onChange={() => toggleService(service, 'softWashing')}
-                                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <label className="text-sm font-semibold text-gray-900 cursor-pointer flex-1">
-                                          {service}
-                                        </label>
-                                      </div>
-                                      {isSelected && (
-                                        <div className="mt-3 space-y-2">
-                                          <label className="block text-xs font-medium text-gray-700 mb-2">Chemicals Used:</label>
-                                          {serviceChemList.length > 0 && (
-                                            <div className="space-y-2 mb-3">
-                                              {serviceChemList.map((chem, idx) => (
-                                                <div key={idx} className="flex items-center gap-2 text-xs bg-white p-2 rounded border border-slate-200">
-                                                  <span className="flex-1">{chem.chemical}</span>
-                                                  <select
-                                                    value={chem.concentration}
-                                                    onChange={(e) => updateChemicalConcentration(service, chem.chemical, e.target.value)}
-                                                    className="px-2 py-1 border border-gray-300 rounded text-xs w-20"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                  >
-                                                    {['1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%', '12.5%', '15%', '20%', '25%', '50%'].map(pct => (
-                                                      <option key={pct} value={pct}>{pct}</option>
-                                                    ))}
-                                                  </select>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => removeChemicalFromService(service, chem.chemical)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                  >
-                                                    <X className="w-3 h-3" />
-                                                  </button>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
-                                            <div className="relative">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  const dropdownKey = `${service}-chemical`;
-                                                  setChemicalDropdownOpen(prev => ({
-                                                    ...prev,
-                                                    [dropdownKey]: !prev[dropdownKey]
-                                                  }));
-                                                  if (!chemicalDropdownOpen[dropdownKey]) {
-                                                    setChemicalSearchTerm(prev => ({ ...prev, [dropdownKey]: '' }));
-                                                  }
-                                                }}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
-                                              >
-                                                <span className="text-gray-500">Select or search a chemical...</span>
-                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${chemicalDropdownOpen[`${service}-chemical`] ? 'transform rotate-180' : ''}`} />
-                                              </button>
-                                              {chemicalDropdownOpen[`${service}-chemical`] && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
-                                                  <div className="p-2 border-b border-gray-200">
-                                                    <input
-                                                      type="text"
-                                                      value={chemicalSearchTerm[`${service}-chemical`] || ''}
-                                                      onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
-                                                      placeholder="Search chemicals..."
-                                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                                      onClick={(e) => e.stopPropagation()}
-                                                      autoFocus
-                                                    />
-                                                  </div>
-                                                  <div className="overflow-y-auto max-h-48">
-                                                    {(() => {
-                                                      const searchTerm = (chemicalSearchTerm[`${service}-chemical`] || '').toLowerCase();
-                                                      const availableChemicals = [...allChemicals, ...customChemicals]
-                                                .filter(chem => !serviceChemList.find(c => c.chemical === chem))
-                                                        .filter(chem => chem.toLowerCase().includes(searchTerm));
-                                                      return availableChemicals.length > 0 ? (
-                                                        availableChemicals.map(chemical => (
-                                                          <button
-                                                            key={chemical}
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              addChemicalToService(service, chemical);
-                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
-                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-700"
-                                                          >
-                                                            {chemical}
-                                                          </button>
-                                                        ))
-                                                      ) : searchTerm ? (
-                                                        <div className="px-3 py-2">
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              if (addCustomChemical(searchTerm)) {
-                                                                addChemicalToService(service, searchTerm);
-                                                              }
-                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
-                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
-                                                            }}
-                                                            className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
-                                                          >
-                                                            + Add "{searchTerm}"
-                                                          </button>
-                                                        </div>
-                                                      ) : (
-                                                        <div className="px-3 py-2 text-xs text-gray-500">No chemicals found</div>
-                                                      );
-                                                    })()}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">PSI:</label>
-                                            <input
-                                              type="text"
-                                              value={servicePSI[service] || ''}
-                                              onChange={(e) => updateServicePSI(service, e.target.value)}
-                                              placeholder="Enter PSI (e.g., 1500)"
-                                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                            />
-                                          </div>
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">Surfaces:</label>
-                                            <div className="relative">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  const dropdownKey = `${service}-surfaces`;
-                                                  setSurfacesDropdownOpen(prev => ({
-                                                    ...prev,
-                                                    [dropdownKey]: !prev[dropdownKey]
-                                                  }));
-                                                }}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
-                                              >
-                                                <span className="text-gray-500">
-                                                  {(serviceSurfaces[service] || []).length > 0 
-                                                    ? `${(serviceSurfaces[service] || []).length} selected`
-                                                    : 'Select surfaces...'}
-                                                </span>
-                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${surfacesDropdownOpen[`${service}-surfaces`] ? 'transform rotate-180' : ''}`} />
-                                              </button>
-                                              {surfacesDropdownOpen[`${service}-surfaces`] && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                                                  <div className="p-2 space-y-1">
-                                                    {[...softWashingSurfaces, ...customSoftWashingSurfaces].map((surface) => {
-                                                      const isSelected = (serviceSurfaces[service] || []).includes(surface);
-                                                      return (
-                                                        <label
-                                                          key={surface}
-                                                          className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
-                                                        >
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                              if (e.target.checked) {
-                                                                addSurfaceToService(service, surface);
-                                                              } else {
-                                                                removeSurfaceFromService(service, surface);
-                                                              }
-                                                            }}
-                                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                          />
-                                                          <span className="ml-2 text-sm text-gray-700">{surface}</span>
-                                                        </label>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                            {(serviceSurfaces[service] || []).length > 0 && (
-                                              <div className="mt-2 flex flex-wrap gap-1">
-                                                {(serviceSurfaces[service] || []).map((surface) => (
-                                                  <div key={surface} className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">
-                                                    <span>{surface}</span>
-                                                    <button
-                                                      type="button"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        removeSurfaceFromService(service, surface);
-                                                      }}
-                                                      className="text-blue-600 hover:text-blue-800"
-                                                    >
-                                                      <X className="w-3 h-3" />
-                                                    </button>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              {/* Add Service Button for this column */}
-                              {columnIndex === 0 && (
-                                <div className="border border-dashed border-slate-300 rounded-lg p-4 bg-slate-50 hover:bg-slate-100 transition-all">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      value={newSoftWashingService}
-                                      onChange={(e) => setNewSoftWashingService(e.target.value)}
-                                      onKeyPress={(e) => e.key === 'Enter' && addCustomSoftWashingService()}
-                                      placeholder="Add service..."
-                                      className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-slate-400"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={addCustomSoftWashingService}
-                                      className="text-blue-600 hover:text-blue-700 disabled:text-gray-400"
-                                      disabled={!newSoftWashingService.trim()}
-                                    >
-                                      <Plus className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Soft Washing</h4>
+                        <div className="space-y-1">
+                          {[...softWashingServices, ...customSoftWashingServices].map((service) => {
+                            const isSelected = selectedServices.includes(service);
+                            const isCustom = customServices.includes(service);
+                            return (
+                              <label
+                                key={service}
+                                className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleService(service)}
+                                  className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 flex-1">{service}</span>
+                                {isCustom && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeCustomService(service);
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                                    title="Remove custom service"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </label>
+                            );
+                          })}
                         </div>
                       </div>
 
-                    </div>
-                  )}
-                </div>
-
-                {/* Pressure Washing */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => {
-                    if (showPressureWashing) {
-                      setCollapsedPressureWashing(!collapsedPressureWashing);
-                    } else {
-                      setShowPressureWashing(true);
-                      setCollapsedPressureWashing(false);
-                    }
-                  }}
-                >
-                  <div className={`flex items-center gap-3 ${showPressureWashing && !collapsedPressureWashing ? 'mb-4' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={showPressureWashing}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setShowPressureWashing(e.target.checked);
-                        if (e.target.checked) {
-                          setCollapsedPressureWashing(false);
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-lg font-semibold text-gray-900 flex-1">
-                      Pressure Washing
-                    </label>
-                    {showPressureWashing && (
-                      <div className="flex items-center justify-center">
-                        <ChevronDown 
-                          className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedPressureWashing ? 'transform rotate-180' : ''}`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  {showPressureWashing && !collapsedPressureWashing && (
-                    <div className="mt-4 space-y-6" onClick={(e) => e.stopPropagation()}>
-                      {/* Services as Cards */}
+                      {/* Pressure Washing Section */}
                       <div>
-                        <label className="block text-base font-semibold text-gray-900 mb-3">Services</label>
-                        <div className="flex flex-col md:flex-row gap-4">
-                          {[0, 1].map(columnIndex => (
-                            <div key={columnIndex} className="flex-1 space-y-4">
-                              {[...pressureWashingServices, ...customPressureWashingServices]
-                                .filter((_, index) => index % 2 === columnIndex)
-                                .map((service) => {
-                                  const isSelected = selectedPressureWashing.includes(service);
-                                  const serviceChemList = serviceChemicals[service] || [];
-                                  return (
-                                    <div
-                                      key={service}
-                                      className={`border-2 rounded-lg p-4 transition-all shadow-sm hover:shadow-md ${
-                                        isSelected
-                                          ? 'border-blue-400 bg-blue-50 shadow-md'
-                                          : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <input
-                                          type="checkbox"
-                                          checked={isSelected}
-                                          onChange={() => toggleService(service, 'pressureWashing')}
-                                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <label className="text-sm font-semibold text-gray-900 cursor-pointer flex-1">
-                                          {service}
-                                        </label>
-                                      </div>
-                                      {isSelected && (
-                                        <div className="mt-3 space-y-2">
-                                          <label className="block text-xs font-medium text-gray-700 mb-2">Chemicals Used:</label>
-                                          {serviceChemList.length > 0 && (
-                                            <div className="space-y-2 mb-3">
-                                              {serviceChemList.map((chem, idx) => (
-                                                <div key={idx} className="flex items-center gap-2 text-xs bg-white p-2 rounded border border-slate-200">
-                                                  <span className="flex-1">{chem.chemical}</span>
-                                                  <select
-                                                    value={chem.concentration}
-                                                    onChange={(e) => updateChemicalConcentration(service, chem.chemical, e.target.value)}
-                                                    className="px-2 py-1 border border-gray-300 rounded text-xs w-20"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                  >
-                                                    {['1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%', '12.5%', '15%', '20%', '25%', '50%'].map(pct => (
-                                                      <option key={pct} value={pct}>{pct}</option>
-                                                    ))}
-                                                  </select>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => removeChemicalFromService(service, chem.chemical)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                  >
-                                                    <X className="w-3 h-3" />
-                                                  </button>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
-                                            <div className="relative">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  const dropdownKey = `${service}-chemical`;
-                                                  setChemicalDropdownOpen(prev => ({
-                                                    ...prev,
-                                                    [dropdownKey]: !prev[dropdownKey]
-                                                  }));
-                                                  if (!chemicalDropdownOpen[dropdownKey]) {
-                                                    setChemicalSearchTerm(prev => ({ ...prev, [dropdownKey]: '' }));
-                                                  }
-                                                }}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
-                                              >
-                                                <span className="text-gray-500">Select or search a chemical...</span>
-                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${chemicalDropdownOpen[`${service}-chemical`] ? 'transform rotate-180' : ''}`} />
-                                              </button>
-                                              {chemicalDropdownOpen[`${service}-chemical`] && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
-                                                  <div className="p-2 border-b border-gray-200">
-                                                    <input
-                                                      type="text"
-                                                      value={chemicalSearchTerm[`${service}-chemical`] || ''}
-                                                      onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
-                                                      placeholder="Search chemicals..."
-                                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                                      onClick={(e) => e.stopPropagation()}
-                                                      autoFocus
-                                                    />
-                                                  </div>
-                                                  <div className="overflow-y-auto max-h-48">
-                                                    {(() => {
-                                                      const searchTerm = (chemicalSearchTerm[`${service}-chemical`] || '').toLowerCase();
-                                                      const availableChemicals = [...allChemicals, ...customChemicals]
-                                                .filter(chem => !serviceChemList.find(c => c.chemical === chem))
-                                                        .filter(chem => chem.toLowerCase().includes(searchTerm));
-                                                      return availableChemicals.length > 0 ? (
-                                                        availableChemicals.map(chemical => (
-                                                          <button
-                                                            key={chemical}
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              addChemicalToService(service, chemical);
-                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
-                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-700"
-                                                          >
-                                                            {chemical}
-                                                          </button>
-                                                        ))
-                                                      ) : searchTerm ? (
-                                                        <div className="px-3 py-2">
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              if (addCustomChemical(searchTerm)) {
-                                                                addChemicalToService(service, searchTerm);
-                                                              }
-                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
-                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
-                                                            }}
-                                                            className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
-                                                          >
-                                                            + Add "{searchTerm}"
-                                                          </button>
-                                                        </div>
-                                                      ) : (
-                                                        <div className="px-3 py-2 text-xs text-gray-500">No chemicals found</div>
-                                                      );
-                                                    })()}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">PSI:</label>
-                                            <input
-                                              type="text"
-                                              value={servicePSI[service] || ''}
-                                              onChange={(e) => updateServicePSI(service, e.target.value)}
-                                              placeholder="Enter PSI (e.g., 1500)"
-                                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                            />
-                                          </div>
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">Surfaces:</label>
-                                            <div className="relative">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  const dropdownKey = `${service}-surfaces`;
-                                                  setSurfacesDropdownOpen(prev => ({
-                                                    ...prev,
-                                                    [dropdownKey]: !prev[dropdownKey]
-                                                  }));
-                                                }}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
-                                              >
-                                                <span className="text-gray-500">
-                                                  {(serviceSurfaces[service] || []).length > 0 
-                                                    ? `${(serviceSurfaces[service] || []).length} selected`
-                                                    : 'Select surfaces...'}
-                                                </span>
-                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${surfacesDropdownOpen[`${service}-surfaces`] ? 'transform rotate-180' : ''}`} />
-                                              </button>
-                                              {surfacesDropdownOpen[`${service}-surfaces`] && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                                                  <div className="p-2 space-y-1">
-                                                    {[...softWashingSurfaces, ...customSoftWashingSurfaces].map((surface) => {
-                                                      const isSelected = (serviceSurfaces[service] || []).includes(surface);
-                                                      return (
-                                                        <label
-                                                          key={surface}
-                                                          className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
-                                                        >
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                              if (e.target.checked) {
-                                                                addSurfaceToService(service, surface);
-                                                              } else {
-                                                                removeSurfaceFromService(service, surface);
-                                                              }
-                                                            }}
-                                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                          />
-                                                          <span className="ml-2 text-sm text-gray-700">{surface}</span>
-                                                        </label>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                            {(serviceSurfaces[service] || []).length > 0 && (
-                                              <div className="mt-2 flex flex-wrap gap-1">
-                                                {(serviceSurfaces[service] || []).map((surface) => (
-                                                  <div key={surface} className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">
-                                                    <span>{surface}</span>
-                                                    <button
-                                                      type="button"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        removeSurfaceFromService(service, surface);
-                                                      }}
-                                                      className="text-blue-600 hover:text-blue-800"
-                                                    >
-                                                      <X className="w-3 h-3" />
-                                                    </button>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              {/* Add Service Button for this column */}
-                              {columnIndex === 0 && (
-                                <div className="border border-dashed border-slate-300 rounded-lg p-4 bg-slate-50 hover:bg-slate-100 transition-all">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      value={newPressureWashingService}
-                                      onChange={(e) => setNewPressureWashingService(e.target.value)}
-                                      onKeyPress={(e) => e.key === 'Enter' && addCustomPressureWashingService()}
-                                      placeholder="Add service..."
-                                      className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-slate-400"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={addCustomPressureWashingService}
-                                      className="text-blue-600 hover:text-blue-700 disabled:text-gray-400"
-                                      disabled={!newPressureWashingService.trim()}
-                                    >
-                                      <Plus className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Pressure Washing</h4>
+                        <div className="space-y-1">
+                          {[...pressureWashingServices, ...customPressureWashingServices].map((service) => {
+                            const isSelected = selectedServices.includes(service);
+                            const isCustom = customServices.includes(service);
+                            return (
+                              <label
+                                key={service}
+                                className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleService(service)}
+                                  className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 flex-1">{service}</span>
+                                {isCustom && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeCustomService(service);
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                                    title="Remove custom service"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </label>
+                            );
+                          })}
                         </div>
                       </div>
 
-                    </div>
-                  )}
-                </div>
-
-                {/* Specialty Cleaning */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => {
-                    if (showSpecialtyCleaning) {
-                      setCollapsedSpecialtyCleaning(!collapsedSpecialtyCleaning);
-                    } else {
-                      setShowSpecialtyCleaning(true);
-                      setCollapsedSpecialtyCleaning(false);
-                    }
-                  }}
-                >
-                  <div className={`flex items-center gap-3 ${showSpecialtyCleaning && !collapsedSpecialtyCleaning ? 'mb-4' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={showSpecialtyCleaning}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setShowSpecialtyCleaning(e.target.checked);
-                        if (e.target.checked) {
-                          setCollapsedSpecialtyCleaning(false);
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-lg font-semibold text-gray-900 flex-1">
-                      Specialty Cleaning
-                    </label>
-                    {showSpecialtyCleaning && (
-                      <div className="flex items-center justify-center">
-                        <ChevronDown 
-                          className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedSpecialtyCleaning ? 'transform rotate-180' : ''}`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  {showSpecialtyCleaning && !collapsedSpecialtyCleaning && (
-                    <div className="mt-4 space-y-6" onClick={(e) => e.stopPropagation()}>
-                      {/* Services as Cards */}
+                      {/* Specialty Cleaning Section */}
                       <div>
-                        <label className="block text-base font-semibold text-gray-900 mb-3">Services</label>
-                        <div className="flex flex-col md:flex-row gap-4">
-                          {[0, 1].map(columnIndex => (
-                            <div key={columnIndex} className="flex-1 space-y-4">
-                              {[...specialtyCleaningServices, ...customSpecialtyCleaningServices]
-                                .filter((_, index) => index % 2 === columnIndex)
-                                .map((service) => {
-                                  const isSelected = selectedSpecialtyCleaning.includes(service);
-                                  const serviceChemList = serviceChemicals[service] || [];
-                                  return (
-                                    <div
-                                      key={service}
-                                      className={`border-2 rounded-lg p-4 transition-all shadow-sm hover:shadow-md ${
-                                        isSelected
-                                          ? 'border-blue-400 bg-blue-50 shadow-md'
-                                          : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <input
-                                          type="checkbox"
-                                          checked={isSelected}
-                                          onChange={() => toggleService(service, 'specialtyCleaning')}
-                                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <label className="text-sm font-semibold text-gray-900 cursor-pointer flex-1">
-                                          {service}
-                                        </label>
-                                      </div>
-                                      {isSelected && (
-                                        <div className="mt-3 space-y-2">
-                                          <label className="block text-xs font-medium text-gray-700 mb-2">Chemicals Used:</label>
-                                          {serviceChemList.length > 0 && (
-                                            <div className="space-y-2 mb-3">
-                                              {serviceChemList.map((chem, idx) => (
-                                                <div key={idx} className="flex items-center gap-2 text-xs bg-white p-2 rounded border border-slate-200">
-                                                  <span className="flex-1">{chem.chemical}</span>
-                                                  <select
-                                                    value={chem.concentration}
-                                                    onChange={(e) => updateChemicalConcentration(service, chem.chemical, e.target.value)}
-                                                    className="px-2 py-1 border border-gray-300 rounded text-xs w-20"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                  >
-                                                    {['1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%', '12.5%', '15%', '20%', '25%', '50%'].map(pct => (
-                                                      <option key={pct} value={pct}>{pct}</option>
-                                                    ))}
-                                                  </select>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => removeChemicalFromService(service, chem.chemical)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                  >
-                                                    <X className="w-3 h-3" />
-                                                  </button>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
-                                            <div className="relative">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  const dropdownKey = `${service}-chemical`;
-                                                  setChemicalDropdownOpen(prev => ({
-                                                    ...prev,
-                                                    [dropdownKey]: !prev[dropdownKey]
-                                                  }));
-                                                  if (!chemicalDropdownOpen[dropdownKey]) {
-                                                    setChemicalSearchTerm(prev => ({ ...prev, [dropdownKey]: '' }));
-                                                  }
-                                                }}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
-                                              >
-                                                <span className="text-gray-500">Select or search a chemical...</span>
-                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${chemicalDropdownOpen[`${service}-chemical`] ? 'transform rotate-180' : ''}`} />
-                                              </button>
-                                              {chemicalDropdownOpen[`${service}-chemical`] && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
-                                                  <div className="p-2 border-b border-gray-200">
-                                                    <input
-                                                      type="text"
-                                                      value={chemicalSearchTerm[`${service}-chemical`] || ''}
-                                                      onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
-                                                      placeholder="Search chemicals..."
-                                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                                      onClick={(e) => e.stopPropagation()}
-                                                      autoFocus
-                                                    />
-                                                  </div>
-                                                  <div className="overflow-y-auto max-h-48">
-                                                    {(() => {
-                                                      const searchTerm = (chemicalSearchTerm[`${service}-chemical`] || '').toLowerCase();
-                                                      const availableChemicals = [...allChemicals, ...customChemicals]
-                                                .filter(chem => !serviceChemList.find(c => c.chemical === chem))
-                                                        .filter(chem => chem.toLowerCase().includes(searchTerm));
-                                                      return availableChemicals.length > 0 ? (
-                                                        availableChemicals.map(chemical => (
-                                                          <button
-                                                            key={chemical}
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              addChemicalToService(service, chemical);
-                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
-                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-700"
-                                                          >
-                                                            {chemical}
-                                                          </button>
-                                                        ))
-                                                      ) : searchTerm ? (
-                                                        <div className="px-3 py-2">
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              if (addCustomChemical(searchTerm)) {
-                                                                addChemicalToService(service, searchTerm);
-                                                              }
-                                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
-                                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
-                                                            }}
-                                                            className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
-                                                          >
-                                                            + Add "{searchTerm}"
-                                                          </button>
-                                                        </div>
-                                                      ) : (
-                                                        <div className="px-3 py-2 text-xs text-gray-500">No chemicals found</div>
-                                                      );
-                                                    })()}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">PSI:</label>
-                                            <input
-                                              type="text"
-                                              value={servicePSI[service] || ''}
-                                              onChange={(e) => updateServicePSI(service, e.target.value)}
-                                              placeholder="Enter PSI (e.g., 1500)"
-                                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                            />
-                                          </div>
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">Surfaces:</label>
-                                            <div className="relative">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  const dropdownKey = `${service}-surfaces`;
-                                                  setSurfacesDropdownOpen(prev => ({
-                                                    ...prev,
-                                                    [dropdownKey]: !prev[dropdownKey]
-                                                  }));
-                                                }}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
-                                              >
-                                                <span className="text-gray-500">
-                                                  {(serviceSurfaces[service] || []).length > 0 
-                                                    ? `${(serviceSurfaces[service] || []).length} selected`
-                                                    : 'Select surfaces...'}
-                                                </span>
-                                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${surfacesDropdownOpen[`${service}-surfaces`] ? 'transform rotate-180' : ''}`} />
-                                              </button>
-                                              {surfacesDropdownOpen[`${service}-surfaces`] && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                                                  <div className="p-2 space-y-1">
-                                                    {[...specialtyCleaningSurfaces].map((surface) => {
-                                                      const isSelected = (serviceSurfaces[service] || []).includes(surface);
-                                                      return (
-                                                        <label
-                                                          key={surface}
-                                                          className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
-                                                        >
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                              if (e.target.checked) {
-                                                                addSurfaceToService(service, surface);
-                                                              } else {
-                                                                removeSurfaceFromService(service, surface);
-                                                              }
-                                                            }}
-                                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                          />
-                                                          <span className="ml-2 text-sm text-gray-700">{surface}</span>
-                                                        </label>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                            {(serviceSurfaces[service] || []).length > 0 && (
-                                              <div className="mt-2 flex flex-wrap gap-1">
-                                                {(serviceSurfaces[service] || []).map((surface) => (
-                                                  <div key={surface} className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">
-                                                    <span>{surface}</span>
-                                                    <button
-                                                      type="button"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        removeSurfaceFromService(service, surface);
-                                                      }}
-                                                      className="text-blue-600 hover:text-blue-800"
-                                                    >
-                                                      <X className="w-3 h-3" />
-                                                    </button>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              {/* Add Service Button for this column */}
-                              {columnIndex === 0 && (
-                                <div className="border border-dashed border-slate-300 rounded-lg p-4 bg-slate-50 hover:bg-slate-100 transition-all">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      value={newSpecialtyCleaningService}
-                                      onChange={(e) => setNewSpecialtyCleaningService(e.target.value)}
-                                      onKeyPress={(e) => e.key === 'Enter' && addCustomSpecialtyCleaningService()}
-                                      placeholder="Add service..."
-                                      className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-slate-400"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={addCustomSpecialtyCleaningService}
-                                      className="text-blue-600 hover:text-blue-700 disabled:text-gray-400"
-                                      disabled={!newSpecialtyCleaningService.trim()}
-                                    >
-                                      <Plus className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Specialty Cleaning</h4>
+                        <div className="space-y-1">
+                          {[...specialtyCleaningServices, ...customSpecialtyCleaningServices, ...customServices].map((service) => {
+                            const isSelected = selectedServices.includes(service);
+                            const isCustom = customServices.includes(service) || customSpecialtyCleaningServices.includes(service);
+                            return (
+                              <label
+                                key={service}
+                                className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleService(service)}
+                                  className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 flex-1">{service}</span>
+                                {isCustom && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeCustomService(service);
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                                    title="Remove custom service"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </label>
+                            );
+                          })}
                         </div>
                       </div>
 
-                    </div>
-                  )}
-                </div>
+                      {/* Window Cleaning Section */}
+                      <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Window Cleaning</h4>
+                        <div className="space-y-1">
+                          {[...windowCleaningServices, ...customWindowCleaningServices].map((service) => {
+                            const isSelected = selectedServices.includes(service);
+                            const isCustom = customServices.includes(service);
+                            return (
+                              <label
+                                key={service}
+                                className="flex items-center px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleService(service)}
+                                  className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 flex-1">{service}</span>
+                                {isCustom && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeCustomService(service);
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                                    title="Remove custom service"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                {/* Window Cleaning */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => {
-                    if (showWindowCleaning) {
-                      setCollapsedWindowCleaning(!collapsedWindowCleaning);
-                    } else {
-                      setShowWindowCleaning(true);
-                      setCollapsedWindowCleaning(false);
-                    }
-                  }}
-                >
-                  <div className={`flex items-center gap-3 ${showWindowCleaning && !collapsedWindowCleaning ? 'mb-4' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={showWindowCleaning}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setShowWindowCleaning(e.target.checked);
-                        if (e.target.checked) {
-                          setCollapsedWindowCleaning(false);
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-lg font-semibold text-gray-900 flex-1">
-                      Window Cleaning
-                    </label>
-                    {showWindowCleaning && (
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                          className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedWindowCleaning ? 'transform rotate-180' : ''}`}
-                      />
+                      {/* Add custom service */}
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
+                          <input
+                            type="text"
+                            value={newService}
+                            onChange={(e) => setNewService(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addCustomService();
+                              }
+                            }}
+                            placeholder="Add custom service..."
+                            className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm flex-1"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addCustomService();
+                            }}
+                            className="text-blue-600 hover:text-blue-700"
+                            disabled={!newService.trim()}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    )}
                   </div>
-                  {showWindowCleaning && !collapsedWindowCleaning && (
-                    <div className="mt-4 space-y-6" onClick={(e) => e.stopPropagation()}>
-                      {/* Services as Cards */}
-                          <div>
-                        <label className="block text-base font-semibold text-gray-900 mb-3">Services</label>
-                        <div className="flex flex-col md:flex-row gap-4">
-                          {[0, 1].map(columnIndex => (
-                            <div key={columnIndex} className="flex-1 space-y-4">
-                              {[...windowCleaningServices, ...customWindowCleaningServices]
-                                .filter((_, index) => index % 2 === columnIndex)
-                                .map((service) => {
-                                  const isSelected = selectedWindowCleaning.includes(service);
-                                  const serviceChemList = serviceChemicals[service] || [];
-                                  return (
-                                    <div
-                                      key={service}
-                                      className={`border-2 rounded-lg p-4 transition-all shadow-sm hover:shadow-md ${
-                                        isSelected
-                                          ? 'border-blue-400 bg-blue-50 shadow-md'
-                                          : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 mb-3">
-                            <input
-                                          type="checkbox"
-                                          checked={isSelected}
-                                          onChange={() => toggleService(service, 'windowCleaning')}
-                                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <label className="text-sm font-semibold text-gray-900 cursor-pointer flex-1">
-                                          {service}
-                                        </label>
-                          </div>
-                                      {isSelected && (
-                                        <div className="mt-3 space-y-2">
-                                          <label className="block text-xs font-medium text-gray-700 mb-2">Chemicals Used:</label>
-                                          {serviceChemList.length > 0 && (
-                                            <div className="space-y-2 mb-3">
-                                              {serviceChemList.map((chem, idx) => (
-                                                <div key={idx} className="flex items-center gap-2 text-xs bg-white p-2 rounded border border-slate-200">
-                                                  <span className="flex-1">{chem.chemical}</span>
-                                                  <select
-                                                    value={chem.concentration}
-                                                    onChange={(e) => updateChemicalConcentration(service, chem.chemical, e.target.value)}
-                                                    className="px-2 py-1 border border-gray-300 rounded text-xs w-20"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                  >
-                                                    {['1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%', '12.5%', '15%', '20%', '25%', '50%'].map(pct => (
-                                                      <option key={pct} value={pct}>{pct}</option>
-                                                    ))}
-                                                  </select>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => removeChemicalFromService(service, chem.chemical)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                  >
-                                                    <X className="w-3 h-3" />
-                                                  </button>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                          <div className="pt-2 border-t border-slate-200">
-                                            <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
-                                            <select
-                                              onChange={(e) => {
-                                                if (e.target.value) {
-                                                  addChemicalToService(service, e.target.value);
-                                                  e.target.value = '';
-                                                }
+                )}
+              </div>
+              {selectedServices.length > 0 ? (
+                <div className="mt-4">
+                  {/* Service cards with chemicals and PSI */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[450px] overflow-y-auto pr-2">
+                    {selectedServices.map((service) => {
+                      const serviceChemList = serviceChemicals[service] || [];
+                      return (
+                        <div
+                          key={service}
+                          className="border-2 rounded-lg p-4 bg-white border-blue-200 shadow-sm relative"
+                        >
+                          {/* Trash icon in upper right corner */}
+                          <button
+                            type="button"
+                            onClick={() => toggleService(service)}
+                            className="absolute top-2 right-2 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Remove service"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <h3 className="text-base font-semibold text-gray-900 mb-4 pr-6">{service}</h3>
+                        
+                        {/* Chemicals Used Section */}
+                        <div className="mb-4">
+                          <label className="block text-xs font-medium text-gray-700 mb-2">Chemicals Used:</label>
+                          <div className="mb-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-2">Add Chemical:</label>
+                            <div className="relative chemical-dropdown-container">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const dropdownKey = `${service}-chemical`;
+                                  setChemicalDropdownOpen(prev => ({
+                                    ...prev,
+                                    [dropdownKey]: !prev[dropdownKey]
+                                  }));
+                                  if (!chemicalDropdownOpen[dropdownKey]) {
+                                    setChemicalSearchTerm(prev => ({ ...prev, [dropdownKey]: '' }));
+                                    setNewCustomChemical(prev => ({ ...prev, [dropdownKey]: '' }));
+                                  }
+                                }}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-left bg-white flex items-center justify-between"
+                              >
+                                <span className="text-gray-500">Select or search a chemical...</span>
+                                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${chemicalDropdownOpen[`${service}-chemical`] ? 'transform rotate-180' : ''}`} />
+                              </button>
+                              {chemicalDropdownOpen[`${service}-chemical`] && (
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden chemical-dropdown-container">
+                                  <div className="p-2 border-b border-gray-200">
+                                    <input
+                                      type="text"
+                                      value={chemicalSearchTerm[`${service}-chemical`] || ''}
+                                      onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
+                                      placeholder="Search chemicals..."
+                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                      onClick={(e) => e.stopPropagation()}
+                                      autoFocus
+                                    />
+                                  </div>
+                                  <div className="overflow-y-auto max-h-48">
+                                    {(() => {
+                                      const searchTerm = (chemicalSearchTerm[`${service}-chemical`] || '').toLowerCase();
+                                      const availableChemicals = [...allChemicals, ...customChemicals]
+                                        .filter(chem => !serviceChemList.find(c => c.chemical === chem))
+                                        .filter(chem => chem.toLowerCase().includes(searchTerm));
+                                      return availableChemicals.length > 0 ? (
+                                        <>
+                                          {availableChemicals.map(chemical => (
+                                            <button
+                                              key={chemical}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                addChemicalToService(service, chemical);
+                                                setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
                                               }}
-                                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                              defaultValue=""
+                                              className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-700"
                                             >
-                                              <option value="">Select a chemical...</option>
-                                              {windowCleaningChemicals
-                                                .filter(chem => !serviceChemList.find(c => c.chemical === chem))
-                                                .map(chemical => (
-                                                  <option key={chemical} value={chemical}>{chemical}</option>
-                                                ))}
-                                            </select>
+                                              {chemical}
+                                            </button>
+                                          ))}
+                                          {/* Add custom chemical option */}
+                                          <div className="border-t border-gray-200 mt-1 pt-1">
+                                            <div className="px-3 py-2 flex items-center gap-2">
+                                              <input
+                                                type="text"
+                                                value={newCustomChemical[`${service}-chemical`] || ''}
+                                                onChange={(e) => setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
+                                                placeholder="Add custom chemical..."
+                                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onKeyPress={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const customChem = (newCustomChemical[`${service}-chemical`] || '').trim();
+                                                    if (customChem) {
+                                                      if (addCustomChemical(customChem)) {
+                                                        addChemicalToService(service, customChem);
+                                                      }
+                                                      setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                      setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                      setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                    }
+                                                  }
+                                                }}
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const customChem = (newCustomChemical[`${service}-chemical`] || '').trim();
+                                                  if (customChem) {
+                                                    if (addCustomChemical(customChem)) {
+                                                      addChemicalToService(service, customChem);
+                                                    }
+                                                    setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                    setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                    setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                  }
+                                                }}
+                                                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                                disabled={!newCustomChemical[`${service}-chemical`]?.trim()}
+                                              >
+                                                <Plus className="w-3 h-3" />
+                                              </button>
+                                            </div>
                                           </div>
+                                        </>
+                                      ) : searchTerm ? (
+                                        <div className="px-3 py-2">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (addCustomChemical(searchTerm)) {
+                                                addChemicalToService(service, searchTerm);
+                                              }
+                                              setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                              setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                            }}
+                                            className="w-full text-left px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+                                          >
+                                            + Add "{searchTerm}"
+                                          </button>
                                         </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              {/* Add Service Button for this column */}
-                              {columnIndex === 0 && (
-                                <div className="border border-dashed border-slate-300 rounded-lg p-4 bg-slate-50 hover:bg-slate-100 transition-all">
-                                  <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                                      value={newWindowCleaningService}
-                                      onChange={(e) => setNewWindowCleaningService(e.target.value)}
-                                      onKeyPress={(e) => e.key === 'Enter' && addCustomWindowCleaningService()}
-                                      placeholder="Add service..."
-                                      className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-slate-400"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={addCustomWindowCleaningService}
-                                      className="text-blue-600 hover:text-blue-700 disabled:text-gray-400"
-                                      disabled={!newWindowCleaningService.trim()}
-                                    >
-                                      <Plus className="w-4 h-4" />
-                                    </button>
+                                      ) : (
+                                        <>
+                                          <div className="px-3 py-2 text-xs text-gray-500">No chemicals found</div>
+                                          {/* Add custom chemical option when no search term */}
+                                          <div className="border-t border-gray-200 mt-1 pt-1 px-3 pb-2">
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                type="text"
+                                                value={newCustomChemical[`${service}-chemical`] || ''}
+                                                onChange={(e) => setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
+                                                placeholder="Add custom chemical..."
+                                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onKeyPress={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const customChem = (newCustomChemical[`${service}-chemical`] || '').trim();
+                                                    if (customChem) {
+                                                      if (addCustomChemical(customChem)) {
+                                                        addChemicalToService(service, customChem);
+                                                      }
+                                                      setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                      setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                      setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                    }
+                                                  }
+                                                }}
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const customChem = (newCustomChemical[`${service}-chemical`] || '').trim();
+                                                  if (customChem) {
+                                                    if (addCustomChemical(customChem)) {
+                                                      addChemicalToService(service, customChem);
+                                                    }
+                                                    setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                    setChemicalDropdownOpen(prev => ({ ...prev, [`${service}-chemical`]: false }));
+                                                    setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: '' }));
+                                                  }
+                                                }}
+                                                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                                disabled={!newCustomChemical[`${service}-chemical`]?.trim()}
+                                              >
+                                                <Plus className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               )}
                             </div>
-                          ))}
-                        </div>
                           </div>
                           
-                    </div>
-                  )}
+                          {/* Chemicals List Container */}
+                          <div className="space-y-2 h-[120px] overflow-y-auto">
+                            {serviceChemList.length > 0 ? (
+                              serviceChemList.map((chem, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded border border-slate-200">
+                                  <span className="flex-1">{chem.chemical}</span>
+                                  <select
+                                    value={chem.concentration}
+                                    onChange={(e) => updateChemicalConcentration(service, chem.chemical, e.target.value)}
+                                    className="px-2 py-1 border border-gray-300 rounded text-xs w-20"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {['1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%', '12.5%', '15%', '20%', '25%', '50%'].map(pct => (
+                                      <option key={pct} value={pct}>{pct}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeChemicalFromService(service, chem.chemical)}
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="h-full flex items-center justify-center text-xs text-gray-400">
+                                No chemicals added
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* PSI Section */}
+                        <div className="pt-2 border-t border-slate-200">
+                          <label className="block text-xs font-medium text-gray-700 mb-2">PSI:</label>
+                          <input
+                            type="text"
+                            value={servicePSI[service] || ''}
+                            onChange={(e) => updateServicePSI(service, e.target.value)}
+                            placeholder="Enter PSI (e.g., 1500)"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                          />
+                        </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-4 text-center py-8">
+                  <p className="text-sm text-gray-500">
+                    No services selected. Use the dropdown above to add services.
+                  </p>
+                </div>
+              )}
+            </div>
 
-              {/* Safety and Preventative Measures Section */}
-              <div className="bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6 mt-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Safety and Preventative Measures</h2>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setSafetyMeasuresDropdownOpen(!safetyMeasuresDropdownOpen)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
-                  >
-                    <span className={allSafetyMeasures.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
-                      {allSafetyMeasures.length > 0
-                        ? `${allSafetyMeasures.length} selected`
-                        : 'Select safety and preventative measures...'}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${safetyMeasuresDropdownOpen ? 'transform rotate-180' : ''}`} />
-                  </button>
-                  {safetyMeasuresDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-                      <div className="p-2 space-y-1">
+            {/* Safety and Preventative Measures Section */}
+            <div className="bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6 mt-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Safety and Preventative Measures</h2>
+              <div className="relative safety-measures-dropdown-container">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSafetyMeasuresDropdownOpen(!safetyMeasuresDropdownOpen);
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
+                >
+                  <span className="text-gray-500">
+                    Select safety and preventative measures...
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${safetyMeasuresDropdownOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                {safetyMeasuresDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto safety-measures-dropdown-container">
+                    <div className="p-4" onClick={(e) => e.stopPropagation()}>
+                      {/* Select All / Deselect All text links */}
+                      <div className="flex gap-3 mb-3 pb-3 border-b border-gray-200">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectAllSafetyMeasures();
+                          }}
+                          className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deselectAllSafetyMeasures();
+                          }}
+                          className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          Deselect All
+                        </button>
+                      </div>
+                      {/* Safety measures bubbles */}
+                      <div className="flex flex-wrap gap-2">
                         {(() => {
-                          // Combine all safety measures from all categories
-                          const combinedMeasures = [
+                          // Base measures (alphabetized)
+                          const baseMeasures = [
                             ...safetyMeasures,
                             ...pressureWashingSafetyMeasures,
                             ...specialtyCleaningSafetyMeasures,
@@ -2054,98 +2212,110 @@ const MyBusiness = ({
                             ...customSoftWashingSafetyMeasures,
                             ...customPressureWashingSafetyMeasures,
                             ...customSpecialtyCleaningSafetyMeasures,
-                            ...customWindowCleaningSafetyMeasures,
-                            ...customAllSafetyMeasures
+                            ...customWindowCleaningSafetyMeasures
                           ];
-                          // Remove duplicates
-                          const uniqueMeasures = [...new Set(combinedMeasures)];
+                          const uniqueBaseMeasures = [...new Set(baseMeasures)].sort((a, b) => 
+                            a.localeCompare(b, undefined, { sensitivity: 'base' })
+                          );
                           
-                          return uniqueMeasures.map((measure) => {
-                            const isSelected = allSafetyMeasures.includes(measure);
-                            return (
-                              <label
-                                key={measure}
-                                className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                          // Custom measures (keep in order added, filter out "bed" and "test")
+                          const filteredCustomMeasures = customAllSafetyMeasures.filter(
+                            m => m.toLowerCase() !== 'bed' && m.toLowerCase() !== 'test'
+                          );
+                          
+                          // Combine: base measures first (alphabetized), then custom measures (in order)
+                          const allMeasures = [...uniqueBaseMeasures, ...filteredCustomMeasures];
+                          
+                          return allMeasures.map((measure) => {
+                          const isSelected = allSafetyMeasures.includes(measure);
+                            const isCustom = filteredCustomMeasures.includes(measure);
+                            
+                          return (
+                              <div
+                              key={measure}
+                                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                                  isSelected
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                } shadow-sm hover:shadow-md`}
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) => {
-                                    toggleAllSafetyMeasure(measure);
-                                  }}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <span className="ml-2 text-sm text-gray-700">{measure}</span>
-                              </label>
-                            );
-                          });
-                        })()}
-                      </div>
-                      <div className="p-2 border-t border-gray-200">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={newAllSafetyMeasure}
-                            onChange={(e) => setNewAllSafetyMeasure(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && addCustomAllSafetyMeasure()}
-                            placeholder="Add custom measure..."
-                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addCustomAllSafetyMeasure();
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  toggleAllSafetyMeasure(measure);
+                                }}
+                                  className="flex-1 text-left"
+                                >
+                                  {measure}
+                                </button>
+                                {isCustom && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeCustomAllSafetyMeasure(measure);
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 transition-colors ml-1"
+                                    title="Remove custom measure"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                          );
+                        });
+                      })()}
+                        {/* Add custom measure - styled like a bubble */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all shadow-sm hover:shadow-md">
+                        <input
+                          type="text"
+                          value={newAllSafetyMeasure}
+                          onChange={(e) => setNewAllSafetyMeasure(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addCustomAllSafetyMeasure();
+                              }
                             }}
-                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-                            disabled={!newAllSafetyMeasure.trim()}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
+                          placeholder="Add custom measure..."
+                            className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-32"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addCustomAllSafetyMeasure();
+                          }}
+                            className="text-blue-600 hover:text-blue-700"
+                          disabled={!newAllSafetyMeasure.trim()}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-                {allSafetyMeasures.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {allSafetyMeasures.map((measure) => (
-                      <div key={measure} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">
-                        <span>{measure}</span>
-                        <button
-                          type="button"
-                          onClick={() => toggleAllSafetyMeasure(measure)}
-                          className="text-blue-600 hover:text-blue-800 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 )}
               </div>
-              
-              {/* Save Button for Services Offered */}
-              <div className="flex justify-end mt-6 pt-6 border-t border-slate-200">
-                <button
-                  onClick={() => {
-                    handleSaveServicesOffered();
-                    console.log('Saving services offered:', {
-                      selectedSoftWashing,
-                      selectedPressureWashing,
-                      selectedSpecialtyCleaning,
-                      serviceChemicals,
-                      servicePSI
-                    });
-                    alert('Services offered saved successfully!');
-                  }}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                >
-                  Save
-                </button>
-              </div>
+              {/* Selected items display */}
+              {allSafetyMeasures.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {[...allSafetyMeasures].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })).map((measure) => (
+                    <div key={measure} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">
+                      <span>{measure}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleAllSafetyMeasure(measure)}
+                        className="text-blue-600 hover:text-blue-800 ml-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Forms Section */}
@@ -2159,18 +2329,18 @@ const MyBusiness = ({
                   <span className="text-sm font-medium text-gray-900 text-center leading-tight">Customize Estimate</span>
                 </button>
 
-                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-emerald-50 hover:border-emerald-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
-                  <FileSignature className="w-6 h-6 mb-2 text-emerald-600 group-hover:text-emerald-700 transition-colors" />
+                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-purple-50 hover:border-purple-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
+                  <FileSignature className="w-6 h-6 mb-2 text-purple-600 group-hover:text-purple-700 transition-colors" />
                   <span className="text-sm font-medium text-gray-900 text-center leading-tight">Customize Contract</span>
                 </button>
 
-                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-purple-50 hover:border-purple-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
-                  <Receipt className="w-6 h-6 mb-2 text-purple-600 group-hover:text-purple-700 transition-colors" />
+                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-amber-50 hover:border-amber-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
+                  <Receipt className="w-6 h-6 mb-2 text-amber-600 group-hover:text-amber-700 transition-colors" />
                   <span className="text-sm font-medium text-gray-900 text-center leading-tight">Customize Invoice</span>
                 </button>
 
-                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-pink-50 hover:border-pink-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
-                  <HeartHandshake className="w-6 h-6 mb-2 text-pink-600 group-hover:text-pink-700 transition-colors" />
+                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-rose-50 hover:border-rose-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
+                  <HeartHandshake className="w-6 h-6 mb-2 text-rose-500 group-hover:text-rose-600 transition-colors" />
                   <span className="text-sm font-medium text-gray-900 text-center leading-tight">Thank You Note</span>
                 </button>
               </div>

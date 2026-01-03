@@ -1,5 +1,5 @@
-import React from 'react';
-import { DollarSign, Calendar, Users, TrendingUp, Bell, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { DollarSign, Calendar, Users, TrendingUp, Bell, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import './dashboard.css';
 
 const Dashboard = ({ 
@@ -10,6 +10,20 @@ const Dashboard = ({
   setNotifications,
   getJobsForDate 
 }) => {
+  const [dashboardWeek, setDashboardWeek] = useState(() => {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    return startOfWeek.toISOString().split('T')[0];
+  });
+
+  const navigateDashboardWeek = (direction) => {
+    const currentWeekStart = new Date(dashboardWeek);
+    const newWeekStart = new Date(currentWeekStart);
+    newWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+    const newWeekStr = newWeekStart.toISOString().split('T')[0];
+    setDashboardWeek(newWeekStr);
+  };
   return (
     <div className="dashboard-container">
       {/* Key Metrics Cards */}
@@ -33,7 +47,7 @@ const Dashboard = ({
           return total;
         }, 0);
 
-        // Calculate Active Jobs (scheduled this week)
+        // Calculate New Leads (added this week)
         const today = new Date();
         const currentDay = today.getDay();
         const startOfWeek = new Date(today);
@@ -43,49 +57,25 @@ const Dashboard = ({
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
         
-        const activeJobs = jobs.filter(job => {
-          if (!job.date) return false;
-          const jobDate = new Date(job.date);
-          return jobDate >= startOfWeek && jobDate <= endOfWeek;
-        }).length;
-
-        // Calculate New Leads (added this week)
         const newLeads = leads.filter(lead => {
           if (!lead.dateAdded) return false;
           const leadDate = new Date(lead.dateAdded);
           return leadDate >= startOfWeek && leadDate <= endOfWeek;
         }).length;
 
-        // Calculate Conversion Rate
-        const totalLeads = leads.length;
-        const totalCustomers = customers.length;
-        const conversionRate = totalLeads > 0 ? ((totalCustomers / totalLeads) * 100).toFixed(1) : '0.0';
+        // Calculate Ready Jobs (jobs ready to be completed - scheduled for today or earlier, not completed)
+        today.setHours(0, 0, 0, 0);
+        
+        const readyJobs = jobs.filter(job => {
+          if (!job.date) return false;
+          const jobDate = new Date(job.date);
+          jobDate.setHours(0, 0, 0, 0);
+          // Job is ready if it's scheduled for today or earlier and not completed
+          return jobDate <= today && job.status !== 'Completed';
+        }).length;
 
         return (
           <div className="metrics-grid">
-            {/* Monthly Revenue Card */}
-            <div className="metric-card">
-              <div className="metric-header">
-                <div className="metric-icon-container metric-icon-blue">
-                  <DollarSign className="metric-icon metric-icon-blue" />
-                </div>
-              </div>
-              <h4 className="metric-title">Monthly Revenue</h4>
-              <p className="metric-value">${monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            </div>
-
-            {/* Active Jobs Card */}
-            <div className="metric-card">
-              <div className="metric-header">
-                <div className="metric-icon-container metric-icon-emerald">
-                  <Calendar className="metric-icon metric-icon-emerald" />
-                </div>
-              </div>
-              <h4 className="metric-title">Active Jobs</h4>
-              <p className="metric-value">{activeJobs}</p>
-              <p className="metric-subtext">Scheduled this week</p>
-            </div>
-
             {/* New Leads Card */}
             <div className="metric-card">
               <div className="metric-header">
@@ -98,16 +88,36 @@ const Dashboard = ({
               <p className="metric-subtext">Added this week</p>
             </div>
 
-            {/* Conversion Rate Card */}
+            {/* Ready Jobs Card */}
             <div className="metric-card">
               <div className="metric-header">
-                <div className="metric-icon-container metric-icon-amber">
-                  <TrendingUp className="metric-icon metric-icon-amber" />
+                <div className="metric-icon-container metric-icon-emerald">
+                  <Calendar className="metric-icon metric-icon-emerald" />
                 </div>
               </div>
-              <h4 className="metric-title">Conversion Rate</h4>
-              <p className="metric-value">{conversionRate}%</p>
-              <p className="metric-subtext">Lead to customer</p>
+              <h4 className="metric-title">Ready Jobs</h4>
+              <p className="metric-value">{readyJobs}</p>
+            </div>
+
+            {/* Revenue This Month Card */}
+            <div className="metric-card">
+              <div className="metric-header">
+                <div className="metric-icon-container metric-icon-blue">
+                  <DollarSign className="metric-icon metric-icon-blue" />
+                </div>
+              </div>
+              <h4 className="metric-title">Revenue This Month</h4>
+              <p className="metric-value">${monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+
+            {/* Blank Fourth Stat Card */}
+            <div className="metric-card">
+              <div className="metric-header">
+                <div className="metric-icon-container metric-icon-gray">
+                </div>
+              </div>
+              <h4 className="metric-title"></h4>
+              <p className="metric-value"></p>
             </div>
           </div>
         );
@@ -220,11 +230,8 @@ const Dashboard = ({
       
       {/* Week of Section */}
       {(() => {
-        // Get current week (Sunday to Saturday)
-        const today = new Date();
-        const currentDay = today.getDay(); // 0 = Sunday, 6 = Saturday
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - currentDay);
+        // Get selected week (Sunday to Saturday)
+        const startOfWeek = new Date(dashboardWeek);
         startOfWeek.setHours(0, 0, 0, 0);
         
         const weekDays = [];
@@ -250,6 +257,13 @@ const Dashboard = ({
         const weekStartStr = startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const weekEndStr = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         
+        // Check if current week
+        const today = new Date();
+        const currentWeekStart = new Date(today);
+        currentWeekStart.setDate(today.getDate() - today.getDay());
+        currentWeekStart.setHours(0, 0, 0, 0);
+        const isCurrentWeek = startOfWeek.getTime() === currentWeekStart.getTime();
+        
         const getJobStatusClass = (status) => {
           if (status === 'completed') return 'week-job-completed';
           if (status === 'in-progress') return 'week-job-in-progress';
@@ -260,7 +274,73 @@ const Dashboard = ({
         return (
           <div className="week-section">
             <div className="week-header">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <button
+                  onClick={() => navigateDashboardWeek(-1)}
+                  style={{
+                    padding: '0.5rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                  }}
+                  title="Previous Week"
+                >
+                  <ChevronLeft style={{ width: '1.25rem', height: '1.25rem', color: '#4b5563' }} />
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <h3 className="week-title">Week of {weekStartStr} - {weekEndStr}</h3>
+                  {isCurrentWeek && (
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      backgroundColor: '#dbeafe',
+                      color: '#1e40af',
+                      borderRadius: '0.375rem'
+                    }}>
+                      Current Week
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => navigateDashboardWeek(1)}
+                  style={{
+                    padding: '0.5rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                  }}
+                  title="Next Week"
+                >
+                  <ChevronRight style={{ width: '1.25rem', height: '1.25rem', color: '#4b5563' }} />
+                </button>
+              </div>
             </div>
             <div className="week-content">
               <div className="week-grid">

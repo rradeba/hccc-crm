@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Check, Building2, Phone, Upload, Trash2, Plus, ChevronDown, X } from 'lucide-react';
+import { Settings, Check, Building2, Phone, Upload, Trash2, Plus, ChevronDown, X, ArrowRight } from 'lucide-react';
 import './myAgent.css';
 
 const MyAgent = ({
@@ -151,7 +151,7 @@ const MyAgent = ({
             <span className="account-label">Website</span>
           </button>
 
-          {/* SMS via Twilio */}
+          {/* SMS and Call */}
           <button
             type="button"
             className="account-button account-button-red"
@@ -164,8 +164,26 @@ const MyAgent = ({
             <div className="account-icon-container account-icon-container-red">
               <Phone className="account-icon" />
             </div>
-            <span className="account-label">SMS via Twilio</span>
+            <span className="account-label">SMS and Call</span>
           </button>
+        </div>
+      </div>
+
+      {/* Sales Flow Section */}
+      <div className="sales-flow-display-section">
+        <div className="sales-flow-display-title">
+          <h3 className="sales-flow-display-title-text">Sales Flow:</h3>
+        </div>
+        <div className="sales-flow-stages-container">
+          {['Contact', 'Qualify Lead', 'Assess Needs', 'Send Estimate', 'Follow-Up', 'Close Sale', 'Fullfill Job', 'Post-Sale'].map((stage, index) => (
+            <div key={stage} className="sales-flow-stage-item">
+              <div className="sales-flow-stage-box">
+                <span className="sales-flow-stage-number">{index + 1}</span>
+                <span className="sales-flow-stage-text">{stage}</span>
+                <ChevronDown className="sales-flow-stage-caret" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

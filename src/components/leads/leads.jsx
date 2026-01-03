@@ -108,7 +108,7 @@ const Leads = ({
         ] : [
           { from: 'assistant', text: `Hi ${leadFirstName}, thanks for texting Holy City Clean Co. Want me to reserve that estimate slot?` },
           { from: 'lead', text: 'Yes, can we keep Tuesday open?' },
-          { from: 'assistant', text: 'Done! I'll send a confirmation SMS with prep instructions.' }
+          { from: 'assistant', text: 'Done! I will send a confirmation SMS with prep instructions.' }
         ],
         Facebook: sectionType === 'rejected' ? [
           { from: 'assistant', text: `Hey ${leadFirstName}! Totally understand you're passing for now.` },
@@ -126,7 +126,7 @@ const Leads = ({
         ] : [
           { from: 'assistant', text: `Hi ${leadFirstName}! Thanks for sliding into our Instagram DMs—your exterior refresh is going to pop.` },
           { from: 'lead', text: 'Love the before/after you posted. How soon can we schedule?' },
-          { from: 'assistant', text: 'Earliest availability is Thursday AM. I'll send the IG booking button right here.' }
+          { from: 'assistant', text: 'Earliest availability is Thursday AM. I will send the IG booking button right here.' }
         ]
       };
       const transcript = chatScripts[selectedMedium] || chatScripts.SMS;

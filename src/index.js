@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import ServiceManagementSystem from './App';
+import ServiceManagementSystem from './ServiceManagementSystem';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
