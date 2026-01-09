@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Settings, Upload } from 'lucide-react';
+import { Building2, Settings, Upload, HelpCircle } from 'lucide-react';
 import './header.css';
 
 const Header = ({ activeTab, setActiveTab, businessInfo }) => {
@@ -100,7 +100,10 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
   // Close header settings when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (openHeaderSettings && !event.target.closest('button[aria-label="Header settings"]') && !event.target.closest('.absolute')) {
+      if (openHeaderSettings && 
+          !event.target.closest('button[aria-label="Header settings"]') && 
+          !event.target.closest('.settings-dropdown') &&
+          !event.target.closest('.relative')) {
         setOpenHeaderSettings(false);
       }
     };
@@ -158,7 +161,15 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
                   <p className="weather-error">{weatherError || 'Unavailable'}</p>
                 )}
               </div>
-              <div className="relative">
+              <div className="relative" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="settings-button"
+                  aria-label="Help"
+                  title="Help"
+                >
+                  <HelpCircle className="settings-icon" />
+                </button>
                 <button
                   type="button"
                   onClick={() => setOpenHeaderSettings(!openHeaderSettings)}
@@ -177,7 +188,8 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
                           <button
                             key={option.value}
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setHeaderColor(option.value);
                             }}
                             className={`color-button ${option.cssClass} ${headerColor === option.value ? 'selected' : ''}`}
@@ -200,11 +212,12 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
                               />
                   </div>
                 )}
-                          <label className="icon-upload-label">
+                          <label className="icon-upload-label" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="file"
                               accept="image/*"
                               onChange={(e) => {
+                                e.stopPropagation();
                                 const file = e.target.files?.[0];
                                 if (file) {
                                   const reader = new FileReader();
@@ -214,6 +227,7 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
                                   reader.readAsDataURL(file);
                                 }
                               }}
+                              onClick={(e) => e.stopPropagation()}
                               className="icon-upload-input"
                             />
                             <span className="icon-upload-button">
@@ -224,7 +238,10 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
                           {customHeaderIcon && (
                             <button
                               type="button"
-                              onClick={() => setCustomHeaderIcon(null)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomHeaderIcon(null);
+                              }}
                               className="remove-icon-button"
                             >
                               Remove Custom Icon
@@ -243,10 +260,11 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
               { id: 'dashboard', label: 'Dashboard' },
               { id: 'leads', label: 'Leads' },
               { id: 'customers', label: 'Customer Directory' },
-              { id: 'aiAgent', label: 'My Agent' },
               { id: 'calendar', label: 'Calendar' },
-              { id: 'business', label: 'My Business' },
-              { id: 'pricingTool', label: 'Pricing Tool' }
+              { id: 'pricingTool', label: 'Pricing Tool' },
+              { id: 'customerCorrespondence', label: 'Customer Correspondence' },
+              { id: 'aiAgent', label: 'My Agent' },
+              { id: 'business', label: 'My Business' }
             ].map(tab => {
               const isActive = activeTab === tab.id;
               return (

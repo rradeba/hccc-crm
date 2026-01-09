@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, ChevronDown, FileText, FileSignature, Receipt, HeartHandshake, ArrowRight, MoveDiagonal, Check, Pause, X, Mail } from 'lucide-react';
+import { Search, Plus, ChevronDown, FileText, FileSignature, Receipt, HeartHandshake, MoveDiagonal, Check, Pause, X, Mail } from 'lucide-react';
 import './leads.css';
 
 // SourceBadge component (same as in customerDirectory)
@@ -55,6 +55,7 @@ const SourceBadge = ({ source }) => {
 };
 
 const Leads = ({ 
+  uncontactedLeads,
   readyJobs,
   inProgress,
   stopped,
@@ -80,6 +81,7 @@ const Leads = ({
     if (!leads || leads.length === 0) return null;
 
     const sectionTitles = {
+      uncontactedLeads: 'Uncontacted Leads',
       readyJobs: 'Ready Jobs',
       inProgress: 'In Progress',
       stopped: 'Paused',
@@ -93,63 +95,44 @@ const Leads = ({
         { label: 'Estimate', icon: FileText },
         { label: 'Contract', icon: FileSignature },
         { label: 'Invoice', icon: Receipt },
-        { label: 'Thank You', icon: HeartHandshake },
-        { label: 'Convert', icon: ArrowRight }
+        { label: 'Thank You', icon: HeartHandshake }
       ];
-      const chatMediumOptions = ['SMS', 'Facebook', 'Instagram'];
-      const selectedMedium = chatMediumByLead[lead.id] || 'SMS';
+      const chatMediumOptions = ['Text', 'Call', 'Email'];
+      const selectedMedium = chatMediumByLead[lead.id] || 'Text';
       const leadFirstName = lead.firstName || lead.name?.split(' ')[0] || 'there';
       
       const chatScripts = {
-        SMS: sectionType === 'rejected' ? [
+        Text: sectionType === 'rejected' ? [
           { from: 'assistant', text: `Hi ${leadFirstName}, thanks for reaching out to Holy City Clean Co. If your plans change, we're happy to revisit your estimate anytime.` },
           { from: 'lead', text: "Thanks, I'll keep that in mind." },
           { from: 'assistant', text: 'No problem at all—have a great day!' }
         ] : [
           { from: 'assistant', text: `Hi ${leadFirstName}, thanks for texting Holy City Clean Co. Want me to reserve that estimate slot?` },
           { from: 'lead', text: 'Yes, can we keep Tuesday open?' },
-          { from: 'assistant', text: 'Done! I will send a confirmation SMS with prep instructions.' }
+          { from: 'assistant', text: 'Done! I will send a confirmation text with prep instructions.' }
         ],
-        Facebook: sectionType === 'rejected' ? [
-          { from: 'assistant', text: `Hey ${leadFirstName}! Totally understand you're passing for now.` },
-          { from: 'lead', text: 'Appreciate the quick quote though.' },
-          { from: 'assistant', text: 'Anytime—if you revisit the project later, just message us here.' }
+        Call: sectionType === 'rejected' ? [
+          { from: 'assistant', text: `Hi ${leadFirstName}, thanks for calling Holy City Clean Co. If your plans change, we're happy to revisit your estimate anytime.` },
+          { from: 'lead', text: "Thanks, I'll keep that in mind." },
+          { from: 'assistant', text: 'No problem at all—have a great day!' }
         ] : [
-          { from: 'assistant', text: `Hey ${leadFirstName}! Saw your Facebook message about the softwash package.` },
-          { from: 'lead', text: 'Appreciate it. Can you send the quote in Messenger?' },
-          { from: 'assistant', text: 'Absolutely—uploading the PDF to this chat in the next minute.' }
+          { from: 'assistant', text: `Hi ${leadFirstName}, thanks for calling Holy City Clean Co. I'd be happy to help you with your service needs.` },
+          { from: 'lead', text: 'Yes, can we schedule something?' },
+          { from: 'assistant', text: 'Absolutely! Let me check our availability and get back to you shortly.' }
         ],
-        Instagram: sectionType === 'rejected' ? [
-          { from: 'assistant', text: `Hi ${leadFirstName}! Thanks for letting us know you're not moving forward right now.` },
-          { from: 'lead', text: 'You all were great—just not the right timing.' },
-          { from: 'assistant', text: 'We get it! Our DMs are always open if timing changes.' }
+        Email: sectionType === 'rejected' ? [
+          { from: 'assistant', text: `Hi ${leadFirstName}, thanks for reaching out to Holy City Clean Co. If your plans change, we're happy to revisit your estimate anytime.` },
+          { from: 'lead', text: "Thanks, I'll keep that in mind." },
+          { from: 'assistant', text: 'No problem at all—have a great day!' }
         ] : [
-          { from: 'assistant', text: `Hi ${leadFirstName}! Thanks for sliding into our Instagram DMs—your exterior refresh is going to pop.` },
-          { from: 'lead', text: 'Love the before/after you posted. How soon can we schedule?' },
-          { from: 'assistant', text: 'Earliest availability is Thursday AM. I will send the IG booking button right here.' }
+          { from: 'assistant', text: `Hi ${leadFirstName}, thank you for reaching out via email. I'll send you more information shortly.` },
+          { from: 'lead', text: 'Appreciate it. Can you send the quote?' },
+          { from: 'assistant', text: 'Absolutely—sending the estimate to your email now.' }
         ]
       };
-      const transcript = chatScripts[selectedMedium] || chatScripts.SMS;
+      const transcript = chatScripts[selectedMedium] || chatScripts.Text;
 
       const isExpanded = expandedLeads.has(lead.id);
-      const salesStages = ['Contact', 'Qualify Lead', 'Assess Needs', 'Send Estimate', 'Follow-Up', 'Close Sale', 'Fullfill Job', 'Post-Sale'];
-      let currentStageIndex = 0;
-      if (lead.status === 'New') {
-        currentStageIndex = 0;
-      } else if (lead.estimateData) {
-        if (lead.status === 'Scheduled' || lead.status === 'In Progress') {
-          currentStageIndex = sectionType === 'readyJobs' ? 4 : 3;
-        } else if (lead.status === 'Contract Signed') {
-          currentStageIndex = sectionType === 'readyJobs' ? 5 : 4;
-        } else if (lead.status === 'Completed') {
-          currentStageIndex = sectionType === 'readyJobs' ? 6 : 5;
-        } else {
-          currentStageIndex = sectionType === 'readyJobs' ? 3 : 2;
-        }
-      } else {
-        currentStageIndex = sectionType === 'readyJobs' ? 2 : 1;
-      }
-      const currentStage = salesStages[currentStageIndex];
       
       const addressLines = formatAddressLines(lead.address || '');
       
@@ -169,7 +152,16 @@ const Leads = ({
             className="lead-row"
           >
             <td className="lead-cell lead-cell-center">
-              {sectionType === 'readyJobs' ? (
+              {sectionType === 'uncontactedLeads' ? (
+                <div className="status-uncontacted">
+                  <span className="status-uncontacted-text">Uncontacted</span>
+                  {lead.dateAdded && (
+                    <span className="status-uncontacted-date">
+                      {new Date(lead.dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+              ) : sectionType === 'readyJobs' ? (
                 <div className="status-scheduled">
                   <span className="status-scheduled-text">Scheduled</span>
                   {lead.dateAdded && (
@@ -198,10 +190,10 @@ const Leads = ({
             <td className="lead-cell">
               <span className="lead-name">{lead.name}</span>
             </td>
-            <td className="lead-cell">
+            <td className="lead-cell lead-cell-hide-md">
               <span className="lead-text">{lead.phone || 'No phone'}</span>
             </td>
-            <td className="lead-cell">
+            <td className="lead-cell lead-cell-hide-md">
               <div className="lead-address-container">
                 <span className="lead-address-line">{addressLines.line1 || lead.address || 'No address'}</span>
                 {addressLines.line2 && (
@@ -209,8 +201,8 @@ const Leads = ({
                 )}
               </div>
             </td>
-            <td className="lead-cell">
-              {sectionType === 'readyJobs' ? (
+            <td className="lead-cell lead-cell-hide-md">
+              {sectionType === 'readyJobs' || sectionType === 'uncontactedLeads' ? (
                 <span className="lead-date">
                   {lead.dateAdded ? new Date(lead.dateAdded).toLocaleDateString() : 'No date'}
                 </span>
@@ -260,40 +252,6 @@ const Leads = ({
             <tr>
               <td colSpan="9" className="lead-expanded-row">
                 <div className="lead-expanded-content">
-                  {/* Sales Stages */}
-                  <div className="sales-stages">
-                    <div className="sales-stages-list">
-                      {salesStages.map((stage, index) => {
-                        const isActive = index === currentStageIndex;
-                        const isCompleted = index < currentStageIndex;
-                        const getStageBoxClass = () => {
-                          if (isActive) return 'sales-stage-box sales-stage-active';
-                          if (isCompleted) return 'sales-stage-box sales-stage-completed';
-                          return 'sales-stage-box sales-stage-inactive';
-                        };
-                        const getConnectorClass = () => {
-                          if (isCompleted) return 'sales-stage-connector sales-stage-connector-completed';
-                          return 'sales-stage-connector sales-stage-connector-inactive';
-                        };
-                        return (
-                          <div key={stage} className="sales-stage-item">
-                            <div className={getStageBoxClass()}>
-                              <div className="sales-stage-content">
-                                {isCompleted && (
-                                  <Check className="sales-stage-check" strokeWidth={3} />
-                                )}
-                                <span>{stage}</span>
-                              </div>
-                            </div>
-                            {index < salesStages.length - 1 && (
-                              <div className={getConnectorClass()}></div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                   {/* Chat Panel */}
                   <div className="chat-panel">
                     <div className="chat-panel-container">
@@ -323,6 +281,10 @@ const Leads = ({
                               <FileText className="open-estimate-icon" />
                               Open Estimate
                             </button>
+                          </div>
+                        ) : sectionType === 'uncontactedLeads' ? (
+                          <div className="chat-header-status">
+                            <span className="text-sm text-gray-500">Not contacted yet</span>
                           </div>
                         ) : (
                           <div className="chat-header-status">
@@ -413,7 +375,7 @@ const Leads = ({
                         <div className="rejected-header">
                           <div>
                             <div className="rejected-status-label">Lead Status</div>
-                            <div className="rejected-status-value">{currentStage}</div>
+                            <div className="rejected-status-value">{lead.status}</div>
                           </div>
                           <div className="rejected-badge">
                             <X className="rejected-badge-icon" strokeWidth={3} />
@@ -435,21 +397,24 @@ const Leads = ({
                   ) : (
                     <div className="action-buttons-panel">
                       <div className="action-buttons-grid">
-                        {actionButtons.filter(action => action.label !== 'Convert').map(action => {
+                        {actionButtons.map(action => {
                           const Icon = action.icon;
                           const getIconClass = () => {
-                            if (action.label === 'Estimate') return 'action-button-icon action-button-icon-blue';
+                            if (action.label === 'Estimate') return 'action-button-icon action-button-icon-green';
                             if (action.label === 'Contract') return 'action-button-icon action-button-icon-purple';
                             if (action.label === 'Invoice') return 'action-button-icon action-button-icon-amber';
                             if (action.label === 'Thank You') return 'action-button-icon action-button-icon-rose';
                             return 'action-button-icon action-button-icon-slate';
                           };
                           const getLabelClass = () => {
-                            if (action.label === 'Estimate') return 'action-button-label action-button-label-blue';
+                            if (action.label === 'Estimate') return 'action-button-label action-button-label-green';
                             if (action.label === 'Contract') return 'action-button-label action-button-label-purple';
                             if (action.label === 'Invoice') return 'action-button-label action-button-label-amber';
                             if (action.label === 'Thank You') return 'action-button-label action-button-label-rose';
                             return 'action-button-label action-button-label-slate';
+                          };
+                          const getCardClass = () => {
+                            return 'action-button-card';
                           };
                           const formStatus = (() => {
                             if (action.label === 'Estimate' || action.label === 'Contract') return 'received';
@@ -460,7 +425,7 @@ const Leads = ({
                           return (
                             <button
                               key={action.label}
-                              className="action-button-card"
+                              className={getCardClass()}
                               type="button"
                               title={action.label}
                               aria-label={action.label}
@@ -485,20 +450,6 @@ const Leads = ({
                           );
                         })}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (handleServiceFileClick) {
-                            handleServiceFileClick('Convert', lead, null);
-                          }
-                        }}
-                        className="convert-button"
-                        type="button"
-                        title="Convert"
-                        aria-label="Convert"
-                      >
-                        Convert
-                      </button>
                     </div>
                   )}
                 </div>
@@ -518,14 +469,14 @@ const Leads = ({
               <tr>
                 <th className="leads-table-header leads-table-header-center" style={{ width: '8rem' }}>Status</th>
                 <th className="leads-table-header">Name</th>
-                <th className="leads-table-header">Phone</th>
-                <th className="leads-table-header">Address</th>
-                <th className="leads-table-header">
-                  {sectionType === 'readyJobs' ? 'Job Date/Time' : 'Contact Date/Time'}
+                <th className="leads-table-header leads-table-header-hide-md">Phone</th>
+                <th className="leads-table-header leads-table-header-hide-md">Address</th>
+                <th className="leads-table-header leads-table-header-hide-md">
+                  {sectionType === 'readyJobs' ? 'Job Date/Time' : sectionType === 'uncontactedLeads' ? 'Date Added' : 'Contact Date/Time'}
                 </th>
                 <th className="leads-table-header">Job Requested</th>
                 <th className="leads-table-header leads-table-header-center">Lead Source</th>
-                <th className="leads-table-header leads-table-header-center">Actions</th>
+                <th className="leads-table-header leads-table-header-center">TO-DO</th>
                 <th className="leads-table-header" style={{ width: '3rem' }}></th>
               </tr>
             </thead>
@@ -576,6 +527,7 @@ const Leads = ({
       </div>
 
       {/* Lead Sections */}
+      {renderLeadSection(uncontactedLeads, 'uncontactedLeads')}
       {renderLeadSection(readyJobs, 'readyJobs')}
       {renderLeadSection(inProgress, 'inProgress')}
       {renderLeadSection(stopped, 'stopped')}

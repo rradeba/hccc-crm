@@ -260,9 +260,9 @@ const CustomerDirectory = ({
               <th className="table-header-cell">Phone</th>
               <th className="table-header-cell">Address</th>
               <th className="table-header-cell">Last Service</th>
-              <th className="table-header-cell table-header-center">Number of Services</th>
-              <th className="table-header-cell table-header-center">Total Spent</th>
-              <th className="table-header-cell table-header-center">Lead Source</th>
+              <th className="table-header-cell table-header-center table-header-cell-hide-md">Number of Services</th>
+              <th className="table-header-cell table-header-center table-header-cell-hide-md">Total Spent</th>
+              <th className="table-header-cell table-header-center table-header-cell-hide-md">Lead Source</th>
               <th className="table-header-cell" style={{ width: '3rem' }}></th>
             </tr>
           </thead>
@@ -345,15 +345,15 @@ const CustomerDirectory = ({
                     <td className="table-cell">
                       <span className="customer-text">{serviceDateText}</span>
                     </td>
-                    <td className="table-cell table-cell-center">
+                    <td className="table-cell table-cell-center table-cell-hide-md">
                       <span className="customer-value">{numberOfServices}</span>
                     </td>
-                    <td className="table-cell table-cell-center">
+                    <td className="table-cell table-cell-center table-cell-hide-md">
                       <span className="customer-value">
                         {totalSpent > 0 ? `$${totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
                       </span>
                     </td>
-                    <td className="table-cell table-cell-center">
+                    <td className="table-cell table-cell-center table-cell-hide-md">
                       <div className="source-badge-container">
                         <SourceBadge source={customer.source} />
                       </div>
@@ -455,6 +455,7 @@ const CustomerDirectory = ({
                               </div>
                               <div className="add-service-footer">
                                 <button
+                                  type="button"
                                   className="add-service-button"
                                   onClick={(e) => {
                                     e.stopPropagation();

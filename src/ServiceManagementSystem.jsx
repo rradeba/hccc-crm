@@ -1,9 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import Components from './components';
+import './modal.css';
 
 const ServiceManagementSystem = () => {
   // Sample data from App.jsx
   const sampleLeads = [
+    {
+      id: 'lead-hc-000',
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      name: 'Sarah Johnson',
+      email: 'sarah.johnson@example.com',
+      phone: '(843) 555-0199',
+      address: '45 Market Street, Charleston, SC 29401',
+      source: 'Website',
+      service: ['Home/Business Exterior'],
+      status: 'Uncontacted',
+      dateAdded: new Date().toISOString().split('T')[0],
+      estimatedValue: 1200,
+      notes: 'New inquiry from website contact form',
+      estimateData: null
+    },
     {
       id: 'lead-hc-001',
       firstName: 'Emily',
@@ -190,11 +207,13 @@ const ServiceManagementSystem = () => {
       address: '12 Battery Park Ct, Charleston, SC 29401',
       source: 'Google Search',
       services: [
-        { type: 'Roof Softwash', date: '2024-10-20' },
-        { type: 'Gutter Brightening', date: '2024-12-05' }
+        { type: 'Roof Softwash', date: '2024-10-20', pricePaid: 850 },
+        { type: 'Gutter Brightening', date: '2024-12-05', pricePaid: 1040 },
+        { type: 'Home/Business Exterior', date: '2024-08-15', pricePaid: 1200 },
+        { type: 'Concrete Pressure Washing', date: '2024-06-10', pricePaid: 650 }
       ],
-      totalSpent: 1890,
-      serviceCount: 2,
+      totalSpent: 3740,
+      serviceCount: 4,
       rating: 4,
       reviewStatus: 'requested',
       estimateData: null
@@ -275,6 +294,25 @@ const ServiceManagementSystem = () => {
   const [modalType, setModalType] = useState('');
   const [editingItem, setEditingItem] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, type: '', id: null });
+  const [newLeadForm, setNewLeadForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    source: 'Website',
+    service: [],
+    estimatedValue: '',
+    notes: ''
+  });
+  const [newCustomerForm, setNewCustomerForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    source: 'Website'
+  });
   const [businessInfo, setBusinessInfo] = useState({
     address: '123 Main St, Charleston, SC 29401'
   });
@@ -333,13 +371,6 @@ const ServiceManagementSystem = () => {
   const [leadFollowupDuration, setLeadFollowupDuration] = useState('days');
   const [leadFollowupDurationValue, setLeadFollowupDurationValue] = useState(30);
   const [leadFollowupDurationUnit, setLeadFollowupDurationUnit] = useState('days');
-  const [weatherIntegrationEnabled, setWeatherIntegrationEnabled] = useState(false);
-  const [dayBeforeJobEnabled, setDayBeforeJobEnabled] = useState(false);
-  const [dayBeforeJobTime, setDayBeforeJobTime] = useState('08:00');
-  const [dayBeforeJobInstructions, setDayBeforeJobInstructions] = useState('');
-  const [dayOfJobEnabled, setDayOfJobEnabled] = useState(false);
-  const [dayOfJobTime, setDayOfJobTime] = useState('07:00');
-  const [dayOfJobInstructions, setDayOfJobInstructions] = useState('');
   const [editingStepId, setEditingStepId] = useState(null);
   const [promotions, setPromotions] = useState([{
     id: Date.now(),
@@ -462,10 +493,10 @@ const ServiceManagementSystem = () => {
   const [openPricingDropdown, setOpenPricingDropdown] = useState(null);
   const [openPricingStructureDropdown, setOpenPricingStructureDropdown] = useState({});
   const [pricingStructureOptions] = useState({
-    rates: ['Hourly', 'Per Item', 'Per Job', 'Per Linear Foot', 'Per Square Foot'].sort(),
+    rates: ['Per Hour', 'Per Item', 'Per Job', 'Per Linear Foot', 'Per Square Foot'].sort(),
     expenses: ['Chemicals and detergents', 'Travel', 'Vehicle and Fuel', 'Water and Filtration'].sort(),
     multipliers: ['Commercial Job', 'Per Building Story', 'Taxes'].sort(),
-    fees: ['Administrative', 'High Risk', 'Unique Surface', 'Urgent Job/Day Of Multiplier', 'Waste Disposal Fee'].sort()
+    fees: ['Administrative', 'Estimate', 'High Risk', 'Unique Surface', 'Urgent Job/Day Of Multiplier', 'Waste Disposal Fee'].sort()
   });
   
   // Custom pricing structure options state
@@ -561,7 +592,42 @@ const ServiceManagementSystem = () => {
   };
 
   const getLeadActionButton = (lead) => {
-    return { label: 'Estimate', onClick: () => handleEstimateClick(lead) };
+    if (lead.status === 'Rejected') {
+      return null; // No actions for rejected leads
+    }
+
+    // Determine action based on lead status and data
+    if (lead.status === 'Completed') {
+      return { 
+        label: 'Send Thank You', 
+        color: 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100',
+        onClick: () => handleEstimateClick(lead)
+      };
+    } else if (lead.status === 'Contract Signed' || lead.status === 'Scheduled' || lead.status === 'In Progress') {
+      return { 
+        label: 'Send Invoice', 
+        color: 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100',
+        onClick: () => handleEstimateClick(lead)
+      };
+    } else if (lead.estimateData || lead.status === 'Estimate Sent') {
+      return { 
+        label: 'Send Contract', 
+        color: 'bg-purple-50 text-purple-700 border-purple-300 hover:bg-purple-100',
+        onClick: () => handleEstimateClick(lead)
+      };
+    } else if (lead.status === 'New' || lead.status === 'Contacted') {
+      return { 
+        label: 'Send Estimate', 
+        color: 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100',
+        onClick: () => handleEstimateClick(lead)
+      };
+    } else {
+      return { 
+        label: 'Follow Up', 
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100',
+        onClick: () => handleEstimateClick(lead)
+      };
+    }
   };
 
   const openModal = (type) => {
@@ -595,6 +661,7 @@ const ServiceManagementSystem = () => {
   };
 
   // Filter leads into categories
+  const uncontactedLeads = leads.filter(lead => lead.status === 'Uncontacted');
   const readyJobs = leads.filter(lead => lead.status === 'New' || lead.status === 'Contacted' || lead.status === 'Estimate Sent' || lead.status === 'Follow Up');
   const inProgress = leads.filter(lead => lead.status === 'Scheduled' || lead.status === 'In Progress' || lead.status === 'Contract Signed');
   const stopped = leads.filter(lead => lead.status === 'Paused');
@@ -622,6 +689,7 @@ const ServiceManagementSystem = () => {
 
         {activeTab === 'leads' && (
           <Components.Leads
+            uncontactedLeads={uncontactedLeads}
             readyJobs={readyJobs}
             inProgress={inProgress}
             stopped={stopped}
@@ -664,6 +732,12 @@ const ServiceManagementSystem = () => {
           />
         )}
 
+        {activeTab === 'customerCorrespondence' && (
+          <Components.CustomerCorrespondence
+            customers={customers}
+          />
+        )}
+
         {activeTab === 'aiAgent' && (
           <Components.MyAgent
             agentFlowSteps={agentFlowSteps}
@@ -690,23 +764,10 @@ const ServiceManagementSystem = () => {
             setLeadFollowupDurationValue={setLeadFollowupDurationValue}
             leadFollowupDurationUnit={leadFollowupDurationUnit}
             setLeadFollowupDurationUnit={setLeadFollowupDurationUnit}
-            weatherIntegrationEnabled={weatherIntegrationEnabled}
-            setWeatherIntegrationEnabled={setWeatherIntegrationEnabled}
-            dayBeforeJobEnabled={dayBeforeJobEnabled}
-            setDayBeforeJobEnabled={setDayBeforeJobEnabled}
-            dayBeforeJobTime={dayBeforeJobTime}
-            setDayBeforeJobTime={setDayBeforeJobTime}
-            dayBeforeJobInstructions={dayBeforeJobInstructions}
-            setDayBeforeJobInstructions={setDayBeforeJobInstructions}
-            dayOfJobEnabled={dayOfJobEnabled}
-            setDayOfJobEnabled={setDayOfJobEnabled}
-            dayOfJobTime={dayOfJobTime}
-            setDayOfJobTime={setDayOfJobTime}
-            dayOfJobInstructions={dayOfJobInstructions}
-            setDayOfJobInstructions={setDayOfJobInstructions}
             editingStepId={editingStepId}
             setEditingStepId={setEditingStepId}
             promotions={promotions}
+            setPromotions={setPromotions}
             softWashingServices={softWashingServices}
             customSoftWashingServices={customSoftWashingServices}
             pressureWashingServices={pressureWashingServices}
@@ -714,6 +775,8 @@ const ServiceManagementSystem = () => {
             specialtyCleaningServices={specialtyCleaningServices}
             customSpecialtyCleaningServices={customSpecialtyCleaningServices}
             updateFlowStep={updateFlowStep}
+            companyInfo={companyInfo}
+            updateCompanyInfo={updateCompanyInfo}
           />
         )}
 
@@ -755,6 +818,496 @@ const ServiceManagementSystem = () => {
           />
         )}
       </div>
+
+      {/* Modal for Add Lead and Add Customer */}
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                {modalType === 'addLead' ? 'Add New Lead' : modalType === 'addCustomer' ? 'Add New Customer' : ''}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="modal-close"
+                aria-label="Close modal"
+              >
+                <span>×</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              {modalType === 'addLead' && (
+                <div style={{ padding: '1.5rem' }}>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!newLeadForm.firstName || !newLeadForm.lastName) {
+                      alert('Please fill in at least first name and last name');
+                      return;
+                    }
+                    const newLead = {
+                      id: `lead-hc-${Date.now()}`,
+                      firstName: newLeadForm.firstName,
+                      lastName: newLeadForm.lastName,
+                      name: `${newLeadForm.firstName} ${newLeadForm.lastName}`,
+                      email: newLeadForm.email || '',
+                      phone: newLeadForm.phone || '',
+                      address: newLeadForm.address || '',
+                      source: newLeadForm.source || 'Website',
+                      service: Array.isArray(newLeadForm.service) ? newLeadForm.service : (newLeadForm.service ? [newLeadForm.service] : []),
+                      status: 'Uncontacted',
+                      dateAdded: new Date().toISOString().split('T')[0],
+                      estimatedValue: newLeadForm.estimatedValue ? parseFloat(newLeadForm.estimatedValue) : null,
+                      notes: newLeadForm.notes || '',
+                      estimateData: null
+                    };
+                    setLeads([newLead, ...leads]);
+                    setNewLeadForm({
+                      firstName: '',
+                      lastName: '',
+                      email: '',
+                      phone: '',
+                      address: '',
+                      source: 'Website',
+                      service: [],
+                      estimatedValue: '',
+                      notes: ''
+                    });
+                    setIsModalOpen(false);
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          First Name <span style={{ color: 'red' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newLeadForm.firstName}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, firstName: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter first name"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Last Name <span style={{ color: 'red' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newLeadForm.lastName}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, lastName: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter last name"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={newLeadForm.email}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, email: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter email address"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={newLeadForm.phone}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, phone: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Address
+                        </label>
+                        <input
+                          type="text"
+                          value={newLeadForm.address}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, address: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter address"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Lead Source
+                        </label>
+                        <select
+                          value={newLeadForm.source}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, source: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value="Website">Website</option>
+                          <option value="Google Search">Google Search</option>
+                          <option value="Facebook Ads">Facebook Ads</option>
+                          <option value="Instagram">Instagram</option>
+                          <option value="Referral">Referral</option>
+                          <option value="Repeat Customer">Repeat Customer</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Service Type
+                        </label>
+                        <select
+                          value={Array.isArray(newLeadForm.service) && newLeadForm.service.length > 0 ? newLeadForm.service[0] : newLeadForm.service || ''}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, service: e.target.value ? [e.target.value] : [] })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value="">Select a service</option>
+                          <option value="Home/Business Exterior">Home/Business Exterior</option>
+                          <option value="Concrete Pressure Washing">Concrete Pressure Washing</option>
+                          <option value="Roof Softwash">Roof Softwash</option>
+                          <option value="Gutter Brightening">Gutter Brightening</option>
+                          <option value="Deck/Fence Cleaning">Deck/Fence Cleaning</option>
+                          <option value="Window Cleaning">Window Cleaning</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Estimated Value ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={newLeadForm.estimatedValue}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, estimatedValue: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter estimated value"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Notes
+                        </label>
+                        <textarea
+                          value={newLeadForm.notes}
+                          onChange={(e) => setNewLeadForm({ ...newLeadForm, notes: e.target.value })}
+                          rows={4}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            resize: 'vertical'
+                          }}
+                          placeholder="Enter any additional notes..."
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsModalOpen(false);
+                            setNewLeadForm({
+                              firstName: '',
+                              lastName: '',
+                              email: '',
+                              phone: '',
+                              address: '',
+                              source: 'Website',
+                              service: [],
+                              estimatedValue: '',
+                              notes: ''
+                            });
+                          }}
+                          style={{
+                            padding: '0.625rem 1.25rem',
+                            backgroundColor: 'white',
+                            color: 'rgb(55 65 81)',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          style={{
+                            padding: '0.625rem 1.25rem',
+                            backgroundColor: 'rgb(37 99 235)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Add Lead
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+              {modalType === 'addCustomer' && (
+                <div style={{ padding: '1.5rem' }}>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!newCustomerForm.firstName || !newCustomerForm.lastName) {
+                      alert('Please fill in at least first name and last name');
+                      return;
+                    }
+                    const newCustomer = {
+                      id: `cust-hc-${Date.now()}`,
+                      firstName: newCustomerForm.firstName,
+                      lastName: newCustomerForm.lastName,
+                      name: `${newCustomerForm.firstName} ${newCustomerForm.lastName}`,
+                      email: newCustomerForm.email || '',
+                      phone: newCustomerForm.phone || '',
+                      address: newCustomerForm.address || '',
+                      source: newCustomerForm.source || 'Website',
+                      services: [],
+                      totalSpent: 0,
+                      serviceCount: 0,
+                      rating: null,
+                      reviewStatus: 'not_given',
+                      estimateData: null
+                    };
+                    setCustomers([newCustomer, ...customers]);
+                    setNewCustomerForm({
+                      firstName: '',
+                      lastName: '',
+                      email: '',
+                      phone: '',
+                      address: '',
+                      source: 'Website'
+                    });
+                    setIsModalOpen(false);
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          First Name <span style={{ color: 'red' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newCustomerForm.firstName}
+                          onChange={(e) => setNewCustomerForm({ ...newCustomerForm, firstName: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter first name"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Last Name <span style={{ color: 'red' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newCustomerForm.lastName}
+                          onChange={(e) => setNewCustomerForm({ ...newCustomerForm, lastName: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter last name"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={newCustomerForm.email}
+                          onChange={(e) => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter email address"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={newCustomerForm.phone}
+                          onChange={(e) => setNewCustomerForm({ ...newCustomerForm, phone: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Address
+                        </label>
+                        <input
+                          type="text"
+                          value={newCustomerForm.address}
+                          onChange={(e) => setNewCustomerForm({ ...newCustomerForm, address: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem'
+                          }}
+                          placeholder="Enter address"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: 'rgb(55 65 81)' }}>
+                          Customer Source
+                        </label>
+                        <select
+                          value={newCustomerForm.source}
+                          onChange={(e) => setNewCustomerForm({ ...newCustomerForm, source: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.625rem 0.75rem',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value="Website">Website</option>
+                          <option value="Google Search">Google Search</option>
+                          <option value="Facebook Ads">Facebook Ads</option>
+                          <option value="Instagram">Instagram</option>
+                          <option value="Referral">Referral</option>
+                          <option value="Repeat Customer">Repeat Customer</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsModalOpen(false);
+                            setNewCustomerForm({
+                              firstName: '',
+                              lastName: '',
+                              email: '',
+                              phone: '',
+                              address: '',
+                              source: 'Website'
+                            });
+                          }}
+                          style={{
+                            padding: '0.625rem 1.25rem',
+                            backgroundColor: 'white',
+                            color: 'rgb(55 65 81)',
+                            border: '1px solid rgb(209 213 219)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          style={{
+                            padding: '0.625rem 1.25rem',
+                            backgroundColor: 'rgb(37 99 235)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Add Customer
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

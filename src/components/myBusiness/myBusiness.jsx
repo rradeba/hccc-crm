@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Phone, ChevronDown, Plus, X, Check, FileText, FileSignature, Receipt, HeartHandshake, Clock, Award, Shield, ShieldCheck, MapPin, Star, Search, Trash2 } from 'lucide-react';
+import { Phone, ChevronDown, Plus, X, Check, FileText, FileSignature, Receipt, HeartHandshake, Clock, Award, Shield, ShieldCheck, MapPin, Star, Search, Trash2, Users } from 'lucide-react';
 import './myBusiness.css';
 
 const MyBusiness = ({
@@ -41,9 +41,11 @@ const MyBusiness = ({
   ];
 
   // Collapsed section states
+  const [collapsedReviewsTestimonials, setCollapsedReviewsTestimonials] = useState(true);
   const [collapsedBrandIdentity, setCollapsedBrandIdentity] = useState(true);
   const [collapsedAreasServed, setCollapsedAreasServed] = useState(true);
   const [collapsedOperatingHours, setCollapsedOperatingHours] = useState(true);
+  const [collapsedStaff, setCollapsedStaff] = useState(true);
   const [collapsedCertifications, setCollapsedCertifications] = useState(true);
   const [collapsedInsurance, setCollapsedInsurance] = useState(true);
   const [collapsedGuaranteeWarranty, setCollapsedGuaranteeWarranty] = useState(true);
@@ -1156,137 +1158,34 @@ const MyBusiness = ({
                   )}
                 </div>
 
-                {/* Brand Identity */}
+                {/* Staff */}
                 <div 
-                  className="collapsible-section"
-                  onClick={() => setCollapsedBrandIdentity(!collapsedBrandIdentity)}
+                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+                  onClick={() => setCollapsedStaff(!collapsedStaff)}
                 >
-                  <div className={`collapsible-header ${!collapsedBrandIdentity ? 'collapsible-header-expanded' : ''}`}>
-                    <div className="section-icon-wrapper">
-                      <Star className="section-icon" />
+                  <div className={`flex items-center gap-3 ${!collapsedStaff ? 'mb-6' : ''}`}>
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-5 h-5 text-slate-600" />
                     </div>
-                    <h3 className="section-title">Brand Identity</h3>
-                    {(() => {
-                      const { completed, total } = getBrandIdentityCompletionLocal();
-                      const isComplete = completed === total;
-                      return (
-                        <div className={`completion-badge ${isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                          <span>{completed}/{total}</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="collapsible-chevron-wrapper">
+                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Staff</h3>
+                    <div className="flex items-center justify-center">
                       <ChevronDown 
-                        className={`collapsible-chevron ${!collapsedBrandIdentity ? 'collapsible-chevron-expanded' : ''}`}
+                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedStaff ? 'transform rotate-180' : ''}`}
                       />
                     </div>
                   </div>
                   
-                  {!collapsedBrandIdentity && (
-                    <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
-                      {/* Brand Identity Content - Gray Box */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Company Slogan</label>
-                        <input
-                          type="text"
-                          value={companyInfo.companySlogan}
-                          onChange={(e) => updateCompanyInfo('companySlogan', e.target.value)}
-                          placeholder="Enter your company slogan"
-                          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Years</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={companyInfo.experienceYears}
-                              onChange={(e) => updateCompanyInfo('experienceYears', e.target.value)}
-                              placeholder="0"
-                              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Months</label>
-                            <input
-                              type="number"
-                              min="0"
-                              max="11"
-                              value={companyInfo.experienceMonths}
-                              onChange={(e) => updateCompanyInfo('experienceMonths', e.target.value)}
-                              placeholder="0"
-                              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Jobs Completed</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={companyInfo.jobsCompleted}
-                              onChange={(e) => updateCompanyInfo('jobsCompleted', e.target.value)}
-                              placeholder="0"
-                              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                            />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Company Qualities - NOT wrapped in gray box */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Company Qualities (select 3)</label>
-                        <div className="flex flex-wrap gap-3">
-                          {[...companyQualities, ...customCompanyQualities].map((quality) => {
-                            const isSelected = companyInfo.whatMakesDifferent.includes(quality);
-                            const isDisabled = !isSelected && companyInfo.whatMakesDifferent.length >= 3;
-                            return (
-                              <button
-                                key={quality}
-                                type="button"
-                                onClick={() => toggleCompanyQuality(quality)}
-                                disabled={isDisabled}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                  isSelected
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                    : isDisabled
-                                    ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                } shadow-sm hover:shadow-md`}
-                              >
-                                <span>{quality}</span>
-                              </button>
-                            );
-                          })}
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
-                            <input
-                              type="text"
-                              value={newCompanyQuality}
-                              onChange={(e) => setNewCompanyQuality(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && addCustomCompanyQuality()}
-                              placeholder="Add quality..."
-                              className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-32"
-                            />
-                            <button
-                              type="button"
-                              onClick={addCustomCompanyQuality}
-                              className="text-blue-600 hover:text-blue-700"
-                              disabled={!newCompanyQuality.trim()}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        {companyInfo.whatMakesDifferent.length > 0 && (
-                          <p className="mt-3 text-xs text-slate-500">
-                            Selected: {companyInfo.whatMakesDifferent.length} of 3
-                          </p>
-                        )}
+                  {!collapsedStaff && (
+                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Select staff members
+                      </p>
+                      <div className="space-y-3">
+                        <select
+                          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                        >
+                          <option value="">Select staff member...</option>
+                        </select>
                       </div>
                     </div>
                   )}
@@ -1551,19 +1450,172 @@ const MyBusiness = ({
                     </div>
                   )}
                 </div>
-
-                {/* Online Reviews */}
+                
+                {/* Reviews and Testimonials */}
                 <div 
                   className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedOnlineReviews(!collapsedOnlineReviews)}
+                  onClick={() => setCollapsedReviewsTestimonials(!collapsedReviewsTestimonials)}
                 >
-                  <div className={`flex items-center gap-3 ${!collapsedOnlineReviews ? 'mb-6' : ''}`}>
+                  <div className={`flex items-center gap-3 ${!collapsedReviewsTestimonials ? 'mb-6' : ''}`}>
                     <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
                       <Star className="w-5 h-5 text-slate-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Online Reviews</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Reviews and Testimonials</h3>
+                    <div className="flex items-center justify-center">
+                      <ChevronDown 
+                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedReviewsTestimonials ? 'transform rotate-180' : ''}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {!collapsedReviewsTestimonials && (
+                    <div className="section-spacing" onClick={(e) => e.stopPropagation()}>
+                      {/* Customer Reviews Section */}
+                      <div className="reviews-section">
+                        <h5 className="reviews-title">Customer Reviews</h5>
+                        <div className="section-spacing">
+                            {(companyInfo.customerReviews || []).map((review, index) => (
+                              <div key={index} className="review-item">
+                                <textarea
+                                  value={review || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = [...(companyInfo.customerReviews || [])];
+                                    updatedReviews[index] = e.target.value;
+                                    updateCompanyInfo('customerReviews', updatedReviews);
+                                  }}
+                                  rows={4}
+                                  placeholder="Enter a customer review..."
+                                  className="review-textarea review-textarea-md"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const updatedReviews = (companyInfo.customerReviews || []).filter((_, i) => i !== index);
+                                    updateCompanyInfo('customerReviews', updatedReviews);
+                                  }}
+                                  className="review-remove-button"
+                                  type="button"
+                                >
+                                  <X className="review-remove-icon" />
+                                </button>
+                              </div>
+                            ))}
+                            
+                            {(companyInfo.customerReviews || []).length < 3 && (
+                              <button
+                                onClick={() => {
+                                  const updatedReviews = [...(companyInfo.customerReviews || []), ''];
+                                  updateCompanyInfo('customerReviews', updatedReviews);
+                                }}
+                                className="add-review-button"
+                                type="button"
+                              >
+                                <Plus className="add-review-icon" />
+                                Add Review {(companyInfo.customerReviews || []).length > 0 ? `(${(companyInfo.customerReviews || []).length}/3)` : '(0/3)'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      
+                      {/* Online Reviews Section */}
+                      <div className="reviews-section mt-6 pt-6 border-t border-slate-200">
+                        <h5 className="reviews-title">Online Reviews</h5>
+                        <div className="space-y-4 mt-4">
+                          {[
+                            { key: 'google', label: 'Google' },
+                            { key: 'facebook', label: 'Facebook' },
+                            { key: 'nextdoor', label: 'Nextdoor' },
+                            { key: 'yelp', label: 'Yelp' },
+                            { key: 'homeadvisor', label: 'HomeAdvisor' }
+                          ].map((platform) => (
+                            <div key={platform.key} className="grid grid-cols-4 gap-4 items-center p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                              <div className="font-semibold text-gray-900 min-w-[120px]">
+                                {platform.label}
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Avg Rating (out of 5)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="5"
+                                  step="0.1"
+                                  value={companyInfo.onlineReviews?.[platform.key]?.averageRating || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = {
+                                      ...(companyInfo.onlineReviews || {}),
+                                      [platform.key]: {
+                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
+                                        averageRating: e.target.value
+                                      }
+                                    };
+                                    updateCompanyInfo('onlineReviews', updatedReviews);
+                                  }}
+                                  placeholder="0.0"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Total Reviews</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={companyInfo.onlineReviews?.[platform.key]?.totalReviews || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = {
+                                      ...(companyInfo.onlineReviews || {}),
+                                      [platform.key]: {
+                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
+                                        totalReviews: e.target.value
+                                      }
+                                    };
+                                    updateCompanyInfo('onlineReviews', updatedReviews);
+                                  }}
+                                  placeholder="0"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">5-Star Reviews</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={companyInfo.onlineReviews?.[platform.key]?.fiveStarReviews || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = {
+                                      ...(companyInfo.onlineReviews || {}),
+                                      [platform.key]: {
+                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
+                                        fiveStarReviews: e.target.value
+                                      }
+                                    };
+                                    updateCompanyInfo('onlineReviews', updatedReviews);
+                                  }}
+                                  placeholder="0"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Brand Identity */}
+                <div 
+                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+                  onClick={() => setCollapsedBrandIdentity(!collapsedBrandIdentity)}
+                >
+                  <div className={`flex items-center gap-3 ${!collapsedBrandIdentity ? 'mb-6' : ''}`}>
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                      <Star className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Brand Identity</h3>
                     {(() => {
-                      const { completed, total } = getOnlineReviewsCompletionLocal();
+                      const { completed, total } = getBrandIdentityCompletionLocal();
                       const isComplete = completed === total;
                       return (
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
@@ -1575,91 +1627,115 @@ const MyBusiness = ({
                     })()}
                     <div className="flex items-center justify-center">
                       <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedOnlineReviews ? 'transform rotate-180' : ''}`}
+                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedBrandIdentity ? 'transform rotate-180' : ''}`}
                       />
                     </div>
                   </div>
                   
-                  {!collapsedOnlineReviews && (
-                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-                      {[
-                        { key: 'google', label: 'Google' },
-                        { key: 'facebook', label: 'Facebook' },
-                        { key: 'nextdoor', label: 'Nextdoor' },
-                        { key: 'yelp', label: 'Yelp' },
-                        { key: 'homeadvisor', label: 'HomeAdvisor' }
-                      ].map((platform) => (
-                        <div key={platform.key} className="grid grid-cols-4 gap-4 items-center p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                          <div className="font-semibold text-gray-900 min-w-[120px]">
-                            {platform.label}
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Avg Rating (out of 5)</label>
-                            <input
-                              type="number"
-                              min="0"
-                              max="5"
-                              step="0.1"
-                              value={companyInfo.onlineReviews?.[platform.key]?.averageRating || ''}
-                              onChange={(e) => {
-                                const updatedReviews = {
-                                  ...companyInfo.onlineReviews,
-                                  [platform.key]: {
-                                    ...companyInfo.onlineReviews[platform.key],
-                                    averageRating: e.target.value
-                                  }
-                                };
-                                updateCompanyInfo('onlineReviews', updatedReviews);
-                              }}
-                              placeholder="0.0"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Total Reviews</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={companyInfo.onlineReviews?.[platform.key]?.totalReviews || ''}
-                              onChange={(e) => {
-                                const updatedReviews = {
-                                  ...companyInfo.onlineReviews,
-                                  [platform.key]: {
-                                    ...companyInfo.onlineReviews[platform.key],
-                                    totalReviews: e.target.value
-                                  }
-                                };
-                                updateCompanyInfo('onlineReviews', updatedReviews);
-                              }}
-                              placeholder="0"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">5-Star Reviews</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={companyInfo.onlineReviews?.[platform.key]?.fiveStarReviews || ''}
-                              onChange={(e) => {
-                                const updatedReviews = {
-                                  ...companyInfo.onlineReviews,
-                                  [platform.key]: {
-                                    ...companyInfo.onlineReviews[platform.key],
-                                    fiveStarReviews: e.target.value
-                                  }
-                                };
-                                updateCompanyInfo('onlineReviews', updatedReviews);
-                              }}
-                              placeholder="0"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                            />
+                  {!collapsedBrandIdentity && (
+                    <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Company Slogan</label>
+                          <input
+                            type="text"
+                            value={companyInfo.companySlogan || ''}
+                            onChange={(e) => updateCompanyInfo('companySlogan', e.target.value)}
+                            placeholder="Enter your company slogan"
+                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Years</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={companyInfo.experienceYears || ''}
+                                onChange={(e) => updateCompanyInfo('experienceYears', e.target.value)}
+                                placeholder="0"
+                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Months</label>
+                              <input
+                                type="number"
+                                min="0"
+                                max="11"
+                                value={companyInfo.experienceMonths || ''}
+                                onChange={(e) => updateCompanyInfo('experienceMonths', e.target.value)}
+                                placeholder="0"
+                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Jobs Completed</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={companyInfo.jobsCompleted || ''}
+                                onChange={(e) => updateCompanyInfo('jobsCompleted', e.target.value)}
+                                placeholder="0"
+                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
+                              />
+                            </div>
                           </div>
                         </div>
-                      ))}
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-3">Company Qualities (select 3)</label>
+                          <div className="flex flex-wrap gap-3">
+                            {[...companyQualities, ...customCompanyQualities].map((quality) => {
+                              const isSelected = (companyInfo.whatMakesDifferent || []).includes(quality);
+                              const isDisabled = !isSelected && (companyInfo.whatMakesDifferent || []).length >= 3;
+                              return (
+                                <button
+                                  key={quality}
+                                  type="button"
+                                  onClick={() => toggleCompanyQuality(quality)}
+                                  disabled={isDisabled}
+                                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                    isSelected
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                      : isDisabled
+                                      ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
+                                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                  } shadow-sm hover:shadow-md`}
+                                >
+                                  <span>{quality}</span>
+                                </button>
+                              );
+                            })}
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
+                              <input
+                                type="text"
+                                value={newCompanyQuality}
+                                onChange={(e) => setNewCompanyQuality(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addCustomCompanyQuality()}
+                                placeholder="Add quality..."
+                                className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-32"
+                              />
+                              <button
+                                type="button"
+                                onClick={addCustomCompanyQuality}
+                                className="text-blue-600 hover:text-blue-700"
+                                disabled={!newCompanyQuality.trim()}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          {(companyInfo.whatMakesDifferent || []).length > 0 && (
+                            <p className="mt-3 text-xs text-slate-500">
+                              Selected: {(companyInfo.whatMakesDifferent || []).length} of 3
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

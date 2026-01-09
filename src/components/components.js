@@ -7,6 +7,7 @@ import Leads from './leads/leads.jsx';
 import MyAgent from './myAgent/myAgent.jsx';
 import MyBusiness from './myBusiness/myBusiness.jsx';
 import PricingTool from './pricingTool/pricingTool.jsx';
+import CustomerCorrespondence from './customerCorrespondence/customerCorrespondence.jsx';
 
 // Export all components as a singular object
 const Components = {
@@ -17,7 +18,8 @@ const Components = {
   Leads,
   MyAgent,
   MyBusiness,
-  PricingTool
+  PricingTool,
+  CustomerCorrespondence
 };
 
 export default Components;

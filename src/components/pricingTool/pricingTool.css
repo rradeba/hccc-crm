@@ -1,5 +1,29 @@
 /* Pricing Tool Component Styles */
 
+/* Subtle shadow for formula elements */
+.shadow-xs {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+}
+
+/* Pricing Formula Divider */
+.pricing-formula-divider {
+  width: 100%;
+  height: 1px;
+  background-color: rgb(226 232 240);
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Pricing Formula Title */
+.pricing-formula-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(55 65 81);
+  margin-bottom: 0.75rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 /* Main Container */
 .pricing-tool-container {
   display: flex;
@@ -39,7 +63,7 @@
 
 /* Format Row */
 .format-row {
-  border: 1px solid rgb(226 232 240);
+  border: 2px solid rgb(203 213 225);
   border-radius: 1rem;
   padding-left: 1rem;
   padding-right: 1rem;
@@ -50,22 +74,25 @@
   flex-direction: column;
   gap: 0.75rem;
   position: relative;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
 }
 
 /* Delete Button */
 .format-delete-button {
   position: absolute;
-  top: 0.75rem;
+  bottom: 0.75rem;
   right: 0.75rem;
-  padding: 0.375rem;
+  padding: 0.5rem;
   color: rgb(156 163 175);
   transition-property: color, background-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
   border-radius: 0.375rem;
-  background: transparent;
-  border: none;
+  background: rgb(255 255 255);
+  border: 1px solid rgb(226 232 240);
   cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
 
 .format-delete-button:hover {
@@ -80,6 +107,9 @@
 
 /* Service Header */
 .service-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid rgb(203 213 225);
 }
@@ -94,17 +124,50 @@
 .service-tag {
   display: inline-flex;
   align-items: center;
+  position: relative;
   padding-left: 1rem;
-  padding-right: 1rem;
+  padding-right: 1.75rem;
   padding-top: 0.375rem;
   padding-bottom: 0.375rem;
-  background-color: rgb(239 246 255);
-  color: rgb(29 78 216);
+  background-color: rgb(243 244 246);
+  color: rgb(55 65 81);
   font-size: 1.125rem;
   line-height: 1.75rem;
   border-radius: 0.375rem;
-  border: 1px solid rgb(191 219 254);
+  border: 1px solid rgb(226 232 240);
   font-weight: 500;
+}
+
+.service-tag-delete {
+  position: absolute;
+  top: 0.125rem;
+  right: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 0.125rem;
+  transition: background-color 0.15s;
+}
+
+.service-tag-delete:hover {
+  background-color: rgb(229 231 235);
+}
+
+.service-tag-delete-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: rgb(107 114 128);
+  stroke-width: 2.5;
+}
+
+.service-tag-delete:hover .service-tag-delete-icon {
+  color: rgb(55 65 81);
 }
 
 /* Add Service Button */
@@ -123,22 +186,37 @@
   transition-property: background-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
-  border: 1px solid rgb(191 219 254);
+  border: 1px solid rgb(226 232 240);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  outline: none;
 }
 
 .add-service-button:hover {
-  background-color: rgb(219 234 254);
+  background-color: rgb(241 245 249);
+}
+
+.add-service-button:focus {
+  outline: 2px solid rgb(156 163 175);
+  outline-offset: 2px;
+}
+
+.add-service-button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.add-service-button:focus-visible {
+  outline: 2px solid rgb(156 163 175);
+  outline-offset: 2px;
 }
 
 .add-service-icon {
   width: 1.25rem;
   height: 1.25rem;
-  color: rgb(29 78 216);
+  color: rgb(71 85 105);
   display: block;
   flex-shrink: 0;
   stroke-width: 2.5;
@@ -242,10 +320,230 @@
 
 /* Pricing Structure */
 .pricing-structure-container {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+/* Plus signs between columns - hidden on small screens */
+.pricing-plus-sign {
+  display: none !important;
+}
+
+/* Section cards in grid layout - ensure full width and override flex-1 */
+.pricing-structure-container > div.relative {
+  width: 100%;
+  flex: none !important;
+}
+
+/* On larger screens, switch to flex layout with 4 columns */
+@media (min-width: 1024px) {
+  .pricing-structure-container {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .pricing-plus-sign {
+    display: flex !important;
+    flex-shrink: 0;
+  }
+  
+  /* Section cards in flex layout */
+  .pricing-structure-container > div.relative {
+    flex: 1 !important;
+    min-width: 0;
+  }
+}
+
+/* Selected items container - prevent overflow */
+.selected-items-panel {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Selected item rows - ensure they don't overflow */
+.selected-item-row {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  background-color: rgb(239 246 255) !important;
+  border-color: rgb(226 232 240) !important;
+  color: rgb(37 99 235) !important;
+}
+
+/* Input fields within selected items - allow expansion for larger numbers */
+.selected-item-row input[type="number"],
+.selected-item-row select {
+  min-width: 80px !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+/* Remove spinner arrows from number inputs */
+.selected-item-row input[type="number"]::-webkit-outer-spin-button,
+.selected-item-row input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.selected-item-row input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Ensure multipliers input doesn't overflow */
+.selected-item-row > div[style*="maxWidth"] {
+  overflow: hidden !important;
+}
+
+.selected-item-row > div[style*="maxWidth"] input {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure inputs don't overflow */
+.selected-item-row {
+  gap: 0.5rem !important; /* 8px gap */
+  width: 100% !important;
+}
+
+.selected-items-panel {
+  width: 100% !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 110px)"],
+.selected-item-row > div[style*="calc(100% - 100px)"],
+.selected-item-row > div[style*="calc(100% - 90px)"],
+.selected-item-row > div[style*="calc(100% - 80px)"] {
+  overflow: hidden !important;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 110px)"] {
+  max-width: calc(100% - 110px) !important;
+  width: calc(100% - 110px) !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 100px)"] {
+  max-width: calc(100% - 100px) !important;
+  width: calc(100% - 100px) !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 90px)"] {
+  max-width: calc(100% - 90px) !important;
+  width: calc(100% - 90px) !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 80px)"] {
+  max-width: calc(100% - 80px) !important;
+  width: calc(100% - 80px) !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 110px)"] input,
+.selected-item-row > div[style*="calc(100% - 110px)"] select,
+.selected-item-row > div[style*="calc(100% - 100px)"] input,
+.selected-item-row > div[style*="calc(100% - 100px)"] select,
+.selected-item-row > div[style*="calc(100% - 90px)"] input,
+.selected-item-row > div[style*="calc(100% - 90px)"] select,
+.selected-item-row > div[style*="calc(100% - 80px)"] input,
+.selected-item-row > div[style*="calc(100% - 80px)"] select {
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 110px)"] > div,
+.selected-item-row > div[style*="calc(100% - 100px)"] > div,
+.selected-item-row > div[style*="calc(100% - 90px)"] > div,
+.selected-item-row > div[style*="calc(100% - 80px)"] > div,
+.selected-item-row > div[style*="calc(100% - 50px)"] > div {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 50px)"] select {
+  width: 130% !important;
+  max-width: 130% !important;
+}
+
+.selected-item-row > div[style*="calc(100% - 110px)"] select {
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Flex containers within selected items */
+.selected-item-row > div {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Responsive adjustments for selected items when window narrows */
+@media (max-width: 1024px) {
+  .selected-item-row {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+  }
+  
+  .selected-item-title {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-bottom: 0.25rem;
+  }
+  
+  .selected-item-row > div[style*="maxWidth"] {
+    max-width: calc(100% - 30px) !important;
+    width: calc(100% - 30px) !important;
+    flex: 1 1 auto !important;
+  }
+  
+  .selected-item-row input[type="number"],
+  .selected-item-row select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .selected-item-row button[aria-label="Remove item"] {
+    align-self: center !important;
+    margin-left: 0.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .selected-item-row {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+  }
+  
+  .selected-item-title {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem;
+  }
+  
+  .selected-item-row > div[style*="maxWidth"] {
+    max-width: calc(100% - 30px) !important;
+    width: calc(100% - 30px) !important;
+    flex: 1 1 auto !important;
+  }
+  
+  .selected-item-row .flex.flex-col {
+    width: calc(100% - 30px) !important;
+    max-width: calc(100% - 30px) !important;
+  }
+  
+  .selected-item-row button[aria-label="Remove item"] {
+    align-self: center !important;
+    margin-left: 0.25rem;
+  }
 }
 
 .structure-label {
@@ -470,6 +768,29 @@
 
 .add-format-button:hover {
   background-color: rgb(29 78 216);
+}
+
+/* Add Item Button */
+.add-item-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background-color: rgb(37 99 235);
+  color: white;
+  border: 1px solid rgb(37 99 235);
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  cursor: pointer;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.add-item-button:hover {
+  background-color: rgb(29 78 216);
+  border-color: rgb(29 78 216);
 }
 
 .add-format-icon {

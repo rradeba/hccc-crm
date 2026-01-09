@@ -111,11 +111,14 @@
 /* Sort Controls */
 .sort-controls {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 
 .sort-select-container {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .sort-select {
@@ -131,6 +134,8 @@
   line-height: 1rem;
   font-weight: 500;
   color: rgb(55 65 81);
+  box-sizing: border-box;
+  min-height: 2.25rem;
 }
 
 .sort-select:focus {
@@ -165,16 +170,17 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
   background-color: white;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
   font-weight: 500;
   color: rgb(55 65 81);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
-  border: none;
   cursor: pointer;
+  box-sizing: border-box;
+  min-height: 2.25rem;
 }
 
 .sort-order-button:hover {
@@ -189,7 +195,6 @@
 /* Table Container */
 .table-container {
   padding: 1rem;
-  overflow-x: auto;
 }
 
 /* Table */
@@ -220,6 +225,21 @@
 
 .table-header-center {
   text-align: center;
+}
+
+/* Responsive column hiding */
+@media (max-width: 1200px) {
+  .table-header-cell-hide-md,
+  .table-cell-hide-md {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-header-cell-hide-sm,
+  .table-cell-hide-sm {
+    display: none;
+  }
 }
 
 /* Table Body */
@@ -479,85 +499,121 @@
   align-items: center;
   justify-content: center;
   gap: 0.125rem;
-  border-radius: 0;
-  border: 1px solid rgb(203 213 225);
+  border-radius: 0.5rem;
+  border: 1px solid rgb(71 85 105);
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 500;
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
-  background-color: white;
-  border: none;
+  background-color: rgb(241 245 249);
+  color: rgb(71 85 105);
   cursor: pointer;
 }
 
 .service-action-button:hover {
-  border-color: rgb(148 163 184);
+  background-color: rgb(226 232 240);
+  border-color: rgb(71 85 105);
 }
 
 .service-action-button-blue {
-  color: rgb(37 99 235);
-  background-color: rgb(239 246 255);
+  color: rgb(5 150 105);
+  background-color: rgb(241 245 249);
+  border: 1px solid rgb(5 150 105);
 }
 
 .service-action-button-blue:hover {
-  background-color: rgb(249 250 251);
+  background-color: rgb(226 232 240);
+  border-color: rgb(4 120 87);
+}
+
+.service-action-button-blue .service-action-icon {
+  color: rgb(5 150 105);
+}
+
+.service-action-button-blue .service-action-label {
+  color: rgb(5 150 105);
 }
 
 .service-action-button-purple {
   color: rgb(147 51 234);
-  background-color: rgb(250 245 255);
+  background-color: rgb(241 245 249);
+  border: 1px solid rgb(147 51 234);
 }
 
 .service-action-button-purple:hover {
-  background-color: rgb(249 250 251);
+  background-color: rgb(226 232 240);
+  border-color: rgb(126 34 206);
+}
+
+.service-action-button-purple .service-action-icon {
+  color: rgb(147 51 234);
+}
+
+.service-action-button-purple .service-action-label {
+  color: rgb(147 51 234);
 }
 
 .service-action-button-amber {
   color: rgb(217 119 6);
-  background-color: rgb(255 251 235);
+  background-color: rgb(241 245 249);
+  border: 1px solid rgb(217 119 6);
 }
 
 .service-action-button-amber:hover {
-  background-color: rgb(249 250 251);
+  background-color: rgb(226 232 240);
+  border-color: rgb(180 83 9);
+}
+
+.service-action-button-amber .service-action-icon {
+  color: rgb(217 119 6);
+}
+
+.service-action-button-amber .service-action-label {
+  color: rgb(217 119 6);
 }
 
 .service-action-icon {
   width: 1rem;
   height: 1rem;
+  color: rgb(71 85 105);
 }
 
 .service-action-label {
   font-size: 0.625rem;
   line-height: 1;
   font-weight: 500;
+  color: rgb(71 85 105);
 }
 
 /* Price Display */
 .price-display {
-  background-color: rgb(236 253 245);
+  background-color: rgb(241 245 249);
   border-radius: 0.5rem;
   padding-left: 0.75rem;
   padding-right: 0.75rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  border: 1px solid rgb(167 243 208);
+  height: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  border: 1px solid rgb(37 99 235);
   text-align: right;
   margin-left: 1.5rem;
 }
 
 .price-amount {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
+  font-size: 0.875rem;
+  line-height: 1.125rem;
   font-weight: 700;
-  color: rgb(5 150 105);
+  color: rgb(37 99 235);
 }
 
 .price-label {
-  font-size: 0.75rem;
-  line-height: 1rem;
-  color: rgb(5 150 105);
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+  color: rgb(37 99 235);
   font-weight: 500;
 }
 
@@ -623,16 +679,17 @@
   padding: 1rem;
   border-top: 1px solid rgb(226 232 240);
   flex-shrink: 0;
+  background-color: white;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .add-service-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
   background-color: rgb(37 99 235);
   color: white;
   border-radius: 0.5rem;
@@ -645,15 +702,28 @@
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   border: none;
   cursor: pointer;
+  white-space: nowrap;
+  min-width: auto;
 }
 
 .add-service-button:hover {
   background-color: rgb(29 78 216);
 }
 
+.add-service-button:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgb(37 99 235), 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.add-service-button:active {
+  background-color: rgb(30 64 175);
+}
+
 .add-service-icon {
   width: 1rem;
   height: 1rem;
+  flex-shrink: 0;
 }
 
 /* Empty Customers Message */

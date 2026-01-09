@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Calendar, Users, TrendingUp, Bell, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { DollarSign, Calendar, Users, TrendingUp, Bell, Star, ChevronLeft, ChevronRight, Percent } from 'lucide-react';
 import './dashboard.css';
 
 const Dashboard = ({ 
@@ -74,6 +74,21 @@ const Dashboard = ({
           return jobDate <= today && job.status !== 'Completed';
         }).length;
 
+        // Calculate Conversion Rate
+        // Conversion rate = (Leads that became customers or jobs) / Total leads
+        const totalLeads = leads.length;
+        const convertedLeads = leads.filter(lead => {
+          // A lead is considered converted if:
+          // 1. It has a status indicating conversion (Contract Signed, Scheduled, In Progress, Completed)
+          // 2. Or if there's a matching customer
+          const convertedStatuses = ['Contract Signed', 'Scheduled', 'In Progress', 'Completed'];
+          return convertedStatuses.includes(lead.status);
+        }).length;
+        
+        const conversionRate = totalLeads > 0 
+          ? ((convertedLeads / totalLeads) * 100).toFixed(1)
+          : '0.0';
+
         return (
           <div className="metrics-grid">
             {/* New Leads Card */}
@@ -110,14 +125,16 @@ const Dashboard = ({
               <p className="metric-value">${monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             </div>
 
-            {/* Blank Fourth Stat Card */}
+            {/* Conversion Rate Card */}
             <div className="metric-card">
               <div className="metric-header">
-                <div className="metric-icon-container metric-icon-gray">
+                <div className="metric-icon-container metric-icon-amber">
+                  <Percent className="metric-icon metric-icon-amber" />
                 </div>
               </div>
-              <h4 className="metric-title"></h4>
-              <p className="metric-value"></p>
+              <h4 className="metric-title">Conversion Rate</h4>
+              <p className="metric-value">{conversionRate}%</p>
+              <p className="metric-subtext">{convertedLeads} of {totalLeads} leads</p>
             </div>
           </div>
         );
@@ -177,7 +194,7 @@ const Dashboard = ({
                 };
                 
                 const getActionButtonClass = () => {
-                  if (notification.type === 'lead') return 'action-button-blue';
+                  if (notification.type === 'lead') return 'action-button-green';
                   if (notification.type === 'customer') return 'action-button-amber';
                   if (notification.type === 'payment') return 'action-button-emerald';
                   if (notification.type === 'reminder') return 'action-button-purple';

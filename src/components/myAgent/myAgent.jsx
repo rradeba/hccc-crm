@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Check, Building2, Phone, Upload, Trash2, Plus, ChevronDown, X, ArrowRight } from 'lucide-react';
+import { Settings, Check, Building2, Phone, Upload, Trash2, Plus, ChevronDown, X, ArrowRight, Star, MessageSquare, Mail } from 'lucide-react';
 import './myAgent.css';
 
 const MyAgent = ({
@@ -27,20 +27,6 @@ const MyAgent = ({
   setLeadFollowupDurationValue,
   leadFollowupDurationUnit,
   setLeadFollowupDurationUnit,
-  weatherIntegrationEnabled,
-  setWeatherIntegrationEnabled,
-  dayBeforeJobEnabled,
-  setDayBeforeJobEnabled,
-  dayBeforeJobTime,
-  setDayBeforeJobTime,
-  dayBeforeJobInstructions,
-  setDayBeforeJobInstructions,
-  dayOfJobEnabled,
-  setDayOfJobEnabled,
-  dayOfJobTime,
-  setDayOfJobTime,
-  dayOfJobInstructions,
-  setDayOfJobInstructions,
   editingStepId,
   setEditingStepId,
   promotions,
@@ -50,8 +36,15 @@ const MyAgent = ({
   customPressureWashingServices,
   specialtyCleaningServices,
   customSpecialtyCleaningServices,
-  updateFlowStep
+  updateFlowStep,
+  companyInfo,
+  updateCompanyInfo
 }) => {
+  // State for collapsed sales flow hooks sections
+  const [collapsedPersonalGreeting, setCollapsedPersonalGreeting] = useState(true);
+  const [collapsedSalesPitchHooks, setCollapsedSalesPitchHooks] = useState(true);
+  
+
   return (
     <div className="my-agent-container">
       {/* Header */}
@@ -166,6 +159,22 @@ const MyAgent = ({
             </div>
             <span className="account-label">SMS and Call</span>
           </button>
+
+          {/* Email */}
+          <button
+            type="button"
+            className="account-button account-button-blue"
+          >
+            {connectedAccounts.email && (
+              <div className="connected-badge">
+                <Check className="connected-check" strokeWidth={3} />
+              </div>
+            )}
+            <div className="account-icon-container account-icon-container-blue">
+              <Mail className="account-icon" />
+            </div>
+            <span className="account-label">Email</span>
+          </button>
         </div>
       </div>
 
@@ -174,13 +183,20 @@ const MyAgent = ({
         <div className="sales-flow-display-title">
           <h3 className="sales-flow-display-title-text">Sales Flow:</h3>
         </div>
-        <div className="sales-flow-stages-container">
-          {['Contact', 'Qualify Lead', 'Assess Needs', 'Send Estimate', 'Follow-Up', 'Close Sale', 'Fullfill Job', 'Post-Sale'].map((stage, index) => (
-            <div key={stage} className="sales-flow-stage-item">
-              <div className="sales-flow-stage-box">
-                <span className="sales-flow-stage-number">{index + 1}</span>
-                <span className="sales-flow-stage-text">{stage}</span>
-                <ChevronDown className="sales-flow-stage-caret" />
+        <div className="section-spacing">
+          {['Contact Lead', 'Send Estimate', 'Send Contract', 'Complete Job', 'Send Invoice', 'Job Followup'].map((stage, index) => (
+            <div 
+              key={stage}
+              className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-slate-600">{index + 1}</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 flex-1">{stage}</h3>
+                <div className="flex items-center justify-center">
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                </div>
               </div>
             </div>
           ))}
@@ -201,15 +217,16 @@ const MyAgent = ({
               const isEditing = editingStepId === step.id;
               const isPersonalGreeting = step.id === 1;
               const isSalesPitchHooks = step.id === 2;
-              const isReviewsTestimonials = step.id === 3;
               
-              // Only show step id 1, 2, or 3 in this section
-              if (!isPersonalGreeting && !isSalesPitchHooks && !isReviewsTestimonials) {
+              // Only show step id 1 or 2 in this section
+              if (!isPersonalGreeting && !isSalesPitchHooks) {
                 return null;
               }
               
               // Special handling for Personal Greeting
               if (isPersonalGreeting) {
+                const step = agentFlowSteps.find(s => s.id === 1);
+                if (!step) return null;
                 let mediaItems = step.mediaItems || [];
                 // Ensure exactly one personal greeting slot is shown for display
                 const displayItems = mediaItems.length === 0 
@@ -330,88 +347,102 @@ const MyAgent = ({
                 );
                 
                 return (
-                  <div key={step.id} className="relative">
-                    <div className="bg-slate-50/60 border-2 border-slate-200 rounded-2xl p-5">
-                      <div className="space-y-4">
-                        <h4 className="text-lg font-bold text-gray-900">{step.name}</h4>
-                        
-                        <div className="space-y-4">
-                          <div className="flex items-start gap-3 flex-wrap">
-                            {displayItems.map((item, itemIndex) => (
-                              <div key={item.id} className="media-item">
-                                {item.media ? (
-                                  <div className="media-preview">
-                                    {item.media instanceof File && item.media.type.startsWith('image/') ? (
-                                      <div className="media-preview-container">
-                                        <img 
-                                          src={URL.createObjectURL(item.media)} 
-                                          alt="Uploaded" 
-                                          className="media-preview-image"
-                                        />
-                                        <button
-                                          onClick={() => clearMediaFromItem(item.id)}
-                                          className="media-remove-button"
-                                          type="button"
-                                        >
-                                          <X className="media-remove-icon" />
-                                        </button>
-                                      </div>
-                                    ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
-                                      <div className="media-preview-container">
-                                        <video 
-                                          src={URL.createObjectURL(item.media)} 
-                                          controls
-                                          className="media-preview-video"
-                                        />
-                                        <button
-                                          onClick={() => clearMediaFromItem(item.id)}
-                                          className="media-remove-button"
-                                          type="button"
-                                        >
-                                          <X className="media-remove-icon" />
-                                        </button>
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <PhotoUploadBox 
-                                    onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
-                                    itemId={item.id}
-                                    onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
-                                  />
-                                )}
-                                
-                                {item.media && (
-                                  <textarea
-                                    value={item.description || ''}
-                                    onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
-                                    rows={2}
-                                    className="description-textarea description-textarea-sm"
-                                    placeholder="Add description..."
-                                  />
-                                )}
-                              </div>
-                            ))}
-                            
-                            {displayItems.length < 1 && (
-                              <button
-                                onClick={addMediaItem}
-                                className="add-media-button"
-                                type="button"
-                              >
-                                <Plus className="add-media-icon" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                  <div 
+                    key={step.id} 
+                    className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+                    onClick={() => setCollapsedPersonalGreeting(!collapsedPersonalGreeting)}
+                  >
+                    <div className={`flex items-center gap-3 ${!collapsedPersonalGreeting ? 'mb-6' : ''}`}>
+                      <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                        <MessageSquare className="w-5 h-5 text-slate-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 flex-1">{step.name}</h3>
+                      <div className="flex items-center justify-center">
+                        <ChevronDown 
+                          className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedPersonalGreeting ? 'transform rotate-180' : ''}`}
+                        />
                       </div>
                     </div>
+                    
+                    {!collapsedPersonalGreeting && (
+                      <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start gap-3 flex-wrap">
+                          {displayItems.map((item, itemIndex) => (
+                            <div key={item.id} className="media-item">
+                              {item.media ? (
+                                <div className="media-preview">
+                                  {item.media instanceof File && item.media.type.startsWith('image/') ? (
+                                    <div className="media-preview-container">
+                                      <img 
+                                        src={URL.createObjectURL(item.media)} 
+                                        alt="Uploaded" 
+                                        className="media-preview-image"
+                                      />
+                                      <button
+                                        onClick={() => clearMediaFromItem(item.id)}
+                                        className="media-remove-button"
+                                        type="button"
+                                      >
+                                        <X className="media-remove-icon" />
+                                      </button>
+                                    </div>
+                                  ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
+                                    <div className="media-preview-container">
+                                      <video 
+                                        src={URL.createObjectURL(item.media)} 
+                                        controls
+                                        className="media-preview-video"
+                                      />
+                                      <button
+                                        onClick={() => clearMediaFromItem(item.id)}
+                                        className="media-remove-button"
+                                        type="button"
+                                      >
+                                        <X className="media-remove-icon" />
+                                      </button>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <PhotoUploadBox 
+                                  onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
+                                  itemId={item.id}
+                                  onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
+                                />
+                              )}
+                              
+                              {item.media && (
+                                <textarea
+                                  value={item.description || ''}
+                                  onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
+                                  rows={2}
+                                  className="description-textarea description-textarea-sm"
+                                  placeholder="Add description..."
+                                />
+                              )}
+                            </div>
+                          ))}
+                          
+                          {displayItems.length < 1 && (
+                            <button
+                              onClick={addMediaItem}
+                              className="add-media-button"
+                              type="button"
+                            >
+                              <Plus className="add-media-icon" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               }
               
               // Special handling for Job Demos (Add Job Demos)
               if (isSalesPitchHooks) {
+                const step = agentFlowSteps.find(s => s.id === 2);
+                if (!step) return null;
                 let mediaItems = step.mediaItems || [];
                 // Ensure at least one media item exists for display
                 const displayItems = mediaItems.length === 0 
@@ -617,197 +648,105 @@ const MyAgent = ({
                 );
                 
                 return (
-                  <div key={step.id} className="step-container">
-                    <div className="step-box">
-                      <div className="step-content">
-                        <h4 className="step-name">{step.name}</h4>
-                        
-                        <div className="section-spacing">
-                          <div className="media-items-container">
-                            {displayItems.map((item, itemIndex) => (
-                              <div key={item.id} className="media-item">
-                                {item.media ? (
-                                  <div className="media-preview">
-                                    {item.media instanceof File && item.media.type.startsWith('image/') ? (
-                                      <div className="media-preview-container">
-                                        <img 
-                                          src={URL.createObjectURL(item.media)} 
-                                          alt="Uploaded" 
-                                          className="media-preview-image"
-                                        />
-                                        <button
-                                          onClick={() => clearMediaFromItem(item.id)}
-                                          className="media-remove-button"
-                                          type="button"
-                                        >
-                                          <X className="media-remove-icon" />
-                                        </button>
-                                      </div>
-                                    ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
-                                      <div className="media-preview-container">
-                                        <video 
-                                          src={URL.createObjectURL(item.media)} 
-                                          controls
-                                          className="media-preview-video"
-                                        />
-                                        <button
-                                          onClick={() => clearMediaFromItem(item.id)}
-                                          className="media-remove-button"
-                                          type="button"
-                                        >
-                                          <X className="media-remove-icon" />
-                                        </button>
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <PhotoUploadBox 
-                                    onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
-                                    itemId={item.id}
-                                    onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
-                                  />
-                                )}
-                                
-                                <ServiceDropdown
-                                  itemId={item.id}
-                                  selectedService={item.service || ''}
-                                  onServiceChange={(service) => updateMediaItem(item.id, 'service', service)}
-                                />
-                                
-                                {item.media && (
-                                  <textarea
-                                    value={item.description || ''}
-                                    onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
-                                    rows={2}
-                                    className="description-textarea description-textarea-sm"
-                                    placeholder="Add description..."
-                                  />
-                                )}
-                              </div>
-                            ))}
-                            
-                            <button
-                              onClick={addMediaItem}
-                              className="add-media-button"
-                              type="button"
-                            >
-                              <Plus className="add-media-icon" />
-                            </button>
-                          </div>
-                        </div>
+                  <div 
+                    key={step.id} 
+                    className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
+                    onClick={() => setCollapsedSalesPitchHooks(!collapsedSalesPitchHooks)}
+                  >
+                    <div className={`flex items-center gap-3 ${!collapsedSalesPitchHooks ? 'mb-6' : ''}`}>
+                      <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-5 h-5 text-slate-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 flex-1">{step.name}</h3>
+                      <div className="flex items-center justify-center">
+                        <ChevronDown 
+                          className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedSalesPitchHooks ? 'transform rotate-180' : ''}`}
+                        />
                       </div>
                     </div>
-                  </div>
-                );
-              }
-              
-              // Special handling for Reviews and Testimonials
-              if (isReviewsTestimonials) {
-                const reviewsData = step.reviewsData || {
-                  customerReviews: []
-                };
-                
-                const customerReviews = reviewsData.customerReviews || [];
-                
-                const handleSaveReviewsTestimonials = () => {
-                  console.log('Saving Reviews and Testimonials:', reviewsData);
-                  // Here you can add API call to save the data
-                  // For now, we'll just show an alert
-                  alert('Reviews and Testimonials saved successfully!');
-                };
-                
-                return (
-                  <div key={step.id} className="step-container">
-                    <div className="step-box">
-                      <div className="step-content">
-                        <h4 className="step-name">{step.name}</h4>
-                        
-                        <div className="section-spacing">
-                          {/* Customer Reviews Section */}
-                          <div className="reviews-section">
-                            <h5 className="reviews-title">Customer Reviews</h5>
-                            <div className="section-spacing">
-                              {customerReviews.map((review, index) => (
-                                <div key={index} className="review-item">
-                                  <textarea
-                                    value={review || ''}
-                                    onChange={(e) => {
-                                      const updatedReviews = [...customerReviews];
-                                      updatedReviews[index] = e.target.value;
-                                      setAgentFlowSteps(agentFlowSteps.map(s => 
-                                        s.id === step.id 
-                                          ? { 
-                                              ...s, 
-                                              reviewsData: {
-                                                ...reviewsData,
-                                                customerReviews: updatedReviews
-                                              }
-                                            }
-                                          : s
-                                      ));
-                                    }}
-                                    rows={4}
-                                    placeholder="Enter a customer review..."
-                                    className="review-textarea review-textarea-md"
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      const updatedReviews = customerReviews.filter((_, i) => i !== index);
-                                      setAgentFlowSteps(agentFlowSteps.map(s => 
-                                        s.id === step.id 
-                                          ? { 
-                                              ...s, 
-                                              reviewsData: {
-                                                ...reviewsData,
-                                                customerReviews: updatedReviews
-                                              }
-                                            }
-                                          : s
-                                      ));
-                                    }}
-                                    className="review-remove-button"
-                                    type="button"
-                                  >
-                                    <X className="review-remove-icon" />
-                                  </button>
+                    
+                    {!collapsedSalesPitchHooks && (
+                      <div className="section-spacing" onClick={(e) => e.stopPropagation()}>
+                        <div className="media-items-container">
+                          {displayItems.map((item, itemIndex) => (
+                            <div key={item.id} className="media-item">
+                              {item.media ? (
+                                <div className="media-preview">
+                                  {item.media instanceof File && item.media.type.startsWith('image/') ? (
+                                    <div className="media-preview-container">
+                                      <img 
+                                        src={URL.createObjectURL(item.media)} 
+                                        alt="Uploaded" 
+                                        className="media-preview-image"
+                                      />
+                                      <button
+                                        onClick={() => clearMediaFromItem(item.id)}
+                                        className="media-remove-button"
+                                        type="button"
+                                      >
+                                        <X className="media-remove-icon" />
+                                      </button>
+                                    </div>
+                                  ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
+                                    <div className="media-preview-container">
+                                      <video 
+                                        src={URL.createObjectURL(item.media)} 
+                                        controls
+                                        className="media-preview-video"
+                                      />
+                                      <button
+                                        onClick={() => clearMediaFromItem(item.id)}
+                                        className="media-remove-button"
+                                        type="button"
+                                      >
+                                        <X className="media-remove-icon" />
+                                      </button>
+                                    </div>
+                                  ) : null}
                                 </div>
-                              ))}
+                              ) : (
+                                <PhotoUploadBox 
+                                  onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
+                                  itemId={item.id}
+                                  onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
+                                />
+                              )}
                               
-                              {customerReviews.length < 3 && (
-                                <button
-                                  onClick={() => {
-                                    const updatedReviews = [...customerReviews, ''];
-                                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                                      s.id === step.id 
-                                        ? { 
-                                            ...s, 
-                                            reviewsData: {
-                                              ...reviewsData,
-                                              customerReviews: updatedReviews
-                                            }
-                                          }
-                                        : s
-                                    ));
-                                  }}
-                                  className="add-review-button"
-                                  type="button"
-                                >
-                                  <Plus className="add-review-icon" />
-                                  Add Review {customerReviews.length > 0 ? `(${customerReviews.length}/3)` : '(0/3)'}
-                                </button>
+                              <ServiceDropdown
+                                itemId={item.id}
+                                selectedService={item.service || ''}
+                                onServiceChange={(service) => updateMediaItem(item.id, 'service', service)}
+                              />
+                              
+                              {item.media && (
+                                <textarea
+                                  value={item.description || ''}
+                                  onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
+                                  rows={2}
+                                  className="description-textarea description-textarea-sm"
+                                  placeholder="Add description..."
+                                />
                               )}
                             </div>
-                          </div>
+                          ))}
+                          
+                          <button
+                            onClick={addMediaItem}
+                            className="add-media-button"
+                            type="button"
+                          >
+                            <Plus className="add-media-icon" />
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               }
               
               return (
                 <div key={step.id} className="step-container">
-                  <div className={`step-box ${!isPersonalGreeting && !isSalesPitchHooks && !isReviewsTestimonials ? 'step-box-editable' : ''}`}>
+                  <div className={`step-box ${!isPersonalGreeting && !isSalesPitchHooks ? 'step-box-editable' : ''}`}>
                     <div className="step-content">
                         {/* Step Name */}
                         {isEditing ? (
@@ -954,342 +893,6 @@ const MyAgent = ({
               );
             })}
           
-          {/* Promotions Section */}
-          {(() => {
-            // Filter live promotions (current date between start and end, or no dates set)
-            const now = new Date();
-            const livePromotions = promotions.filter(promo => {
-              if (!promo.startDate && !promo.endDate) {
-                return true; // Show if no dates set
-              }
-              const startDate = promo.startDate ? new Date(promo.startDate) : null;
-              const endDate = promo.endDate ? new Date(promo.endDate) : null;
-              if (startDate && endDate) {
-                return now >= startDate && now <= endDate;
-              }
-              if (startDate && !endDate) {
-                return now >= startDate;
-              }
-              if (!startDate && endDate) {
-                return now <= endDate;
-              }
-              return false;
-            });
-            
-            const formatPromotionText = (promo) => {
-              const servicesText = promo.services && promo.services.length > 0 
-                ? promo.services.join(', ') 
-                : 'All Services';
-              
-              if (promo.promotionType === 'percentOff' && promo.percentOff) {
-                return `${promo.percentOff}% OFF - ${servicesText}`;
-              } else if (promo.promotionType === 'package') {
-                // Check if packageFormula exists and has data
-                if (promo.packageFormula && promo.packageFormula.initialService) {
-                  const initialService = promo.packageFormula.initialService;
-                  const additionalServices = promo.packageFormula.additionalServices || [];
-                  
-                  if (additionalServices.length > 0) {
-                    const additionalText = additionalServices.map((addService) => {
-                      if (addService.service) {
-                        if (addService.discountType === 'free') {
-                          return `${addService.service} (Free)`;
-                        } else if (addService.discountType === 'percentOff' && addService.percentOff) {
-                          return `${addService.service} (${addService.percentOff}% off)`;
-                        } else {
-                          return addService.service;
-                        }
-                      }
-                      return '';
-                    }).filter(Boolean).join(', ');
-                    
-                    return `Package: ${initialService} + ${additionalText}`;
-                  } else {
-                    return `Package: ${initialService}`;
-                  }
-                }
-                
-                // Fallback to old packageType format
-                const packageText = promo.packageType === 'buyOneGetOne' 
-                  ? 'Buy One Get One' 
-                  : promo.packageType === 'buyTwoGetOne' 
-                  ? 'Buy Two Get One Free' 
-                  : 'Bundle Discount';
-                return `${packageText} - ${servicesText}`;
-              }
-              return `Promotion - ${servicesText}`;
-            };
-            
-            return (
-              <div key="promotions" className="step-container">
-                <div className="step-box">
-                  <div className="step-content">
-                    <h4 className="promotions-title">Live Promotions</h4>
-                    
-                    <div className="section-spacing">
-                      {livePromotions.length > 0 ? (
-                        <div className="section-spacing">
-                          {livePromotions.map((promo) => (
-                            <div 
-                              key={promo.id} 
-                              className="promotion-item"
-                            >
-                              <div style={{ width: '0.75rem', height: '0.75rem', borderRadius: '9999px', backgroundColor: 'rgb(34 197 94)', marginTop: '0.375rem', flexShrink: 0 }}></div>
-                              <div className="promotion-content">
-                                <p className="promotion-text">
-                                  {formatPromotionText(promo)}
-                                </p>
-                                {promo.startDate && promo.endDate && (
-                                  <p className="text-xs text-gray-600 mt-1">
-                                    {new Date(promo.startDate).toLocaleDateString()} - {new Date(promo.endDate).toLocaleDateString()}
-                                  </p>
-                                )}
-                                {promo.startDate && !promo.endDate && (
-                                  <p className="text-xs text-gray-600 mt-1">
-                                    Starts: {new Date(promo.startDate).toLocaleDateString()}
-                                  </p>
-                                )}
-                                {!promo.startDate && promo.endDate && (
-                                  <p className="text-xs text-gray-600 mt-1">
-                                    Ends: {new Date(promo.endDate).toLocaleDateString()}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500 text-sm">
-                          No live promotions at this time
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* Lead Followup Section */}
-      <div className="lead-followup-section">
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="lead-followup-title">Lead Followup</h3>
-          <label className="toggle-container" style={{ cursor: 'pointer' }}>
-            <span className="toggle-label">Enable Followup</span>
-            <div className="toggle-switch">
-              <input
-                type="checkbox"
-                checked={leadFollowupEnabled}
-                onChange={(e) => setLeadFollowupEnabled(e.target.checked)}
-                className="toggle-input"
-              />
-              <div className="toggle-slider"></div>
-            </div>
-          </label>
-        </div>
-        {leadFollowupEnabled && (
-          <div className="bg-slate-50/60 border border-slate-200 rounded-xl p-5 space-y-4">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium text-gray-700 min-w-[120px]">Followup Frequency:</label>
-              <select
-                value={leadFollowupFrequency}
-                onChange={(e) => setLeadFollowupFrequency(e.target.value)}
-                className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-              >
-                <option value="">Select frequency...</option>
-                <option value="daily">Daily</option>
-                <option value="intermittent">Every X Days</option>
-              </select>
-              {leadFollowupFrequency === 'intermittent' && (
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-gray-700">Followup every</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={leadFollowupDays}
-                    onChange={(e) => setLeadFollowupDays(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
-                    placeholder="Number of days"
-                    className="w-32 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                  />
-                  <span className="text-sm font-medium text-gray-700">days</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <label className={`text-sm font-medium min-w-[120px] ${
-                (!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays)) 
-                  ? 'text-gray-400' 
-                  : 'text-gray-700'
-              }`}>Duration:</label>
-              <select
-                value={leadFollowupDuration}
-                onChange={(e) => setLeadFollowupDuration(e.target.value)}
-                disabled={!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays)}
-                className={`px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                  (!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays))
-                    ? 'bg-slate-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white'
-                }`}
-              >
-                <option value="indefinitely">Indefinitely</option>
-                <option value="limited">For a specific duration</option>
-              </select>
-              {leadFollowupDuration === 'limited' && (
-                <div className="flex items-center gap-2">
-                  <label className={`text-sm font-medium ${
-                    (!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays))
-                      ? 'text-gray-400'
-                      : 'text-gray-700'
-                  }`}>For</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={leadFollowupDurationValue}
-                    onChange={(e) => setLeadFollowupDurationValue(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
-                    placeholder="Number"
-                    disabled={!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays)}
-                    className={`w-24 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      (!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays))
-                        ? 'bg-slate-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white'
-                    }`}
-                  />
-                  <select
-                    value={leadFollowupDurationUnit}
-                    onChange={(e) => setLeadFollowupDurationUnit(e.target.value)}
-                    disabled={!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays)}
-                    className={`px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      (!leadFollowupFrequency || (leadFollowupFrequency === 'intermittent' && !leadFollowupDays))
-                        ? 'bg-slate-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white'
-                    }`}
-                  >
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                  </select>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Weather Section */}
-      <div className="weather-section">
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="weather-title">Weather</h3>
-          <label className="toggle-container" style={{ cursor: 'pointer' }}>
-            <span className="toggle-label">Integrate Weather Data</span>
-            <div className="toggle-switch">
-              <input
-                type="checkbox"
-                checked={weatherIntegrationEnabled}
-                onChange={(e) => setWeatherIntegrationEnabled(e.target.checked)}
-                className="toggle-input"
-              />
-              <div className="toggle-slider"></div>
-            </div>
-          </label>
-        </div>
-        <div className="space-y-2">
-          <p className="text-sm text-gray-600">
-            Weather data will be integrated into scheduling recommendations to help optimize job scheduling based on weather conditions.
-          </p>
-        </div>
-      </div>
-
-      {/* Before-Job Reminders Section */}
-      <div className="job-reminders-section">
-        <div className="mb-6">
-          <h3 className="job-reminders-title">Before-Job Reminders</h3>
-        </div>
-
-        <div className="space-y-6">
-          {/* Day Before Job */}
-          <div className="space-y-4">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={dayBeforeJobEnabled}
-                onChange={(e) => setDayBeforeJobEnabled(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">Day Before Job</span>
-            </label>
-            
-            {dayBeforeJobEnabled && (
-              <div className="ml-7 bg-slate-50/60 border border-slate-200 rounded-xl p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Time of Message
-                  </label>
-                  <input
-                    type="time"
-                    value={dayBeforeJobTime}
-                    onChange={(e) => setDayBeforeJobTime(e.target.value)}
-                    className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customize Prompt
-                  </label>
-                  <textarea
-                    value={dayBeforeJobInstructions}
-                    onChange={(e) => setDayBeforeJobInstructions(e.target.value)}
-                    rows={4}
-                    placeholder="Enter instructions for customers to prepare for the job..."
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Day Of Job */}
-          <div className="space-y-4 pt-4 border-t border-slate-200">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={dayOfJobEnabled}
-                onChange={(e) => setDayOfJobEnabled(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">Day of Job</span>
-            </label>
-            
-            {dayOfJobEnabled && (
-              <div className="ml-7 bg-slate-50/60 border border-slate-200 rounded-xl p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Time of Message
-                  </label>
-                  <input
-                    type="time"
-                    value={dayOfJobTime}
-                    onChange={(e) => setDayOfJobTime(e.target.value)}
-                    className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customize Prompt
-                  </label>
-                  <textarea
-                    value={dayOfJobInstructions}
-                    onChange={(e) => setDayOfJobInstructions(e.target.value)}
-                    rows={4}
-                    placeholder="Enter instructions for customers for the day of the job..."
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -1393,21 +996,12 @@ const MyAgent = ({
               // Save all agent data
               const personalGreetingStep = agentFlowSteps.find(s => s.id === 1);
               const salesPitchHooksStep = agentFlowSteps.find(s => s.id === 2);
-              const reviewsTestimonialsStep = agentFlowSteps.find(s => s.id === 3);
               
               console.log('Saving all My Agent data:', {
                 agentName,
                 agentFlowSteps,
                 personalGreeting: personalGreetingStep?.mediaItems || [],
                 salesPitchHooks: salesPitchHooksStep?.mediaItems || [],
-                reviewsTestimonials: reviewsTestimonialsStep?.reviewsData || {},
-                leadFollowupEnabled,
-                leadFollowupFrequency,
-                leadFollowupDays,
-                leadFollowupDuration,
-                leadFollowupDurationValue,
-                leadFollowupDurationUnit,
-                weatherIntegrationEnabled,
                 connectedAccounts
               });
               
