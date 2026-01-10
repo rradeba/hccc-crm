@@ -375,7 +375,8 @@ const ServiceManagementSystem = () => {
   const [promotions, setPromotions] = useState([{
     id: Date.now(),
     services: [],
-    promotionType: 'percentOff',
+    promotionType: '',
+    title: '',
     percentOff: '',
     percentOffServices: [],
     packageType: 'buyOneGetOne',
@@ -482,7 +483,7 @@ const ServiceManagementSystem = () => {
     basePrice: '',
     jobDifficultyMultiplier: '',
     storyMultiplier: '',
-    isPricingPanelsCollapsed: false,
+    isPricingPanelsCollapsed: true, // Collapsed by default
     pricingStructure: {
       rates: [],
       expenses: [],
