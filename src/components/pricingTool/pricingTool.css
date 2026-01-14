@@ -74,6 +74,7 @@
   flex-direction: column;
   gap: 0.75rem;
   position: relative;
+  overflow: visible;
 }
 
 /* Delete Button */
@@ -357,11 +358,12 @@
   }
 }
 
-/* Selected items container - prevent overflow */
+/* Selected items container - allow dropdown overflow */
 .selected-items-panel {
-  overflow-x: hidden !important;
+  overflow: visible !important;
   width: 100% !important;
   box-sizing: border-box !important;
+  position: relative !important;
 }
 
 /* Selected item rows - ensure they don't overflow */
@@ -803,4 +805,56 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+/* Promotion Type Select Styling */
+.promotion-type-select {
+  color: rgb(55 65 81);
+}
+
+.promotion-type-select option {
+  background-color: white !important;
+  color: rgb(55 65 81) !important;
+  padding: 0.5rem;
+}
+
+.promotion-type-select option:hover {
+  background-color: rgb(248 250 252) !important;
+  color: rgb(55 65 81) !important;
+}
+
+.promotion-type-select option:focus,
+.promotion-type-select option:active {
+  background-color: rgb(248 250 252) !important;
+  color: rgb(55 65 81) !important;
+}
+
+.promotion-type-select option:checked {
+  background-color: rgb(239 246 255) !important;
+  color: rgb(29 78 216) !important;
+}
+
+/* Prevent text selection highlighting in date inputs */
+input[type="date"]::selection {
+  background: transparent;
+  color: inherit;
+}
+
+input[type="date"]::-moz-selection {
+  background: transparent;
+  color: inherit;
+}
+
+input[type="date"] {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  caret-color: transparent;
+}
+
+/* Remove default browser styling that causes dark gray hover */
+.promotion-type-select option:hover:not(:checked) {
+  background-color: rgb(248 250 252) !important;
+  color: rgb(55 65 81) !important;
 }

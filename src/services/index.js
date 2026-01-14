@@ -9,5 +9,9 @@ export { default as customersService } from './customersService';
 export { default as jobsService } from './jobsService';
 export { default as aiService } from './aiService';
 export { default as weatherService } from './weatherService';
+export { default as cityService } from './cityService';
+
+
+
 
 

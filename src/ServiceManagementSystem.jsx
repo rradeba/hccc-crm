@@ -433,16 +433,16 @@ const ServiceManagementSystem = () => {
 
   // My Business state
   const [companyInfo, setCompanyInfo] = useState({
-    companyName: 'Holy City Clean Co.',
-    phone: '(843) 555-0100',
-    email: 'contact@hccc.com',
+    companyName: '',
+    phone: '',
+    email: '',
     website: '',
-    street: '123 Main St',
+    street: '',
     street2: '',
-    city: 'Charleston',
-    state: 'SC',
-    zip: '29401',
-    address: '123 Main St, Charleston, SC 29401',
+    city: '',
+    state: '',
+    zip: '',
+    address: '',
     facebook: '',
     instagram: '',
     tiktok: '',
@@ -453,24 +453,27 @@ const ServiceManagementSystem = () => {
     experienceYears: '',
     experienceMonths: '',
     jobsCompleted: '',
+    satisfiedCustomers: '',
     whatMakesDifferent: [],
     areasServed: [],
     operatingHours: [
-      { day: 'Monday', open: '8:00 AM', close: '6:00 PM', closed: false },
-      { day: 'Tuesday', open: '8:00 AM', close: '6:00 PM', closed: false },
-      { day: 'Wednesday', open: '8:00 AM', close: '6:00 PM', closed: false },
-      { day: 'Thursday', open: '8:00 AM', close: '6:00 PM', closed: false },
-      { day: 'Friday', open: '8:00 AM', close: '6:00 PM', closed: false },
-      { day: 'Saturday', open: '9:00 AM', close: '2:00 PM', closed: false },
-      { day: 'Sunday', open: 'Closed', close: 'Closed', closed: true }
+      { day: 'Monday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Tuesday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Wednesday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Thursday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Friday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Saturday', open: '', close: '', closed: false, open24hr: false },
+      { day: 'Sunday', open: '', close: '', closed: false, open24hr: false }
     ],
     certificationsList: [],
+    insuranceList: [],
     insuranceStatus: '',
     insuranceCompany: '',
     insurancePolicyNumber: '',
     insuranceCoverageLimits: '',
     guaranteeWarranty: '',
-    onlineReviews: {}
+    onlineReviews: {},
+    customerReviews: []
   });
   const [collapsedContactDetails, setCollapsedContactDetails] = useState(true);
 
@@ -495,9 +498,9 @@ const ServiceManagementSystem = () => {
   const [openPricingStructureDropdown, setOpenPricingStructureDropdown] = useState({});
   const [pricingStructureOptions] = useState({
     rates: ['Per Hour', 'Per Item', 'Per Job', 'Per Linear Foot', 'Per Square Foot'].sort(),
-    expenses: ['Chemicals and detergents', 'Travel', 'Vehicle and Fuel', 'Water and Filtration'].sort(),
+    expenses: ['Chemicals', 'Detergents', 'Travel', 'Vehicle', 'Fuel', 'Water'].sort(),
     multipliers: ['Commercial Job', 'Per Building Story', 'Taxes'].sort(),
-    fees: ['Administrative', 'Estimate', 'High Risk', 'Unique Surface', 'Urgent Job/Day Of Multiplier', 'Waste Disposal Fee'].sort()
+    fees: ['Administrative', 'Estimate', 'High Risk', 'Unique Surface', 'Urgent Job/Day Of Multiplier', 'Waste Disposal'].sort()
   });
   
   // Custom pricing structure options state
