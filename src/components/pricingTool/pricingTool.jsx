@@ -525,7 +525,7 @@ const PricingTool = ({
             </div>
 
             {/* Add Price and Active Prices Section */}
-            <div className="bg-white rounded-3xl p-6 mb-6">
+            <div className="bg-white rounded-3xl p-6 mb-6" style={{border: '1px solid #f3f4f6'}}>
                 <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-gray-500" />
                   Add Price
@@ -3414,7 +3414,7 @@ const PricingTool = ({
               </div>
               
               {/* Add Promotions Subsection */}
-              <div className="bg-white rounded-3xl p-6 mt-6 mb-6">
+              <div className="bg-white rounded-3xl p-6 mt-6 mb-6" style={{border: '1px solid #f3f4f6'}}>
                 <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-gray-500" />
                   Add Promotions

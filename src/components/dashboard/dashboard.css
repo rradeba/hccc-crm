@@ -294,12 +294,12 @@
 
 /* Action Button */
 .action-button {
-  padding-left: 0.975rem;
-  padding-right: 0.975rem;
-  padding-top: 0.4875rem;
-  padding-bottom: 0.4875rem;
-  font-size: 0.975rem;
-  line-height: 1.3rem;
+  padding-left: 0.73125rem;
+  padding-right: 0.73125rem;
+  padding-top: 0.365625rem;
+  padding-bottom: 0.365625rem;
+  font-size: 0.73125rem;
+  line-height: 0.975rem;
   font-weight: 500;
   border-radius: 0.375rem;
   transition-property: background-color, color, border-color;

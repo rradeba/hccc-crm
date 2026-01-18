@@ -363,6 +363,14 @@ const ServiceManagementSystem = () => {
       reviewsData: {
         customerReviews: []
       }
+    },
+    { 
+      id: 4, 
+      name: 'Before & After', 
+      principle: 'Visual proof of transformation builds trust and demonstrates results.',
+      description: 'Showcase before and after photos/videos of your completed jobs to highlight the quality and impact of your work.',
+      order: 3,
+      mediaItems: [{ id: Date.now() + 2, media: null, description: '', service: '' }]
     }
   ]);
   const [leadFollowupEnabled, setLeadFollowupEnabled] = useState(false);

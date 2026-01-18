@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Phone, ChevronDown, Plus, X, Check, FileText, FileSignature, Receipt, HeartHandshake, Clock, Award, Shield, ShieldCheck, MapPin, Star, Search, Trash2, Pencil } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, ChevronDown, Plus, X, Check, FileText, FileSignature, Receipt, HeartHandshake, Clock, Award, Shield, ShieldCheck, MapPin, Star, Search, Trash2, Pencil, Briefcase, User, Globe } from 'lucide-react';
 import { cityService } from '../../services';
 import './myBusiness.css';
 
@@ -41,15 +41,20 @@ const MyBusiness = ({
     'Integrity in every job'
   ];
 
-  // Collapsed section states
-  const [collapsedReviewsTestimonials, setCollapsedReviewsTestimonials] = useState(true);
+  // Selected tab state for main navigation
+  const [selectedTab, setSelectedTab] = useState('Contact Details');
+  
+  // Collapsed section states (kept for compatibility but may not be used with tab layout)
+  const [collapsedCustomerReviews, setCollapsedCustomerReviews] = useState(true);
+  const [collapsedOnlineReviews, setCollapsedOnlineReviews] = useState(true);
   const [collapsedBrandIdentity, setCollapsedBrandIdentity] = useState(true);
   const [collapsedAreasServed, setCollapsedAreasServed] = useState(true);
   const [collapsedOperatingHours, setCollapsedOperatingHours] = useState(true);
   const [collapsedCertifications, setCollapsedCertifications] = useState(true);
   const [collapsedInsurance, setCollapsedInsurance] = useState(true);
   const [collapsedGuaranteeWarranty, setCollapsedGuaranteeWarranty] = useState(true);
-  const [collapsedOnlineReviews, setCollapsedOnlineReviews] = useState(true);
+  const [collapsedServicesOffered, setCollapsedServicesOffered] = useState(true);
+  const [servicesOfferedSaveAttempted, setServicesOfferedSaveAttempted] = useState(false);
   const [savedGuaranteeWarranty, setSavedGuaranteeWarranty] = useState('');
   const [savedCertifications, setSavedCertifications] = useState([]);
   const [savedInsurance, setSavedInsurance] = useState([]);
@@ -62,6 +67,15 @@ const MyBusiness = ({
   const [contactDetailsSaveAttempted, setContactDetailsSaveAttempted] = useState(false);
   const [areasServedSaveAttempted, setAreasServedSaveAttempted] = useState(false);
   const [operatingHoursSaveAttempted, setOperatingHoursSaveAttempted] = useState(false);
+  const [guaranteeWarrantySaveAttempted, setGuaranteeWarrantySaveAttempted] = useState(false);
+  const [savedBrandIdentity, setSavedBrandIdentity] = useState(null);
+  const [editingBrandIdentity, setEditingBrandIdentity] = useState(false);
+  const [brandIdentitySaveAttempted, setBrandIdentitySaveAttempted] = useState(false);
+  const [savedCustomerReviews, setSavedCustomerReviews] = useState([]);
+  const [editingReviewIndex, setEditingReviewIndex] = useState(null);
+  const [savedOnlineReviews, setSavedOnlineReviews] = useState(null);
+  const [editingOnlineReviews, setEditingOnlineReviews] = useState(false);
+  const [onlineReviewsSaveAttempted, setOnlineReviewsSaveAttempted] = useState(false);
 
   // Company qualities state
   const [customCompanyQualities, setCustomCompanyQualities] = useState([]);
@@ -263,23 +277,9 @@ const MyBusiness = ({
   };
 
   const getBrandIdentityCompletionLocal = () => {
-    // Track 3 categories:
-    // 1. Company slogan
-    const hasSlogan =
-      companyInfo.companySlogan && companyInfo.companySlogan.trim() !== '';
-
-    // 2. At least one experience input (years, months, or jobsCompleted)
-    const hasExperience =
-      (companyInfo.experienceYears && companyInfo.experienceYears.trim() !== '') ||
-      (companyInfo.experienceMonths && companyInfo.experienceMonths.trim() !== '') ||
-      (companyInfo.jobsCompleted && companyInfo.jobsCompleted.trim() !== '');
-
-    // 3. 3 company qualities selected
-    const hasQualities = companyInfo.whatMakesDifferent.length >= 3;
-
-    const completed = [hasSlogan, hasExperience, hasQualities].filter(Boolean).length;
-    const total = 3;
-
+    // Check if brand identity has been saved
+    const completed = savedBrandIdentity ? 1 : 0;
+    const total = 1;
     return { completed, total };
   };
 
@@ -313,8 +313,9 @@ const MyBusiness = ({
   };
 
   const getCertificationsCompletionLocal = () => {
-    // Track 1 category: at least one certification with both name and organization
-    const hasCompleteCertification = companyInfo.certificationsList.some(cert => 
+    // Track saved certifications: at least one certification with both name and organization
+    const hasCompleteCertification = savedCertifications.length > 0 || 
+      companyInfo.certificationsList.some(cert => 
       cert.certificationName && cert.certificationName.trim() !== '' &&
       cert.certifyingOrganization && cert.certifyingOrganization.trim() !== ''
     );
@@ -340,8 +341,53 @@ const MyBusiness = ({
   };
 
   const handleSaveGuaranteeWarranty = () => {
-    setSavedGuaranteeWarranty(companyInfo.guaranteeWarranty || '');
-    setEditingGuaranteeWarranty(false);
+    setGuaranteeWarrantySaveAttempted(true);
+    if (companyInfo.guaranteeWarranty && companyInfo.guaranteeWarranty.trim() !== '') {
+      setSavedGuaranteeWarranty(companyInfo.guaranteeWarranty);
+      setEditingGuaranteeWarranty(false);
+      setGuaranteeWarrantySaveAttempted(false);
+    }
+  };
+
+  const handleSaveBrandIdentity = () => {
+    setBrandIdentitySaveAttempted(true);
+    
+    // Check if at least one field is filled
+    const hasSlogan = companyInfo.companySlogan && companyInfo.companySlogan.trim() !== '';
+    const hasExperienceYears = companyInfo.experienceYears && companyInfo.experienceYears.toString().trim() !== '';
+    const hasJobsCompleted = companyInfo.jobsCompleted && companyInfo.jobsCompleted.toString().trim() !== '';
+    const hasQualities = companyInfo.whatMakesDifferent && companyInfo.whatMakesDifferent.length > 0;
+    
+    if (hasSlogan || hasExperienceYears || hasJobsCompleted || hasQualities) {
+      // Save the brand identity
+      setSavedBrandIdentity({
+        companySlogan: companyInfo.companySlogan || '',
+        experienceYears: companyInfo.experienceYears || '',
+        jobsCompleted: companyInfo.jobsCompleted || '',
+        whatMakesDifferent: companyInfo.whatMakesDifferent || []
+      });
+      setEditingBrandIdentity(false);
+      setBrandIdentitySaveAttempted(false);
+    }
+  };
+
+  const handleSaveOnlineReviews = () => {
+    setOnlineReviewsSaveAttempted(true);
+    
+    // Check if at least one platform has data
+    const hasData = companyInfo.onlineReviews && Object.keys(companyInfo.onlineReviews).some(platform => {
+      const review = companyInfo.onlineReviews[platform];
+      return (review.averageRating && review.averageRating !== '') ||
+             (review.totalReviews && review.totalReviews !== '') ||
+             (review.fiveStarReviews && review.fiveStarReviews !== '');
+    });
+    
+    if (hasData) {
+      // Save the online reviews
+      setSavedOnlineReviews(companyInfo.onlineReviews);
+      setEditingOnlineReviews(false);
+      setOnlineReviewsSaveAttempted(false);
+    }
   };
 
   const handleSaveCertifications = () => {
@@ -471,6 +517,24 @@ const MyBusiness = ({
         delete newPSI[service];
         return newPSI;
       });
+      // Remove service safety measures
+      setServiceSafetyMeasures((prev) => {
+        const newSafetyMeasures = { ...prev };
+        delete newSafetyMeasures[service];
+        return newSafetyMeasures;
+      });
+      // Remove safety dropdown state
+      setSafetyDropdownOpen((prev) => {
+        const newDropdownState = { ...prev };
+        delete newDropdownState[service];
+        return newDropdownState;
+      });
+      // Remove chemical dropdown state for this service
+      setChemicalDropdownOpen((prev) => {
+        const newDropdownState = { ...prev };
+        delete newDropdownState[`${service}-chemical`];
+        return newDropdownState;
+      });
     } else {
       // Add service
       setSelectedServices((prev) => [...prev, service]);
@@ -483,6 +547,11 @@ const MyBusiness = ({
       setServicePSI((prev) => ({
         ...prev,
         [service]: prev[service] || '',
+      }));
+      // Initialize safety dropdown as closed
+      setSafetyDropdownOpen((prev) => ({
+        ...prev,
+        [service]: false,
       }));
     }
   };
@@ -552,6 +621,20 @@ const MyBusiness = ({
     if (trimmedMeasure && !(serviceSafetyMeasures[service] || []).includes(trimmedMeasure)) {
       toggleServiceSafetyMeasure(service, trimmedMeasure);
     }
+  };
+
+  const selectAllSafetyMeasures = (service, allMeasures) => {
+    setServiceSafetyMeasures((prev) => ({
+      ...prev,
+      [service]: [...allMeasures]
+    }));
+  };
+
+  const deselectAllSafetyMeasures = (service) => {
+    setServiceSafetyMeasures((prev) => ({
+      ...prev,
+      [service]: []
+    }));
   };
 
   const addCustomChemical = (chemicalName) => {
@@ -642,6 +725,31 @@ const MyBusiness = ({
     }
   }, [chemicalDropdownOpen]);
 
+  // Click outside handler for safety dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if any safety dropdown is open
+      const hasOpenDropdown = Object.values(safetyDropdownOpen).some(isOpen => isOpen);
+      
+      if (hasOpenDropdown) {
+        // Check if click is outside any safety dropdown
+        const clickedInsideDropdown = event.target.closest('.safety-dropdown-container');
+        if (!clickedInsideDropdown) {
+          // Close all open safety dropdowns
+          setSafetyDropdownOpen({});
+        }
+      }
+    };
+
+    const hasOpenDropdown = Object.values(safetyDropdownOpen).some(isOpen => isOpen);
+    if (hasOpenDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [safetyDropdownOpen]);
+
   const handleSaveCompanyInfo = () => {
     // Implementation would go here
   };
@@ -658,26 +766,197 @@ const MyBusiness = ({
                 <h2 className="company-info-title">Company Information</h2>
               </div>
               
-              <div className="space-y-8">
-                {/* Section 1: Contact Details, Areas Served, Operating Hours, Staff */}
-              <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Basic Information</h3>
-                {/* Contact Details */}
-                <div 
-                  className="collapsible-section"
-                  onClick={() => setCollapsedContactDetails(!collapsedContactDetails)}
-                >
-                  <div className={`collapsible-header ${!collapsedContactDetails ? 'collapsible-header-expanded' : ''}`}>
-                    <div className="section-icon-wrapper">
-                      <Phone className="section-icon" />
+              {/* Two Column Layout: 20% Tabs | 80% Content */}
+              <div className="flex gap-4 mt-6">
+                {/* Left Column - Tabs (20%) */}
+                <div className="w-1/5 flex flex-col gap-4">
+                  {/* Basic Information Section */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Basic Information</h4>
+                    <div className="flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Contact Details')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Contact Details' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <Phone className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Contact Details</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Areas Served')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Areas Served' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <MapPin className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Areas Served</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Operating Hours')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Operating Hours' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <Clock className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Operating Hours</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Services Offered')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Services Offered' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <Briefcase className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Services Offered</span>
+                      </button>
                     </div>
-                    <h3 className="section-title">
+                  </div>
+                  
+                  {/* Credentials & Protection Section */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Credentials & Protection</h4>
+                    <div className="flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Certifications')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Certifications' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <Award className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Certifications</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Insurance')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Insurance' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <Shield className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Insurance</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Guarantee/Warranty')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Guarantee/Warranty' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Guarantee/Warranty</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Brand & Reputation Section */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Brand & Reputation</h4>
+                    <div className="flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Brand Identity')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Brand Identity' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <Star className="w-5 h-5 text-lime-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Brand Identity</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Customer Reviews')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Customer Reviews' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <User className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Customer Reviews</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Online Reviews')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Online Reviews' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <Globe className="w-5 h-5 text-violet-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Online Reviews</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Customize Forms Section */}
+                  <div className="mt-4">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-2">Customize Forms</h4>
+                    <div className="flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab('Forms')}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left active:bg-slate-200 ${
+                          selectedTab === 'Forms' 
+                            ? 'bg-slate-100 shadow-sm' 
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <FileText className="w-5 h-5 text-fuchsia-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 truncate">Forms</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Content (80%) */}
+                <div className="flex-1">
+                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 min-h-[400px]">
+                    {/* Contact Details Content */}
+                    {selectedTab === 'Contact Details' && (
+                      <div>
+                {/* Contact Details */}
+                <div className="bg-slate-100 border border-slate-300 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">
                       Contact Details 
                       {contactDetailsSaveAttempted && (() => {
                         const { completed, total } = getCompanyDetailsCompletion();
                         const isComplete = completed === total;
                         return !isComplete ? (
-                          <span className="text-red-500 text-sm">*</span>
+                          <span className="text-red-500 text-sm ml-0.5">*</span>
                         ) : null;
                       })()}
                     </h3>
@@ -685,26 +964,21 @@ const MyBusiness = ({
                       const { completed, total } = getCompanyDetailsCompletion();
                       const isComplete = completed === total;
                       return (
-                        <div className={`completion-badge ${isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                           <span>{completed}/{total}</span>
                         </div>
                       );
                     })()}
-                    <div className="collapsible-chevron-wrapper">
-                      <ChevronDown 
-                        className={`collapsible-chevron ${!collapsedContactDetails ? 'collapsible-chevron-expanded' : ''}`}
-                      />
-                    </div>
                   </div>
                   
-                  {!collapsedContactDetails && (
-                    <div className="section-content" onClick={(e) => e.stopPropagation()}>
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                    <div className="space-y-4">
                       <div className="form-field">
                         <label className="form-label flex items-center gap-1">
                           Company Name
                           {contactDetailsSaveAttempted && (!companyInfo.companyName || companyInfo.companyName.trim() === '') && (
-                            <span className="text-red-500 text-sm">*</span>
+                          <span className="text-red-500 text-sm">*</span>
                           )}
                         </label>
                         <input
@@ -721,7 +995,7 @@ const MyBusiness = ({
                         <label className="form-label flex items-center gap-1">
                           Phone Number
                           {contactDetailsSaveAttempted && (!companyInfo.phone || companyInfo.phone.trim() === '') && (
-                            <span className="text-red-500 text-sm">*</span>
+                          <span className="text-red-500 text-sm">*</span>
                           )}
                         </label>
                         <input
@@ -738,7 +1012,7 @@ const MyBusiness = ({
                         <label className="form-label flex items-center gap-1">
                           Email
                           {contactDetailsSaveAttempted && (!companyInfo.email || companyInfo.email.trim() === '') && (
-                            <span className="text-red-500 text-sm">*</span>
+                          <span className="text-red-500 text-sm">*</span>
                           )}
                         </label>
                         <input
@@ -766,7 +1040,7 @@ const MyBusiness = ({
                             <label className="form-label flex items-center gap-1">
                               Street Address
                               {contactDetailsSaveAttempted && (!companyInfo.street || companyInfo.street.trim() === '') && (
-                                <span className="text-red-500 text-sm">*</span>
+                              <span className="text-red-500 text-sm">*</span>
                               )}
                             </label>
                             <input
@@ -795,7 +1069,7 @@ const MyBusiness = ({
                               <label className="form-label flex items-center gap-1">
                                 City
                                 {contactDetailsSaveAttempted && (!companyInfo.city || companyInfo.city.trim() === '') && (
-                                  <span className="text-red-500 text-sm">*</span>
+                                <span className="text-red-500 text-sm">*</span>
                                 )}
                               </label>
                               <input
@@ -812,7 +1086,7 @@ const MyBusiness = ({
                               <label className="form-label flex items-center gap-1">
                                 State
                                 {contactDetailsSaveAttempted && (!companyInfo.state || companyInfo.state.trim() === '') && (
-                                  <span className="text-red-500 text-sm">*</span>
+                                <span className="text-red-500 text-sm">*</span>
                                 )}
                               </label>
                           <select
@@ -881,7 +1155,7 @@ const MyBusiness = ({
                             <label className="form-label flex items-center gap-1">
                               ZIP Code
                               {contactDetailsSaveAttempted && (!companyInfo.zip || companyInfo.zip.trim() === '') && (
-                                <span className="text-red-500 text-sm">*</span>
+                              <span className="text-red-500 text-sm">*</span>
                               )}
                             </label>
                             <input
@@ -892,49 +1166,51 @@ const MyBusiness = ({
                               className="form-input"
                               required
                             />
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end gap-3 mt-6">
-                        {contactDetailsSaveAttempted && (() => {
+                    <div className="flex items-center justify-end gap-3 mt-4">
+                      {contactDetailsSaveAttempted && (() => {
+                        const { completed, total } = getCompanyDetailsCompletion();
+                        const isComplete = completed === total;
+                        return !isComplete ? (
+                          <span className="text-red-600 text-sm font-medium">
+                            <span className="text-red-500">*</span> Please complete all required fields
+                          </span>
+                        ) : null;
+                      })()}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setContactDetailsSaveAttempted(true);
                           const { completed, total } = getCompanyDetailsCompletion();
                           const isComplete = completed === total;
-                          return !isComplete ? (
-                            <span className="text-red-600 text-sm font-medium">
-                              <span className="text-red-500">*</span> Please complete all required fields
-                            </span>
-                          ) : null;
-                        })()}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setContactDetailsSaveAttempted(true);
-                            const { completed, total } = getCompanyDetailsCompletion();
-                            const isComplete = completed === total;
-                            if (isComplete) {
-                              // Save logic here if needed
-                              setContactDetailsSaveAttempted(false);
-                            }
-                          }}
-                          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        >
-                          Save
-                        </button>
-                      </div>
+                          if (isComplete) {
+                            // Save logic here if needed
+                            setContactDetailsSaveAttempted(false);
+                          }
+                        }}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                      >
+                        Save
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
+              </div>
+            )}
 
+                    {/* Areas Served Content */}
+                    {selectedTab === 'Areas Served' && (
+                      <div>
                 {/* Areas Served */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedAreasServed(!collapsedAreasServed)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedAreasServed ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-5 h-5 text-slate-600" />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-green-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Areas Served <span className="text-gray-500 text-sm">*</span></h3>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Areas Served</h3>
                     {(() => {
                       const { completed, total } = getAreasServedCompletionLocal();
                       const isComplete = completed === total;
@@ -946,23 +1222,17 @@ const MyBusiness = ({
                         </div>
                       );
                     })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedAreasServed ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
                   </div>
                   
-                  {!collapsedAreasServed && (
-                    <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
+                    <div className="space-y-5">
                       {/* Areas Served Content - Gray Box */}
                       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                          Search and Add Cities
                           {areasServedSaveAttempted && companyInfo.areasServed.length === 0 && (
                             <span className="text-red-500 text-sm">*</span>
                           )}
-                          Search and Add Cities
                         </label>
                         <div className="relative city-search-container">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
@@ -1036,41 +1306,42 @@ const MyBusiness = ({
                         </div>
                       )}
                       </div>
-                      
-                      <div className="flex items-center justify-end gap-3 mt-6">
-                        {areasServedSaveAttempted && companyInfo.areasServed.length === 0 && (
-                          <span className="text-red-600 text-sm font-medium">
-                            <span className="text-red-500">*</span> Please add at least one city
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAreasServedSaveAttempted(true);
-                            if (companyInfo.areasServed.length > 0) {
-                              // Save logic here if needed
-                              setAreasServedSaveAttempted(false);
-                            }
-                          }}
-                          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        >
-                          Save
-                        </button>
-                      </div>
                     </div>
-                  )}
+                    
+                    <div className="flex items-center justify-end gap-3 mt-4">
+                      {areasServedSaveAttempted && companyInfo.areasServed.length === 0 && (
+                        <span className="text-red-600 text-sm font-medium">
+                          <span className="text-red-500">*</span> Please add at least one city
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAreasServedSaveAttempted(true);
+                          if (companyInfo.areasServed.length > 0) {
+                            // Save logic here if needed
+                            setAreasServedSaveAttempted(false);
+                          }
+                        }}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                      >
+                        Save
+                      </button>
                 </div>
+                </div>
+                      </div>
+                    )}
 
+                    {/* Operating Hours Content */}
+                    {selectedTab === 'Operating Hours' && (
+                      <div>
                 {/* Operating Hours */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedOperatingHours(!collapsedOperatingHours)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedOperatingHours ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-5 h-5 text-slate-600" />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-orange-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Operating Hours <span className="text-gray-500 text-sm">*</span></h3>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Operating Hours</h3>
                     {(() => {
                       const { completed, total } = getOperatingHoursCompletionLocal();
                       const isComplete = completed === total;
@@ -1082,15 +1353,9 @@ const MyBusiness = ({
                         </div>
                       );
                     })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedOperatingHours ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
                   </div>
                   
-                  {!collapsedOperatingHours && (
-                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="space-y-4">
                       <p className="text-sm text-gray-600 mb-4">
                         Set your default hours of operation
                       </p>
@@ -1202,1177 +1467,54 @@ const MyBusiness = ({
                           );
                         })}
                       </div>
-                      
-                      {/* Save button */}
-                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-                        {operatingHoursSaveAttempted && (() => {
+                </div>
+
+                    <div className="flex items-center justify-end gap-3 mt-4">
+                      {operatingHoursSaveAttempted && (() => {
+                        const { completed, total } = getOperatingHoursCompletionLocal();
+                      const isComplete = completed === total;
+                        return !isComplete ? (
+                          <span className="text-red-600 text-sm font-medium">
+                            <span className="text-red-500">*</span> Please fill in all days
+                          </span>
+                        ) : null;
+                    })()}
+                              <button
+                                type="button"
+                                onClick={() => {
+                          setOperatingHoursSaveAttempted(true);
                           const { completed, total } = getOperatingHoursCompletionLocal();
-                          const isComplete = completed === total;
-                          return !isComplete ? (
-                            <span className="text-red-600 text-sm font-medium">
-                              <span className="text-red-500">*</span> Please fill in all days
-                            </span>
-                          ) : null;
-                        })()}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOperatingHoursSaveAttempted(true);
-                            const { completed, total } = getOperatingHoursCompletionLocal();
-                            const isComplete = completed === total;
-                            if (isComplete) {
-                              // Save current operating hours
-                              setSavedOperatingHours([...companyInfo.operatingHours]);
-                              setOperatingHoursSaveAttempted(false);
-                            }
-                          }}
-                          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                </div>
-
-                {/* Section 2: Certifications, Insurance, Guarantee/Warranty */}
-                <div className="space-y-6 pt-6 border-t-2 border-gray-200">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Credentials & Protection</h3>
-                {/* Certifications */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedCertifications(!collapsedCertifications)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedCertifications ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <Award className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Certifications</h3>
-                    {(() => {
-                      const { completed, total } = getCertificationsCompletionLocal();
                       const isComplete = completed === total;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          <span>{completed}/{total}</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedCertifications ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!collapsedCertifications && (
-                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-                      {/* Saved Certifications - Always shown if they exist */}
-                      {savedCertifications.length > 0 && (
-                        <div className="space-y-3">
-                          {savedCertifications.map((cert) => (
-                            // Display format
-                            <div
-                              key={cert.id}
-                              className="border border-gray-200 rounded-2xl px-5 py-4 bg-slate-50/60 relative flex items-center"
-                            >
-                              <div className="flex-1 grid grid-cols-3 gap-6 items-center">
-                                <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Certification Name</label>
-                                  <p className="text-base font-medium text-gray-900">{cert.certificationName}</p>
-                          </div>
-                                <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Certifying Organization</label>
-                                  <p className="text-base text-gray-800">{cert.certifyingOrganization}</p>
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Date Received</label>
-                                  <p className="text-base text-gray-800">
-                                    {cert.dateReceived ? new Date(cert.dateReceived).toLocaleDateString() : '—'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex justify-end gap-2 ml-4">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    // Move certification to editable section
-                                    const updatedSaved = savedCertifications.filter(c => c.id !== cert.id);
-                                    setSavedCertifications(updatedSaved);
-                                    setEditingCertifications(true);
-                                    updateCompanyInfo('certificationsList', [
-                                      ...companyInfo.certificationsList,
-                                      { ...cert }
-                                    ]);
-                                  }}
-                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                                  aria-label="Edit certification"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = savedCertifications.filter(c => c.id !== cert.id);
-                                    setSavedCertifications(updated);
-                                  }}
-                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-100 rounded-md transition-colors"
-                                  aria-label="Delete certification"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Editable Certifications - Shown when editing or when no saved certifications */}
-                      {(editingCertifications || savedCertifications.length === 0) && (
-                        <div className="space-y-4">
-                          {companyInfo.certificationsList.length > 0 && companyInfo.certificationsList.map((cert, index) => (
-                            <div key={cert.id || index} className="grid grid-cols-4 gap-4 items-end p-4 bg-slate-50/60 border border-slate-200 rounded-lg">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                              Certification Name
-                              {certificationErrors[cert.id]?.missingName && (
-                                <span className="text-red-500 text-sm">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              value={cert.certificationName || ''}
-                              onChange={(e) => {
-                                const updated = [...companyInfo.certificationsList];
-                                updated[index].certificationName = e.target.value;
-                                updateCompanyInfo('certificationsList', updated);
-                                // Clear error when user starts typing
-                                if (certificationErrors[cert.id]?.missingName) {
-                                  setCertificationErrors(prev => {
-                                    const newErrors = { ...prev };
-                                    if (newErrors[cert.id]) {
-                                      delete newErrors[cert.id].missingName;
-                                      if (Object.keys(newErrors[cert.id]).length === 0) {
-                                        delete newErrors[cert.id];
-                                      }
-                                    }
-                                    return newErrors;
-                                  });
-                                }
-                              }}
-                              placeholder="Enter certification name"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                              Certifying Organization
-                              {certificationErrors[cert.id]?.missingOrganization && (
-                                <span className="text-red-500 text-sm">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                                  value={cert.certifyingOrganization || ''}
-                              onChange={(e) => {
-                                const updated = [...companyInfo.certificationsList];
-                                updated[index].certifyingOrganization = e.target.value;
-                                updateCompanyInfo('certificationsList', updated);
-                                    // Clear error when user starts typing
-                                    if (certificationErrors[cert.id]?.missingOrganization) {
-                                      setCertificationErrors(prev => {
-                                        const newErrors = { ...prev };
-                                        if (newErrors[cert.id]) {
-                                          delete newErrors[cert.id].missingOrganization;
-                                          if (Object.keys(newErrors[cert.id]).length === 0) {
-                                            delete newErrors[cert.id];
-                                          }
-                                        }
-                                        return newErrors;
-                                      });
-                                    }
-                              }}
-                              placeholder="Enter organization"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none"
-                            />
-                          </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                                  Date Received
-                                  {certificationErrors[cert.id]?.missingDate && (
-                                    <span className="text-red-500 text-sm">*</span>
-                                  )}
-                                </label>
-                                <input
-                                  type="date"
-                                  value={cert.dateReceived || ''}
-                                  max={new Date().toISOString().split('T')[0]}
-                                  onChange={(e) => {
-                                    const updated = [...companyInfo.certificationsList];
-                                    updated[index].dateReceived = e.target.value;
-                                    updateCompanyInfo('certificationsList', updated);
-                                    // Clear error when user selects a date
-                                    if (certificationErrors[cert.id]?.missingDate) {
-                                      setCertificationErrors(prev => {
-                                        const newErrors = { ...prev };
-                                        if (newErrors[cert.id]) {
-                                          delete newErrors[cert.id].missingDate;
-                                          if (Object.keys(newErrors[cert.id]).length === 0) {
-                                            delete newErrors[cert.id];
-                                          }
-                                        }
-                                        return newErrors;
-                                      });
-                                    }
-                                  }}
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none"
-                                />
-                              </div>
-
-                              <div className="flex justify-end gap-2 items-center">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Save this individual certification
-                                      const certToSave = cert;
-                                      const errors = {};
-                                      let hasErrors = false;
-                                      
-                                      if (!certToSave.certificationName || certToSave.certificationName.trim() === '') {
-                                        errors.missingName = true;
-                                        hasErrors = true;
-                                      }
-                                      
-                                      if (!certToSave.certifyingOrganization || certToSave.certifyingOrganization.trim() === '') {
-                                        errors.missingOrganization = true;
-                                        hasErrors = true;
-                                      }
-                                      
-                                      if (!certToSave.dateReceived || certToSave.dateReceived.trim() === '') {
-                                        errors.missingDate = true;
-                                        hasErrors = true;
-                                      }
-                                      
-                                      if (hasErrors) {
-                                        // Set errors for this certification
-                                        setCertificationErrors(prev => ({
-                                          ...prev,
-                                          [cert.id]: errors
-                                        }));
-                                        return;
-                                      }
-                                      
-                                      // Clear any errors for this certification
-                                      setCertificationErrors(prev => {
-                                        const newErrors = { ...prev };
-                                        delete newErrors[cert.id];
-                                        return newErrors;
-                                      });
-                                      
-                                      const newCert = {
-                                        ...certToSave,
-                                        id: certToSave.id || Date.now() + Math.random(),
-                                        savedAt: new Date().toISOString()
-                                      };
-                                      setSavedCertifications((prev) => {
-                                        const existingIds = new Set(prev.map(c => c.id));
-                                        if (existingIds.has(newCert.id)) {
-                                          return prev.map(c => c.id === newCert.id ? newCert : c);
-                                        }
-                                        if (prev.length >= 10) {
-                                          alert('Maximum of 10 certifications allowed');
-                                          return prev;
-                                        }
-                                        return [...prev, newCert];
-                                      });
-                                      // Remove from editable list
-                                  const updated = companyInfo.certificationsList.filter((_, i) => i !== index);
-                                  updateCompanyInfo('certificationsList', updated);
-                                }}
-                                    className="p-2.5 text-green-600 hover:text-green-700 hover:bg-gray-100 border border-transparent hover:border-gray-300 rounded-lg transition-all duration-200"
-                                    aria-label="Save certification"
-                                  >
-                                    <Check className="w-6 h-6" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const updated = companyInfo.certificationsList.filter((_, i) => i !== index);
-                                      updateCompanyInfo('certificationsList', updated);
-                                    }}
-                                    className="p-2.5 text-red-600 hover:text-red-700 hover:bg-gray-100 border border-transparent hover:border-gray-300 rounded-lg transition-all duration-200"
-                                    aria-label="Delete certification"
-                                  >
-                                    <Trash2 className="w-6 h-6" />
-                              </button>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Add Certification Button - Only shown when no certifications are being edited */}
-                      {companyInfo.certificationsList.length === 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                                const totalCertifications = savedCertifications.length + companyInfo.certificationsList.length;
-                                if (totalCertifications >= 10) {
-                                  alert('Maximum of 10 certifications allowed');
-                                  return;
-                                }
-                            updateCompanyInfo('certificationsList', [
-                              ...companyInfo.certificationsList,
-                                  { id: Date.now() + Math.random(), certificationName: '', certifyingOrganization: '', dateReceived: '' }
-                            ]);
-                          }}
-                              disabled={savedCertifications.length + companyInfo.certificationsList.length >= 10}
-                              className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-sm font-medium">Add Certification</span>
-                        </button>
-                      )}
-
-                        </div>
-                      )}
-
-                      {/* Add Certification Button - Only shown when not editing and there are saved certifications */}
-                      {!editingCertifications && savedCertifications.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (savedCertifications.length >= 10) {
-                              alert('Maximum of 10 certifications allowed');
-                              return;
-                            }
-                            setEditingCertifications(true);
-                            // Only add a new empty certification, don't load saved ones
-                            updateCompanyInfo('certificationsList', [
-                              { id: Date.now() + Math.random(), certificationName: '', certifyingOrganization: '', dateReceived: '' }
-                            ]);
-                          }}
-                          disabled={savedCertifications.length >= 10}
-                          className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-sm font-medium">Add Certification</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Insurance */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedInsurance(!collapsedInsurance)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedInsurance ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <Shield className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Insurance</h3>
-                    {(() => {
-                      const { completed, total } = getInsuranceCompletionLocal();
-                      const isComplete = completed === total;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          <span>{completed}/{total}</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedInsurance ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!collapsedInsurance && (
-                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-                      {/* Check if Uninsured is selected */}
-                      {(() => {
-                        const isUninsured = savedInsurance.some(ins => ins.status === 'Uninsured') || 
-                                          (companyInfo.insuranceList || []).some(ins => ins.status === 'Uninsured');
-                        
-                        return (
-                          <>
-                            {/* Saved Insurance - Hidden if Uninsured is checked */}
-                            {savedInsurance.length > 0 && !isUninsured && (
-                              <div className="space-y-3">
-                                {savedInsurance.map((ins) => (
-                            // Display format
-                            <div
-                              key={ins.id}
-                              className="border border-gray-200 rounded-2xl px-5 py-4 bg-slate-50/60 relative flex items-center"
-                            >
-                              <div className="flex-1 grid grid-cols-3 gap-6 items-center">
-                        <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Company</label>
-                                  <p className="text-base font-medium text-gray-900">{ins.company || '—'}</p>
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Policy Number</label>
-                                  <p className="text-base text-gray-800">{ins.policyNumber || '—'}</p>
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Coverage Limits ($)</label>
-                                  <p className="text-base text-gray-800">
-                                    {ins.coverageLimits ? `$${parseFloat(ins.coverageLimits.replace(/[^0-9.]/g, '') || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '—'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex justify-end gap-2 ml-4">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    // Move insurance to editable section
-                                    const updatedSaved = savedInsurance.filter(i => i.id !== ins.id);
-                                    setSavedInsurance(updatedSaved);
-                                    setEditingInsurance(true);
-                                    updateCompanyInfo('insuranceList', [
-                                      ...(companyInfo.insuranceList || []),
-                                      { ...ins }
-                                    ]);
-                                  }}
-                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                                  aria-label="Edit insurance"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = savedInsurance.filter(i => i.id !== ins.id);
-                                    setSavedInsurance(updated);
-                                  }}
-                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-100 rounded-md transition-colors"
-                                  aria-label="Delete insurance"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                        </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                            {/* Editable Insurance - Hidden if Uninsured is checked */}
-                            {(editingInsurance || savedInsurance.length === 0) && !isUninsured && (
-                              <div className="space-y-4">
-                                {(companyInfo.insuranceList || []).length > 0 && (() => {
-                                  const filteredList = (companyInfo.insuranceList || []).filter(ins => ins.status !== 'Uninsured');
-                                  return filteredList.map((ins) => {
-                                    // Find the original index in the unfiltered array by id or by matching the object
-                                    const originalIndex = (companyInfo.insuranceList || []).findIndex(item => {
-                                      if (item.status === 'Uninsured') return false;
-                                      if (ins.id && item.id === ins.id) return true;
-                                      // Match by object reference as fallback
-                                      return item === ins;
-                                    });
-                                    return (
-                            <div key={ins.id || originalIndex} className="grid grid-cols-4 gap-4 items-end p-4 bg-slate-50/60 border border-slate-200 rounded-lg">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                                  Company
-                                  {insuranceErrors[ins.id]?.missingCompany && (
-                                    <span className="text-red-500 text-sm">*</span>
-                                  )}
-                                </label>
-                              <input
-                                type="text"
-                                  value={ins.company || ''}
-                                  onChange={(e) => {
-                                    const updated = [...(companyInfo.insuranceList || [])];
-                                    updated[originalIndex].company = e.target.value;
-                                    updateCompanyInfo('insuranceList', updated);
-                                    if (insuranceErrors[ins.id]?.missingCompany) {
-                                      setInsuranceErrors(prev => {
-                                        const newErrors = { ...prev };
-                                        if (newErrors[ins.id]) {
-                                          delete newErrors[ins.id].missingCompany;
-                                          if (Object.keys(newErrors[ins.id]).length === 0) {
-                                            delete newErrors[ins.id];
-                                          }
-                                        }
-                                        return newErrors;
-                                      });
-                                    }
-                                  }}
-                                placeholder="Enter company name"
-                                  disabled={ins.status === 'Uninsured'}
-                                  className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none ${
-                                    ins.status === 'Uninsured' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''
-                                  }`}
-                              />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                                  Policy Number
-                                  {insuranceErrors[ins.id]?.missingPolicyNumber && (
-                                    <span className="text-red-500 text-sm">*</span>
-                                  )}
-                                </label>
-                              <input
-                                type="text"
-                                  value={ins.policyNumber || ''}
-                                  onChange={(e) => {
-                                    const updated = [...(companyInfo.insuranceList || [])];
-                                    updated[originalIndex].policyNumber = e.target.value;
-                                    updateCompanyInfo('insuranceList', updated);
-                                    if (insuranceErrors[ins.id]?.missingPolicyNumber) {
-                                      setInsuranceErrors(prev => {
-                                        const newErrors = { ...prev };
-                                        if (newErrors[ins.id]) {
-                                          delete newErrors[ins.id].missingPolicyNumber;
-                                          if (Object.keys(newErrors[ins.id]).length === 0) {
-                                            delete newErrors[ins.id];
-                                          }
-                                        }
-                                        return newErrors;
-                                      });
-                                    }
-                                  }}
-                                placeholder="Enter policy number"
-                                  disabled={ins.status === 'Uninsured'}
-                                  className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none ${
-                                    ins.status === 'Uninsured' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''
-                                  }`}
-                              />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                                  Coverage Limits ($)
-                                  {insuranceErrors[ins.id]?.missingCoverageLimits && (
-                                    <span className="text-red-500 text-sm">*</span>
-                                  )}
-                                </label>
-                                <div className="relative">
-                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
-                              <input
-                                type="text"
-                                    value={ins.coverageLimits ? ins.coverageLimits.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                                    onChange={(e) => {
-                                      // Remove all non-numeric characters except commas
-                                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                                      const formattedValue = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                      const updated = [...(companyInfo.insuranceList || [])];
-                                      updated[originalIndex].coverageLimits = numericValue;
-                                      updateCompanyInfo('insuranceList', updated);
-                                    if (insuranceErrors[ins.id]?.missingCoverageLimits) {
-                                      setInsuranceErrors(prev => {
-                                        const newErrors = { ...prev };
-                                        if (newErrors[ins.id]) {
-                                          delete newErrors[ins.id].missingCoverageLimits;
-                                          if (Object.keys(newErrors[ins.id]).length === 0) {
-                                            delete newErrors[ins.id];
-                                          }
-                                        }
-                                        return newErrors;
-                                      });
-                                    }
-                                  }}
-                                  placeholder="0"
-                                  disabled={ins.status === 'Uninsured'}
-                                  className={`w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none ${
-                                    ins.status === 'Uninsured' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''
-                                  }`}
-                              />
-                            </div>
-                          </div>
-
-                              <div className="flex justify-end gap-2 items-center">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Save this individual insurance
-                                    const insToSave = ins;
-                                    const errors = {};
-                                    let hasErrors = false;
-                                    
-                                    if (insToSave.status !== 'Uninsured') {
-                                      if (!insToSave.company || insToSave.company.trim() === '') {
-                                        errors.missingCompany = true;
-                                        hasErrors = true;
-                                      }
-                                      
-                                      if (!insToSave.policyNumber || insToSave.policyNumber.trim() === '') {
-                                        errors.missingPolicyNumber = true;
-                                        hasErrors = true;
-                                      }
-                                      
-                                      if (!insToSave.coverageLimits || insToSave.coverageLimits.trim() === '') {
-                                        errors.missingCoverageLimits = true;
-                                        hasErrors = true;
-                                      }
-                                    }
-                                    
-                                    if (hasErrors) {
-                                      setInsuranceErrors(prev => ({
-                                        ...prev,
-                                        [ins.id]: errors
-                                      }));
-                                      return;
-                                    }
-                                    
-                                    setInsuranceErrors(prev => {
-                                      const newErrors = { ...prev };
-                                      delete newErrors[ins.id];
-                                      return newErrors;
-                                    });
-                                    
-                                    const newIns = {
-                                      ...insToSave,
-                                      id: insToSave.id || Date.now() + Math.random(),
-                                      savedAt: new Date().toISOString()
-                                    };
-                                    setSavedInsurance((prev) => {
-                                      const existingIds = new Set(prev.map(i => i.id));
-                                      if (existingIds.has(newIns.id)) {
-                                        return prev.map(i => i.id === newIns.id ? newIns : i);
-                                      }
-                                      if (prev.length >= 10) {
-                                        alert('Maximum of 10 insurance policies allowed');
-                                        return prev;
-                                      }
-                                      return [...prev, newIns];
-                                    });
-                                    // Remove from editable list
-                                    const updated = (companyInfo.insuranceList || []).filter(item => {
-                                      // Keep items that are Uninsured or don't match the saved insurance
-                                      if (item.status === 'Uninsured') return true;
-                                      // Remove the item that matches by id or object reference
-                                      if (ins.id && item.id === ins.id) return false;
-                                      return item !== ins;
-                                    });
-                                    updateCompanyInfo('insuranceList', updated);
-                                  }}
-                                  className="p-2.5 text-green-600 hover:text-green-700 hover:bg-gray-100 border border-transparent hover:border-gray-300 rounded-lg transition-all duration-200"
-                                  aria-label="Save insurance"
-                                >
-                                  <Check className="w-6 h-6" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const updated = (companyInfo.insuranceList || []).filter(item => {
-                                      // Keep items that are Uninsured or don't match the deleted insurance
-                                      if (item.status === 'Uninsured') return true;
-                                      // Remove the item that matches by id or object reference
-                                      if (ins.id && item.id === ins.id) return false;
-                                      return item !== ins;
-                                    });
-                                    updateCompanyInfo('insuranceList', updated);
-                                  }}
-                                  className="p-2.5 text-red-600 hover:text-red-700 hover:bg-gray-100 border border-transparent hover:border-gray-300 rounded-lg transition-all duration-200"
-                                  aria-label="Delete insurance"
-                                >
-                                  <Trash2 className="w-6 h-6" />
-                                </button>
-                        </div>
-                      </div>
-                                    );
-                                  });
-                                })()}
-                              </div>
-                            )}
-
-                            {/* Add Insurance Button and Uninsured checkbox */}
-                            <div className="flex items-center gap-4">
-                              {/* Add Insurance Button - Only shown when no insurance items are being edited */}
-                              {(() => {
-                                const filteredList = (companyInfo.insuranceList || []).filter(ins => ins.status !== 'Uninsured');
-                                return filteredList.length === 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (savedInsurance.length >= 10) {
-                                        alert('Maximum of 10 insurance policies allowed');
-                                        return;
-                                      }
-                                      setEditingInsurance(true);
-                                      updateCompanyInfo('insuranceList', [
-                                        { id: Date.now() + Math.random(), company: '', policyNumber: '', coverageLimits: '', status: 'Insured' }
-                                      ]);
-                                    }}
-                                    disabled={isUninsured}
-                                    className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Add Insurance</span>
-                                  </button>
-                                );
-                              })()}
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={isUninsured}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      // Clear all insurance entries and add uninsured entry
-                                      setSavedInsurance([]);
-                                      updateCompanyInfo('insuranceList', [
-                                        { id: Date.now() + Math.random(), company: '', policyNumber: '', coverageLimits: '', status: 'Uninsured' }
-                                      ]);
-                                      setEditingInsurance(true);
-                                    } else {
-                                      // Remove uninsured entries
-                                      const updated = (companyInfo.insuranceList || []).filter(ins => ins.status !== 'Uninsured');
-                                      updateCompanyInfo('insuranceList', updated);
-                                      if (updated.length === 0) {
-                                        setEditingInsurance(false);
-                                      }
-                                    }
-                                  }}
-                                  className="w-4 h-4 rounded border-gray-300 accent-blue-600 focus:ring-blue-500 focus:ring-2"
-                                />
-                                <label className="text-sm text-gray-700">Uninsured</label>
-                              </div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
-
-                {/* Guarantee/Warranty */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedGuaranteeWarranty(!collapsedGuaranteeWarranty)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedGuaranteeWarranty ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <ShieldCheck className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Guarantee/Warranty</h3>
-                    {(() => {
-                      const { completed, total } = getGuaranteeWarrantyCompletionLocal();
-                      const isComplete = completed === total;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          <span>{completed}/{total}</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedGuaranteeWarranty ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!collapsedGuaranteeWarranty && (
-                    <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
-                      {savedGuaranteeWarranty && savedGuaranteeWarranty.trim() !== '' && !editingGuaranteeWarranty ? (
-                        // View Mode
-                        <div className="p-4 bg-slate-50 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <p className="text-sm italic text-gray-600">{savedGuaranteeWarranty}</p>
-                            </div>
-                            <div className="flex items-center gap-2 ml-4">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingGuaranteeWarranty(true);
-                                  // Load saved guarantee/warranty into editing state
-                                  updateCompanyInfo('guaranteeWarranty', savedGuaranteeWarranty);
-                                }}
-                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                                title="Edit guarantee/warranty"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSavedGuaranteeWarranty('');
-                                  updateCompanyInfo('guaranteeWarranty', '');
-                                }}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                title="Delete guarantee/warranty"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        // Edit Mode - Show textarea when section is opened
-                      <div className="relative p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                        {(!companyInfo.guaranteeWarranty || companyInfo.guaranteeWarranty.trim() === '') && (
-                          <span className="absolute top-2 left-2 text-red-500 text-sm font-medium">*</span>
-                        )}
-                        <div className="space-y-4">
-                          <textarea
-                            rows={4}
-                              value={companyInfo.guaranteeWarranty || ''}
-                            onChange={(e) => updateCompanyInfo('guaranteeWarranty', e.target.value)}
-                            placeholder="Describe your guarantee or warranty policy..."
-                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm resize-y bg-white shadow-sm"
-                          />
-                            <div className="flex justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingGuaranteeWarranty(false);
-                                  // Reset to saved state if canceling
-                                  if (savedGuaranteeWarranty) {
-                                    updateCompanyInfo('guaranteeWarranty', savedGuaranteeWarranty);
-                                  } else {
-                                    updateCompanyInfo('guaranteeWarranty', '');
-                                  }
-                                }}
-                                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                              >
-                                Cancel
-                              </button>
-                            <button
-                              type="button"
-                              onClick={handleSaveGuaranteeWarranty}
+                          if (isComplete) {
+                            // Save current operating hours
+                            setSavedOperatingHours([...companyInfo.operatingHours]);
+                            setOperatingHoursSaveAttempted(false);
+                          }
+                        }}
                               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
                             >
                               Save
                             </button>
                           </div>
-                          </div>
-                            </div>
-                          )}
-                    </div>
-                  )}
-                </div>
-                
-                
-                {/* Section 3: Brand Identity, Reviews and Testimonials */}
-                <div className="space-y-6 pt-6 border-t-2 border-gray-200">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Brand & Reputation</h3>
-                {/* Brand Identity */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedBrandIdentity(!collapsedBrandIdentity)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedBrandIdentity ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <Star className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Brand Identity</h3>
-                    {(() => {
-                      const { completed, total } = getBrandIdentityCompletionLocal();
-                      const isComplete = completed === total;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                            isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          <span>{completed}/{total}</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedBrandIdentity ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!collapsedBrandIdentity && (
-                    <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Company Slogan</label>
-                          <input
-                            type="text"
-                            value={companyInfo.companySlogan || ''}
-                            onChange={(e) => updateCompanyInfo('companySlogan', e.target.value)}
-                            placeholder="Enter your company slogan"
-                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs text-gray-600 mb-1">Years</label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={companyInfo.experienceYears || ''}
-                                onChange={(e) => updateCompanyInfo('experienceYears', e.target.value)}
-                                placeholder="0"
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                              />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-600 mb-1">Jobs Completed</label>
-                              <input
-                                type="number"
-                                min="0"
-                                  value={companyInfo.jobsCompleted || ''}
-                                  onChange={(e) => updateCompanyInfo('jobsCompleted', e.target.value)}
-                                placeholder="0"
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                              />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-600 mb-1">Satisfied Customers</label>
-                              <input
-                                type="number"
-                                min="0"
-                                  value={companyInfo.satisfiedCustomers || ''}
-                                  onChange={(e) => updateCompanyInfo('satisfiedCustomers', e.target.value)}
-                                placeholder="0"
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-3">Company Qualities (select 3)</label>
-                          <div className="flex flex-wrap gap-3">
-                            {[...companyQualities, ...customCompanyQualities].map((quality) => {
-                              const isSelected = (companyInfo.whatMakesDifferent || []).includes(quality);
-                              const isDisabled = !isSelected && (companyInfo.whatMakesDifferent || []).length >= 3;
-                              return (
-                                <button
-                                  key={quality}
-                                  type="button"
-                                  onClick={() => toggleCompanyQuality(quality)}
-                                  disabled={isDisabled}
-                                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                    isSelected
-                                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                      : isDisabled
-                                      ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
-                                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                  } shadow-sm hover:shadow-md`}
-                                >
-                                  <span>{quality}</span>
-                                </button>
-                              );
-                            })}
-                            <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
-                              <input
-                                type="text"
-                                value={newCompanyQuality}
-                                onChange={(e) => setNewCompanyQuality(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && addCustomCompanyQuality()}
-                                placeholder="Add quality..."
-                                className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-32"
-                              />
-                              <button
-                                type="button"
-                                onClick={addCustomCompanyQuality}
-                                className="text-blue-600 hover:text-blue-700"
-                                disabled={!newCompanyQuality.trim()}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          {(companyInfo.whatMakesDifferent || []).length > 0 && (
-                            <p className="mt-3 text-xs text-slate-500">
-                              Selected: {(companyInfo.whatMakesDifferent || []).length} of 3
-                            </p>
-                          )}
-                        </div>
                       </div>
                     </div>
                   )}
-                  </div>
-                
-                  {/* Reviews and Testimonials */}
-                <div 
-                  className="bg-white border-2 border-slate-200 rounded-2xl p-5 cursor-pointer"
-                  onClick={() => setCollapsedReviewsTestimonials(!collapsedReviewsTestimonials)}
-                >
-                  <div className={`flex items-center gap-3 ${!collapsedReviewsTestimonials ? 'mb-6' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                      <Star className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">Reviews and Testimonials</h3>
-                    <div className="flex items-center justify-center">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-slate-600 transition-transform duration-200 ${!collapsedReviewsTestimonials ? 'transform rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {!collapsedReviewsTestimonials && (
-                    <div className="section-spacing" onClick={(e) => e.stopPropagation()}>
-                      {/* Customer Reviews Section */}
-                      <div className="reviews-section">
-                        <h5 className="reviews-title">Customer Reviews</h5>
-                        <div className="section-spacing">
-                            {(companyInfo.customerReviews || []).map((review, index) => (
-                              <div key={index} className="review-item">
-                                <textarea
-                                  value={review || ''}
-                                  onChange={(e) => {
-                                    const updatedReviews = [...(companyInfo.customerReviews || [])];
-                                    updatedReviews[index] = e.target.value;
-                                    updateCompanyInfo('customerReviews', updatedReviews);
-                                  }}
-                                  rows={4}
-                                  placeholder="Enter a customer review..."
-                                  className="review-textarea review-textarea-md"
-                                />
-                                <button
-                                  onClick={() => {
-                                    const updatedReviews = (companyInfo.customerReviews || []).filter((_, i) => i !== index);
-                                    updateCompanyInfo('customerReviews', updatedReviews);
-                                  }}
-                                  className="review-remove-button"
-                                  type="button"
-                                >
-                                  <X className="review-remove-icon" />
-                                </button>
-                              </div>
-                            ))}
-                            
-                            {(companyInfo.customerReviews || []).length < 3 && (
-                              <button
-                                onClick={() => {
-                                  const updatedReviews = [...(companyInfo.customerReviews || []), ''];
-                                  updateCompanyInfo('customerReviews', updatedReviews);
-                                }}
-                                className="add-review-button"
-                                type="button"
-                              >
-                                <Plus className="add-review-icon" />
-                                Add Review {(companyInfo.customerReviews || []).length > 0 ? `(${(companyInfo.customerReviews || []).length}/3)` : '(0/3)'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      
-                      {/* Online Reviews Section */}
-                      <div className="reviews-section mt-6 pt-6 border-t border-slate-200">
-                        <h5 className="reviews-title">Online Reviews</h5>
-                        <div className="space-y-4 mt-4">
-                          {[
-                            { key: 'google', label: 'Google' },
-                            { key: 'facebook', label: 'Facebook' },
-                            { key: 'nextdoor', label: 'Nextdoor' },
-                            { key: 'yelp', label: 'Yelp' },
-                            { key: 'homeadvisor', label: 'HomeAdvisor' }
-                          ].map((platform) => (
-                            <div key={platform.key} className="grid grid-cols-4 gap-4 items-center p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                              <div className="font-semibold text-gray-900 min-w-[120px]">
-                                {platform.label}
-                              </div>
-                              
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Avg Rating (out of 5)</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="5"
-                                  step="0.1"
-                                  value={companyInfo.onlineReviews?.[platform.key]?.averageRating || ''}
-                                  onChange={(e) => {
-                                    const updatedReviews = {
-                                      ...(companyInfo.onlineReviews || {}),
-                                      [platform.key]: {
-                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                        averageRating: e.target.value
-                                      }
-                                    };
-                                    updateCompanyInfo('onlineReviews', updatedReviews);
-                                  }}
-                                  placeholder="0.0"
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                />
-                              </div>
-                              
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Total Reviews</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={companyInfo.onlineReviews?.[platform.key]?.totalReviews || ''}
-                                  onChange={(e) => {
-                                    const updatedReviews = {
-                                      ...(companyInfo.onlineReviews || {}),
-                                      [platform.key]: {
-                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                        totalReviews: e.target.value
-                                      }
-                                    };
-                                    updateCompanyInfo('onlineReviews', updatedReviews);
-                                  }}
-                                  placeholder="0"
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                />
-                              </div>
-                              
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">5-Star Reviews</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={companyInfo.onlineReviews?.[platform.key]?.fiveStarReviews || ''}
-                                  onChange={(e) => {
-                                    const updatedReviews = {
-                                      ...(companyInfo.onlineReviews || {}),
-                                      [platform.key]: {
-                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                        fiveStarReviews: e.target.value
-                                      }
-                                    };
-                                    updateCompanyInfo('onlineReviews', updatedReviews);
-                                  }}
-                                  placeholder="0"
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                </div>
-              </div>
-              
-              {/* Save Button for Company Information */}
-              <div className="flex justify-end mt-6 pt-6 border-t border-slate-200">
-                <button
-                  onClick={() => {
-                    handleSaveCompanyInfo();
-                    console.log('Saving company information:', companyInfo);
-                    alert('Company information saved successfully!');
-                  }}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
 
+                    {/* Services Offered Content */}
+                    {selectedTab === 'Services Offered' && (
+                              <div>
             {/* Services Offered Section */}
-            <div className="bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Services Offered</h2>
-                {selectedServices.length === 0 && (
-                  <span className="text-sm text-red-600 font-medium">
-                    * At least one service required
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                      <Briefcase className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">
+                      Services Offered
+                    </h3>
+                    {servicesOfferedSaveAttempted && selectedServices.length === 0 && (
+                      <span className="text-red-600 text-sm font-medium flex items-center">
+                        <span className="text-red-500">*</span> One service required
                   </span>
                 )}
               </div>
@@ -2581,24 +1723,25 @@ const MyBusiness = ({
                 )}
               </div>
               {selectedServices.length > 0 ? (
-                <div className="mt-4">
+                <div className={`mt-4 pr-2 ${selectedServices.length > 3 ? 'max-h-[650px] overflow-y-auto' : ''}`}>
                   {/* Service cards with chemicals and PSI */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[450px] overflow-y-auto pr-2">
+                  <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${selectedServices.length > 3 ? 'pb-4' : ''}`}>
                     {selectedServices.map((service) => {
                       const serviceChemList = serviceChemicals[service] || [];
                       return (
                         <div
                           key={service}
-                          className="border rounded-lg p-4 bg-slate-50 border-gray-300 shadow-sm relative"
+                          className="border rounded-lg p-4 bg-slate-50 border-gray-300 relative min-w-0"
+                          style={{width: '100%'}}
                         >
                           {/* Trash icon in upper right corner */}
                           <button
                             type="button"
                             onClick={() => toggleService(service)}
-                            className="absolute top-2 right-2 text-gray-400 hover:text-red-600 transition-colors"
+                            className="group absolute top-2 right-2 text-gray-400 hover:text-red-600 transition-colors"
                             title="Remove service"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
                           </button>
                           <h3 className="text-base font-semibold text-gray-900 mb-4 pr-6">{service}</h3>
                         
@@ -2634,7 +1777,7 @@ const MyBusiness = ({
                                       value={chemicalSearchTerm[`${service}-chemical`] || ''}
                                       onChange={(e) => setChemicalSearchTerm(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
                                       placeholder="Search chemicals..."
-                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white focus:ring-blue-500 focus:border-blue-500"
                                       onClick={(e) => e.stopPropagation()}
                                       autoFocus
                                     />
@@ -2670,7 +1813,7 @@ const MyBusiness = ({
                                                 value={newCustomChemical[`${service}-chemical`] || ''}
                                                 onChange={(e) => setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
                                                 placeholder="Add custom chemical..."
-                                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-white focus:ring-blue-500 focus:border-blue-500"
                                                 onClick={(e) => e.stopPropagation()}
                                                 onKeyPress={(e) => {
                                                   if (e.key === 'Enter') {
@@ -2737,7 +1880,7 @@ const MyBusiness = ({
                                                 value={newCustomChemical[`${service}-chemical`] || ''}
                                                 onChange={(e) => setNewCustomChemical(prev => ({ ...prev, [`${service}-chemical`]: e.target.value }))}
                                                 placeholder="Add custom chemical..."
-                                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-white focus:ring-blue-500 focus:border-blue-500"
                                                 onClick={(e) => e.stopPropagation()}
                                                 onKeyPress={(e) => {
                                                   if (e.key === 'Enter') {
@@ -2793,7 +1936,7 @@ const MyBusiness = ({
                                   <select
                                     value={chem.concentration}
                                     onChange={(e) => updateChemicalConcentration(service, chem.chemical, e.target.value)}
-                                    className="px-2 py-1 border border-gray-300 rounded text-xs w-20"
+                                    className="px-2 py-1 border border-gray-300 rounded text-xs w-20 focus:ring-blue-500 focus:border-blue-500"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     {['1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%', '12.5%', '15%', '20%', '25%', '50%'].map(pct => (
@@ -2825,18 +1968,18 @@ const MyBusiness = ({
                             value={servicePSI[service] || ''}
                             onChange={(e) => updateServicePSI(service, e.target.value)}
                             placeholder="Enter PSI (e.g., 1500)"
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white focus:ring-blue-500 focus:border-blue-500"
                           />
                         </div>
 
                         {/* Safety & Prevention Section */}
-                        <div className="pt-2 border-t border-slate-200">
+                        <div className="pt-3 mt-2 border-t border-gray-300">
                           <label className="block text-xs font-medium text-gray-700 mb-2">Safety & Prevention:</label>
                           <div className="relative safety-dropdown-container">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                                 setSafetyDropdownOpen(prev => ({
                                   ...prev,
                                   [service]: !prev[service]
@@ -2846,38 +1989,54 @@ const MyBusiness = ({
                             >
                               <span className="text-gray-500">Select safety measures...</span>
                               <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${safetyDropdownOpen[service] ? 'transform rotate-180' : ''}`} />
-                            </button>
+                </button>
                             {safetyDropdownOpen[service] && (
-                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden safety-dropdown-container">
-                                <div className="overflow-y-auto max-h-56">
-                                  {(() => {
+                              <div className="absolute z-[100] w-full bottom-full mb-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                                <div className="overflow-y-auto max-h-56 rounded-lg">
+                        {(() => {
                                     // Get all safety measures from Safety and Preventive Measures section
-                                    const baseMeasures = [
-                                      ...safetyMeasures,
-                                      ...pressureWashingSafetyMeasures,
-                                      ...specialtyCleaningSafetyMeasures,
-                                      ...windowCleaningSafetyMeasures,
-                                      ...customSoftWashingSafetyMeasures,
-                                      ...customPressureWashingSafetyMeasures,
-                                      ...customSpecialtyCleaningSafetyMeasures,
-                                      ...customWindowCleaningSafetyMeasures
-                                    ];
-                                    const uniqueBaseMeasures = [...new Set(baseMeasures)].sort((a, b) => 
-                                      a.localeCompare(b, undefined, { sensitivity: 'base' })
-                                    );
+                          const baseMeasures = [
+                            ...safetyMeasures,
+                            ...pressureWashingSafetyMeasures,
+                            ...specialtyCleaningSafetyMeasures,
+                            ...windowCleaningSafetyMeasures,
+                            ...customSoftWashingSafetyMeasures,
+                            ...customPressureWashingSafetyMeasures,
+                            ...customSpecialtyCleaningSafetyMeasures,
+                            ...customWindowCleaningSafetyMeasures
+                          ];
+                          const uniqueBaseMeasures = [...new Set(baseMeasures)].sort((a, b) => 
+                            a.localeCompare(b, undefined, { sensitivity: 'base' })
+                          );
                                     const filteredCustomMeasures = [].filter(
-                                      m => m.toLowerCase() !== 'bed' && m.toLowerCase() !== 'test'
-                                    );
-                                    const allMeasures = [...uniqueBaseMeasures, ...filteredCustomMeasures];
+                            m => m.toLowerCase() !== 'bed' && m.toLowerCase() !== 'test'
+                          );
+                          const allMeasures = [...uniqueBaseMeasures, ...filteredCustomMeasures];
                                     const serviceMeasures = serviceSafetyMeasures[service] || [];
-                                    
-                                    return (
+                                    const allSelected = serviceMeasures.length === allMeasures.length && allMeasures.length > 0;
+                            
+                          return (
                                       <>
+                                        {/* Select All / Deselect All */}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (allSelected) {
+                                              deselectAllSafetyMeasures(service);
+                                            } else {
+                                              selectAllSafetyMeasures(service, allMeasures);
+                                            }
+                                          }}
+                                          className="w-full px-3 py-2 text-xs font-semibold text-left bg-gray-50 hover:bg-gray-100 transition-colors border-b-2 border-gray-200 text-gray-700"
+                                        >
+                                          {allSelected ? 'Deselect All' : 'Select All'}
+                                        </button>
                                         {allMeasures.map((measure) => {
                                           const isSelected = serviceMeasures.includes(measure);
                                           return (
                                             <label
-                                              key={measure}
+                              key={measure}
                                               className="flex items-center px-3 py-2 text-xs hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0"
                                               onClick={(e) => e.stopPropagation()}
                                             >
@@ -2895,16 +2054,16 @@ const MyBusiness = ({
                                         {/* Add custom safety measure option */}
                                         <div className="border-t border-gray-200 mt-1 pt-1 px-3 pb-2">
                                           <div className="flex items-center gap-2">
-                                            <input
-                                              type="text"
+                        <input
+                          type="text"
                                               value={newCustomSafetyMeasure[service] || ''}
                                               onChange={(e) => setNewCustomSafetyMeasure(prev => ({ ...prev, [service]: e.target.value }))}
                                               placeholder="Add custom measure..."
-                                              className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                              className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-white focus:ring-blue-500 focus:border-blue-500"
                                               onClick={(e) => e.stopPropagation()}
-                                              onKeyPress={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  e.preventDefault();
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
                                                   const customMeasure = (newCustomSafetyMeasure[service] || '').trim();
                                                   if (customMeasure) {
                                                     addCustomSafetyMeasureToService(service, customMeasure);
@@ -2912,11 +2071,11 @@ const MyBusiness = ({
                                                   }
                                                 }
                                               }}
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                                                 const customMeasure = (newCustomSafetyMeasure[service] || '').trim();
                                                 if (customMeasure) {
                                                   addCustomSafetyMeasureToService(service, customMeasure);
@@ -2927,36 +2086,38 @@ const MyBusiness = ({
                                               disabled={!newCustomSafetyMeasure[service]?.trim()}
                                             >
                                               <Plus className="w-3 h-3" />
-                                            </button>
-                                          </div>
-                                        </div>
+                        </button>
+                        </div>
+                      </div>
                                       </>
                                     );
                                   })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+                          {/* Display selected safety measures */}
+                          <div className="space-y-2 mt-2 h-[90px] overflow-y-auto">
+                            {serviceSafetyMeasures[service] && serviceSafetyMeasures[service].length > 0 ? (
+                              serviceSafetyMeasures[service].map((measure) => (
+                                <div
+                                  key={measure}
+                                  className="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded border border-slate-200"
+                                >
+                                  <span className="flex-1">{measure}</span>
+                      <button
+                        type="button"
+                                    onClick={() => toggleServiceSafetyMeasure(service, measure)}
+                                    className="text-red-600 hover:text-red-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                                 </div>
-                              </div>
+                  ))
+                            ) : (
+                              <div className="h-full flex items-center justify-center text-xs text-gray-400">No safety measures selected</div>
                             )}
                           </div>
-                          {/* Display selected safety measures */}
-                          {serviceSafetyMeasures[service] && serviceSafetyMeasures[service].length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {serviceSafetyMeasures[service].map((measure) => (
-                                <span
-                                  key={measure}
-                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200"
-                                >
-                                  {measure}
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleServiceSafetyMeasure(service, measure)}
-                                    className="ml-1 text-blue-600 hover:text-blue-800"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                         </div>
                       );
@@ -2970,36 +2131,1483 @@ const MyBusiness = ({
                   </p>
                 </div>
               )}
+
+              {/* Save Button */}
+              <div className="mt-6 flex items-center justify-end gap-4">
+                {servicesOfferedSaveAttempted && selectedServices.length === 0 && (
+                  <span className="text-red-600 text-sm font-medium">
+                    <span className="text-red-500">*</span> One service required
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setServicesOfferedSaveAttempted(true);
+                    if (selectedServices.length > 0) {
+                      // Services are valid, reset error state
+                      setServicesOfferedSaveAttempted(false);
+                      // You can add additional save logic here if needed
+                    }
+                  }}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                >
+                  Save
+                </button>
             </div>
+                </div>
+                      </div>
+                    )}
+
+                    {/* Certifications Content */}
+                    {selectedTab === 'Certifications' && (
+                      <div>
+                {/* Certifications */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <Award className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Certifications</h3>
+                    {(() => {
+                      const { completed, total } = getCertificationsCompletionLocal();
+                      const isComplete = completed === total;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                    <div className="space-y-4">
+                      {/* Saved Certifications - Always shown if they exist */}
+                      {savedCertifications.length > 0 && (
+                        <div className="space-y-3">
+                          {savedCertifications.map((cert) => (
+                            // Display format
+                            <div
+                              key={cert.id}
+                              className="border border-gray-200 rounded-2xl px-5 py-4 bg-slate-50/60 relative"
+                            >
+                              {/* Pencil and Trashcan buttons - upper right */}
+                              <div className="absolute top-4 right-4 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Move certification to editable section
+                                    const updatedSaved = savedCertifications.filter(c => c.id !== cert.id);
+                                    setSavedCertifications(updatedSaved);
+                                    setEditingCertifications(true);
+                                    updateCompanyInfo('certificationsList', [
+                                      ...companyInfo.certificationsList,
+                                      { ...cert }
+                                    ]);
+                                  }}
+                                  className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                  aria-label="Edit certification"
+                                >
+                                  <Pencil className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = savedCertifications.filter(c => c.id !== cert.id);
+                                    setSavedCertifications(updated);
+                                  }}
+                                  className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                  aria-label="Delete certification"
+                                >
+                                  <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
+                                </button>
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-6 pr-20">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Certification Name</label>
+                                  <p className="text-base font-medium text-gray-900">{cert.certificationName}</p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Certifying Organization</label>
+                                  <p className="text-base text-gray-800">{cert.certifyingOrganization}</p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Date Received</label>
+                                  <p className="text-base text-gray-800">
+                                    {cert.dateReceived ? new Date(cert.dateReceived).toLocaleDateString() : '—'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Editable Certifications - Shown when editing or when no saved certifications */}
+                      {(editingCertifications || savedCertifications.length === 0) && (
+                        <div className="space-y-4">
+                          {companyInfo.certificationsList.length > 0 && companyInfo.certificationsList.map((cert, index) => (
+                            <div key={cert.id || index} className="bg-slate-50/60 border border-slate-200 rounded-lg p-4 relative">
+                              {/* Trashcan button - upper right */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const updated = companyInfo.certificationsList.filter((_, i) => i !== index);
+                                  updateCompanyInfo('certificationsList', updated);
+                                }}
+                                className="absolute top-4 right-4 group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                aria-label="Delete certification"
+                              >
+                                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
+                              </button>
+                              
+                              <div className="grid grid-cols-3 gap-4 pr-10">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Certification Name
+                              {certificationErrors[cert.id]?.missingName && (
+                                <span className="text-red-500 text-sm ml-0.5">*</span>
+                              )}
+                            </label>
+                            <input
+                              type="text"
+                              value={cert.certificationName || ''}
+                              onChange={(e) => {
+                                const updated = [...companyInfo.certificationsList];
+                                updated[index].certificationName = e.target.value;
+                                updateCompanyInfo('certificationsList', updated);
+                                // Clear error when user starts typing
+                                if (certificationErrors[cert.id]?.missingName) {
+                                  setCertificationErrors(prev => {
+                                    const newErrors = { ...prev };
+                                    if (newErrors[cert.id]) {
+                                      delete newErrors[cert.id].missingName;
+                                      if (Object.keys(newErrors[cert.id]).length === 0) {
+                                        delete newErrors[cert.id];
+                                      }
+                                    }
+                                    return newErrors;
+                                  });
+                                }
+                              }}
+                              placeholder="Enter certification name"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Certifying Organization
+                              {certificationErrors[cert.id]?.missingOrganization && (
+                                <span className="text-red-500 text-sm ml-0.5">*</span>
+                              )}
+                            </label>
+                            <input
+                              type="text"
+                                  value={cert.certifyingOrganization || ''}
+                              onChange={(e) => {
+                                const updated = [...companyInfo.certificationsList];
+                                updated[index].certifyingOrganization = e.target.value;
+                                updateCompanyInfo('certificationsList', updated);
+                                    // Clear error when user starts typing
+                                    if (certificationErrors[cert.id]?.missingOrganization) {
+                                      setCertificationErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        if (newErrors[cert.id]) {
+                                          delete newErrors[cert.id].missingOrganization;
+                                          if (Object.keys(newErrors[cert.id]).length === 0) {
+                                            delete newErrors[cert.id];
+                                          }
+                                        }
+                                        return newErrors;
+                                      });
+                                    }
+                              }}
+                              placeholder="Enter organization"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none"
+                            />
+                          </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Date Received
+                                  {certificationErrors[cert.id]?.missingDate && (
+                                    <span className="text-red-500 text-sm ml-0.5">*</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="date"
+                                  value={cert.dateReceived || ''}
+                                  max={new Date().toISOString().split('T')[0]}
+                                  onChange={(e) => {
+                                    const updated = [...companyInfo.certificationsList];
+                                    updated[index].dateReceived = e.target.value;
+                                    updateCompanyInfo('certificationsList', updated);
+                                    // Clear error when user selects a date
+                                    if (certificationErrors[cert.id]?.missingDate) {
+                                      setCertificationErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        if (newErrors[cert.id]) {
+                                          delete newErrors[cert.id].missingDate;
+                                          if (Object.keys(newErrors[cert.id]).length === 0) {
+                                            delete newErrors[cert.id];
+                                          }
+                                        }
+                                        return newErrors;
+                                      });
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none"
+                                />
+                              </div>
+                              </div>
+                              
+                              {/* Save button at bottom right */}
+                              <div className="flex items-center justify-end gap-3 mt-4">
+                                {(() => {
+                                  const errors = {};
+                                  let hasErrors = false;
+                                  
+                                  if (!cert.certificationName || cert.certificationName.trim() === '') {
+                                    hasErrors = true;
+                                  }
+                                  
+                                  if (!cert.certifyingOrganization || cert.certifyingOrganization.trim() === '') {
+                                    hasErrors = true;
+                                  }
+                                  
+                                  if (!cert.dateReceived || cert.dateReceived.trim() === '') {
+                                    hasErrors = true;
+                                  }
+                                  
+                                  return hasErrors && certificationErrors[cert.id] && Object.keys(certificationErrors[cert.id]).length > 0 ? (
+                                    <span className="text-red-600 text-sm font-medium flex items-center">
+                                      <span className="text-red-500">*</span> Please fill in all required fields
+                                    </span>
+                                  ) : null;
+                                })()}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Save this individual certification
+                                    const certToSave = cert;
+                                    const errors = {};
+                                    let hasErrors = false;
+                                    
+                                    if (!certToSave.certificationName || certToSave.certificationName.trim() === '') {
+                                      errors.missingName = true;
+                                      hasErrors = true;
+                                    }
+                                    
+                                    if (!certToSave.certifyingOrganization || certToSave.certifyingOrganization.trim() === '') {
+                                      errors.missingOrganization = true;
+                                      hasErrors = true;
+                                    }
+                                    
+                                    if (!certToSave.dateReceived || certToSave.dateReceived.trim() === '') {
+                                      errors.missingDate = true;
+                                      hasErrors = true;
+                                    }
+                                    
+                                    if (hasErrors) {
+                                      // Set errors for this certification
+                                      setCertificationErrors(prev => ({
+                                        ...prev,
+                                        [cert.id]: errors
+                                      }));
+                                      return;
+                                    }
+                                    
+                                    // Clear any errors for this certification
+                                    setCertificationErrors(prev => {
+                                      const newErrors = { ...prev };
+                                      delete newErrors[cert.id];
+                                      return newErrors;
+                                    });
+                                    
+                                    const newCert = {
+                                      ...certToSave,
+                                      id: certToSave.id || Date.now() + Math.random(),
+                                      savedAt: new Date().toISOString()
+                                    };
+                                    setSavedCertifications((prev) => {
+                                      const existingIds = new Set(prev.map(c => c.id));
+                                      if (existingIds.has(newCert.id)) {
+                                        return prev.map(c => c.id === newCert.id ? newCert : c);
+                                      }
+                                      if (prev.length >= 10) {
+                                        alert('Maximum of 10 certifications allowed');
+                                        return prev;
+                                      }
+                                      return [...prev, newCert];
+                                    });
+                                    // Remove from editable list
+                                    const updated = companyInfo.certificationsList.filter((_, i) => i !== index);
+                                    updateCompanyInfo('certificationsList', updated);
+                                  }}
+                                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                                >
+                                  Save
+                                </button>
+                              </div>
+                        </div>
+                      ))}
+                      
+                      {/* Add Certification Button - Only shown when no certifications are being edited */}
+                      {companyInfo.certificationsList.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                                const totalCertifications = savedCertifications.length + companyInfo.certificationsList.length;
+                                if (totalCertifications >= 10) {
+                                  alert('Maximum of 10 certifications allowed');
+                                  return;
+                                }
+                          updateCompanyInfo('certificationsList', [
+                            ...companyInfo.certificationsList,
+                                  { id: Date.now() + Math.random(), certificationName: '', certifyingOrganization: '', dateReceived: '' }
+                          ]);
+                        }}
+                              disabled={savedCertifications.length + companyInfo.certificationsList.length >= 10}
+                              className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span className="text-sm font-medium">Add Certification</span>
+                      </button>
+                      )}
+
+                        </div>
+                      )}
+
+                      {/* Add Certification Button - Only shown when not editing and there are saved certifications */}
+                      {!editingCertifications && savedCertifications.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (savedCertifications.length >= 10) {
+                              alert('Maximum of 10 certifications allowed');
+                              return;
+                            }
+                            setEditingCertifications(true);
+                            // Only add a new empty certification, don't load saved ones
+                            updateCompanyInfo('certificationsList', [
+                              { id: Date.now() + Math.random(), certificationName: '', certifyingOrganization: '', dateReceived: '' }
+                            ]);
+                          }}
+                          disabled={savedCertifications.length >= 10}
+                          className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span className="text-sm font-medium">Add Certification</span>
+                        </button>
+                      )}
+                    </div>
+                </div>
+                      </div>
+                    )}
+
+                    {/* Insurance Content */}
+                    {selectedTab === 'Insurance' && (
+                      <div>
+                {/* Insurance */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Insurance</h3>
+                    {(() => {
+                      const { completed, total } = getInsuranceCompletionLocal();
+                      const isComplete = completed === total;
+                          return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                    <div className="space-y-4">
+                      {/* Check if Uninsured is selected */}
+                      {(() => {
+                        const isUninsured = savedInsurance.some(ins => ins.status === 'Uninsured') || 
+                                          (companyInfo.insuranceList || []).some(ins => ins.status === 'Uninsured');
+                        
+                        return (
+                          <>
+                            {/* Saved Insurance - Hidden if Uninsured is checked */}
+                            {savedInsurance.length > 0 && !isUninsured && (
+                              <div className="space-y-3">
+                                {savedInsurance.map((ins) => (
+                            // Display format
+                            <div
+                              key={ins.id}
+                              className="border border-gray-200 rounded-2xl px-5 py-4 bg-slate-50/60 relative flex items-center"
+                            >
+                              <div className="flex-1 grid grid-cols-3 gap-6 items-center">
+                        <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                                  <p className="text-base font-medium text-gray-900">{ins.company || '—'}</p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Policy Number</label>
+                                  <p className="text-base text-gray-800">{ins.policyNumber || '—'}</p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Coverage Limits ($)</label>
+                                  <p className="text-base text-gray-800">
+                                    {ins.coverageLimits ? `$${parseFloat(ins.coverageLimits.replace(/[^0-9.]/g, '') || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '—'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2 ml-4">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Move insurance to editable section
+                                    const updatedSaved = savedInsurance.filter(i => i.id !== ins.id);
+                                    setSavedInsurance(updatedSaved);
+                                    setEditingInsurance(true);
+                                    updateCompanyInfo('insuranceList', [
+                                      ...(companyInfo.insuranceList || []),
+                                      { ...ins }
+                                    ]);
+                                  }}
+                                  className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                  aria-label="Edit insurance"
+                                >
+                                  <Pencil className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = savedInsurance.filter(i => i.id !== ins.id);
+                                    setSavedInsurance(updated);
+                                  }}
+                                  className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-100 rounded-md transition-colors"
+                                  aria-label="Delete insurance"
+                                >
+                                  <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
+                                </button>
+                        </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                            {/* Editable Insurance - Hidden if Uninsured is checked */}
+                            {(editingInsurance || savedInsurance.length === 0) && !isUninsured && (
+                              <div className="space-y-4">
+                                {(companyInfo.insuranceList || []).length > 0 && (() => {
+                                  const filteredList = (companyInfo.insuranceList || []).filter(ins => ins.status !== 'Uninsured');
+                                  return filteredList.map((ins) => {
+                                    // Find the original index in the unfiltered array by id or by matching the object
+                                    const originalIndex = (companyInfo.insuranceList || []).findIndex(item => {
+                                      if (item.status === 'Uninsured') return false;
+                                      if (ins.id && item.id === ins.id) return true;
+                                      // Match by object reference as fallback
+                                      return item === ins;
+                                    });
+                                    return (
+                            <div key={ins.id || originalIndex} className="grid grid-cols-4 gap-4 items-end p-4 bg-slate-50/60 border border-slate-200 rounded-lg">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Company
+                                  {insuranceErrors[ins.id]?.missingCompany && (
+                                    <span className="text-red-500 text-sm ml-0.5">*</span>
+                                  )}
+                                </label>
+                              <input
+                                type="text"
+                                  value={ins.company || ''}
+                                  onChange={(e) => {
+                                    const updated = [...(companyInfo.insuranceList || [])];
+                                    updated[originalIndex].company = e.target.value;
+                                    updateCompanyInfo('insuranceList', updated);
+                                    if (insuranceErrors[ins.id]?.missingCompany) {
+                                      setInsuranceErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        if (newErrors[ins.id]) {
+                                          delete newErrors[ins.id].missingCompany;
+                                          if (Object.keys(newErrors[ins.id]).length === 0) {
+                                            delete newErrors[ins.id];
+                                          }
+                                        }
+                                        return newErrors;
+                                      });
+                                    }
+                                  }}
+                                placeholder="Enter company name"
+                                  disabled={ins.status === 'Uninsured'}
+                                  className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none ${
+                                    ins.status === 'Uninsured' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''
+                                }`}
+                              />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Policy Number
+                                  {insuranceErrors[ins.id]?.missingPolicyNumber && (
+                                    <span className="text-red-500 text-sm ml-0.5">*</span>
+                                  )}
+                                </label>
+                              <input
+                                type="text"
+                                  value={ins.policyNumber || ''}
+                                  onChange={(e) => {
+                                    const updated = [...(companyInfo.insuranceList || [])];
+                                    updated[originalIndex].policyNumber = e.target.value;
+                                    updateCompanyInfo('insuranceList', updated);
+                                    if (insuranceErrors[ins.id]?.missingPolicyNumber) {
+                                      setInsuranceErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        if (newErrors[ins.id]) {
+                                          delete newErrors[ins.id].missingPolicyNumber;
+                                          if (Object.keys(newErrors[ins.id]).length === 0) {
+                                            delete newErrors[ins.id];
+                                          }
+                                        }
+                                        return newErrors;
+                                      });
+                                    }
+                                  }}
+                                placeholder="Enter policy number"
+                                  disabled={ins.status === 'Uninsured'}
+                                  className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none ${
+                                    ins.status === 'Uninsured' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''
+                                }`}
+                              />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Coverage Limits ($)
+                                  {insuranceErrors[ins.id]?.missingCoverageLimits && (
+                                    <span className="text-red-500 text-sm ml-0.5">*</span>
+                                  )}
+                                </label>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                              <input
+                                type="text"
+                                    value={ins.coverageLimits ? ins.coverageLimits.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                                    onChange={(e) => {
+                                      // Remove all non-numeric characters except commas
+                                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                      const formattedValue = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                      const updated = [...(companyInfo.insuranceList || [])];
+                                      updated[originalIndex].coverageLimits = numericValue;
+                                      updateCompanyInfo('insuranceList', updated);
+                                    if (insuranceErrors[ins.id]?.missingCoverageLimits) {
+                                      setInsuranceErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        if (newErrors[ins.id]) {
+                                          delete newErrors[ins.id].missingCoverageLimits;
+                                          if (Object.keys(newErrors[ins.id]).length === 0) {
+                                            delete newErrors[ins.id];
+                                          }
+                                        }
+                                        return newErrors;
+                                      });
+                                    }
+                                  }}
+                                  placeholder="0"
+                                  disabled={ins.status === 'Uninsured'}
+                                  className={`w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-700 focus:outline-none ${
+                                    ins.status === 'Uninsured' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''
+                                }`}
+                              />
+                            </div>
+                          </div>
+
+                              <div className="flex justify-end gap-2 items-center">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Save this individual insurance
+                                    const insToSave = ins;
+                                    const errors = {};
+                                    let hasErrors = false;
+                                    
+                                    if (insToSave.status !== 'Uninsured') {
+                                      if (!insToSave.company || insToSave.company.trim() === '') {
+                                        errors.missingCompany = true;
+                                        hasErrors = true;
+                                      }
+                                      
+                                      if (!insToSave.policyNumber || insToSave.policyNumber.trim() === '') {
+                                        errors.missingPolicyNumber = true;
+                                        hasErrors = true;
+                                      }
+                                      
+                                      if (!insToSave.coverageLimits || insToSave.coverageLimits.trim() === '') {
+                                        errors.missingCoverageLimits = true;
+                                        hasErrors = true;
+                                      }
+                                    }
+                                    
+                                    if (hasErrors) {
+                                      setInsuranceErrors(prev => ({
+                                        ...prev,
+                                        [ins.id]: errors
+                                      }));
+                                      return;
+                                    }
+                                    
+                                    setInsuranceErrors(prev => {
+                                      const newErrors = { ...prev };
+                                      delete newErrors[ins.id];
+                                      return newErrors;
+                                    });
+                                    
+                                    const newIns = {
+                                      ...insToSave,
+                                      id: insToSave.id || Date.now() + Math.random(),
+                                      savedAt: new Date().toISOString()
+                                    };
+                                    setSavedInsurance((prev) => {
+                                      const existingIds = new Set(prev.map(i => i.id));
+                                      if (existingIds.has(newIns.id)) {
+                                        return prev.map(i => i.id === newIns.id ? newIns : i);
+                                      }
+                                      if (prev.length >= 10) {
+                                        alert('Maximum of 10 insurance policies allowed');
+                                        return prev;
+                                      }
+                                      return [...prev, newIns];
+                                    });
+                                    // Remove from editable list
+                                    const updated = (companyInfo.insuranceList || []).filter(item => {
+                                      // Keep items that are Uninsured or don't match the saved insurance
+                                      if (item.status === 'Uninsured') return true;
+                                      // Remove the item that matches by id or object reference
+                                      if (ins.id && item.id === ins.id) return false;
+                                      return item !== ins;
+                                    });
+                                    updateCompanyInfo('insuranceList', updated);
+                                  }}
+                                  className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                  aria-label="Save insurance"
+                                >
+                                  <Check className="w-4 h-4 text-gray-600 group-hover:text-green-600" />
+                                </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                    const updated = (companyInfo.insuranceList || []).filter(item => {
+                                      // Keep items that are Uninsured or don't match the deleted insurance
+                                      if (item.status === 'Uninsured') return true;
+                                      // Remove the item that matches by id or object reference
+                                      if (ins.id && item.id === ins.id) return false;
+                                      return item !== ins;
+                                    });
+                                    updateCompanyInfo('insuranceList', updated);
+                                  }}
+                                  className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                  aria-label="Delete insurance"
+                                >
+                                  <Trash2 className="w-4 h-4 text-gray-600 group-hover:text-red-600" />
+                                  </button>
+                        </div>
+                              </div>
+                          );
+                        });
+                      })()}
+                              </div>
+                            )}
+
+                            {/* Add Insurance Button and Uninsured checkbox */}
+                            <div className="flex items-center gap-4">
+                              {/* Add Insurance Button - Only shown when no insurance items are being edited */}
+                              {(() => {
+                                const filteredList = (companyInfo.insuranceList || []).filter(ins => ins.status !== 'Uninsured');
+                                return filteredList.length === 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (savedInsurance.length >= 10) {
+                                        alert('Maximum of 10 insurance policies allowed');
+                                        return;
+                                      }
+                                      setEditingInsurance(true);
+                                      updateCompanyInfo('insuranceList', [
+                                        { id: Date.now() + Math.random(), company: '', policyNumber: '', coverageLimits: '', status: 'Insured' }
+                                      ]);
+                                    }}
+                                    disabled={isUninsured}
+                                    className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                    <span className="text-sm font-medium">Add Insurance</span>
+                                  </button>
+                                );
+                              })()}
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isUninsured}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // Clear all insurance entries and add uninsured entry
+                                      setSavedInsurance([]);
+                                      updateCompanyInfo('insuranceList', [
+                                        { id: Date.now() + Math.random(), company: '', policyNumber: '', coverageLimits: '', status: 'Uninsured' }
+                                      ]);
+                                      setEditingInsurance(true);
+                                    } else {
+                                      // Remove uninsured entries
+                                      const updated = (companyInfo.insuranceList || []).filter(ins => ins.status !== 'Uninsured');
+                                      updateCompanyInfo('insuranceList', updated);
+                                      if (updated.length === 0) {
+                                        setEditingInsurance(false);
+                                      }
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded border-gray-300 accent-blue-600 focus:ring-blue-500 focus:ring-2"
+                                />
+                                <label className="text-sm text-gray-700">Uninsured</label>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                </div>
+                      </div>
+                    )}
+
+                    {/* Guarantee/Warranty Content */}
+                    {selectedTab === 'Guarantee/Warranty' && (
+                      <div>
+                {/* Guarantee/Warranty */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Guarantee/Warranty</h3>
+                    {(() => {
+                      const { completed, total } = getGuaranteeWarrantyCompletionLocal();
+                      const isComplete = completed === total;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                    <div className="space-y-5">
+                      {savedGuaranteeWarranty && savedGuaranteeWarranty.trim() !== '' && !editingGuaranteeWarranty ? (
+                        // View Mode
+                        <div className="p-4 bg-slate-50 border border-gray-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm italic text-gray-600">{savedGuaranteeWarranty}</p>
+                            </div>
+                            <div className="flex items-center gap-2 ml-4">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingGuaranteeWarranty(true);
+                                  // Load saved guarantee/warranty into editing state
+                                  updateCompanyInfo('guaranteeWarranty', savedGuaranteeWarranty);
+                                }}
+                                className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                title="Edit guarantee/warranty"
+                              >
+                                <Pencil className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSavedGuaranteeWarranty('');
+                                  updateCompanyInfo('guaranteeWarranty', '');
+                                }}
+                                className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                title="Delete guarantee/warranty"
+                              >
+                                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // Edit Mode - Show textarea when section is opened
+                        <div className="space-y-4">
+                      <div className="relative p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        {guaranteeWarrantySaveAttempted && (!companyInfo.guaranteeWarranty || companyInfo.guaranteeWarranty.trim() === '') && (
+                          <span className="absolute top-2 left-2 text-red-500 text-sm font-medium">*</span>
+                        )}
+                          <textarea
+                            rows={4}
+                              value={companyInfo.guaranteeWarranty || ''}
+                            onChange={(e) => {
+                              updateCompanyInfo('guaranteeWarranty', e.target.value);
+                              // Clear error when user starts typing
+                              if (guaranteeWarrantySaveAttempted && e.target.value.trim() !== '') {
+                                setGuaranteeWarrantySaveAttempted(false);
+                              }
+                            }}
+                            placeholder="Describe your guarantee or warranty policy..."
+                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm resize-y bg-white shadow-sm focus:outline-none"
+                          />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              {guaranteeWarrantySaveAttempted && (!companyInfo.guaranteeWarranty || companyInfo.guaranteeWarranty.trim() === '') && (
+                                <span className="text-red-600 text-sm font-medium flex items-center">
+                                  <span className="text-red-500">*</span> Please enter guarantee/warranty information
+                                </span>
+                              )}
+                            <button
+                              type="button"
+                              onClick={handleSaveGuaranteeWarranty}
+                              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                            >
+                              Save
+                            </button>
+                          </div>
+                          </div>
+                          )}
+                        </div>
+                      </div>
+                </div>
+                    )}
+
+                    {/* Brand Identity Content */}
+                    {selectedTab === 'Brand Identity' && (
+                      <div>
+                {/* Brand Identity */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-lime-100 flex items-center justify-center flex-shrink-0">
+                      <Star className="w-5 h-5 text-lime-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Brand Identity</h3>
+                    {(() => {
+                      const { completed, total } = getBrandIdentityCompletionLocal();
+                      const isComplete = completed === total;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                    <div className="space-y-5">
+                      {savedBrandIdentity && !editingBrandIdentity ? (
+                        // Display Mode
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4 relative">
+                          {/* Edit Icon */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingBrandIdentity(true);
+                              // Restore saved values to edit
+                              updateCompanyInfo('companySlogan', savedBrandIdentity.companySlogan);
+                              updateCompanyInfo('experienceYears', savedBrandIdentity.experienceYears);
+                              updateCompanyInfo('jobsCompleted', savedBrandIdentity.jobsCompleted);
+                              updateCompanyInfo('whatMakesDifferent', savedBrandIdentity.whatMakesDifferent);
+                            }}
+                            className="group absolute top-4 right-4 p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
+                          </button>
+
+                          {savedBrandIdentity.companySlogan && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Company Slogan</label>
+                              <p className="text-base text-gray-900 italic">{savedBrandIdentity.companySlogan}</p>
+                    </div>
+                  )}
+
+                          {(savedBrandIdentity.experienceYears || savedBrandIdentity.jobsCompleted) && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
+                              <div className="flex gap-3">
+                                {savedBrandIdentity.experienceYears && (
+                                  <div className="bg-gray-100 border border-gray-200 rounded-lg px-4 py-3">
+                                    <label className="block text-xs text-gray-600 mb-1 text-center">Years in Business</label>
+                                    <p className="text-2xl text-gray-900 font-semibold text-center">{savedBrandIdentity.experienceYears}</p>
+                                  </div>
+                                )}
+                                {savedBrandIdentity.jobsCompleted && (
+                                  <div className="bg-gray-100 border border-gray-200 rounded-lg px-4 py-3">
+                                    <label className="block text-xs text-gray-600 mb-1 text-center">Jobs Completed (Estimate)</label>
+                                    <p className="text-2xl text-gray-900 font-semibold text-center">{savedBrandIdentity.jobsCompleted}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {savedBrandIdentity.whatMakesDifferent && savedBrandIdentity.whatMakesDifferent.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Company Qualities</label>
+                              <div className="flex flex-wrap gap-2">
+                                {savedBrandIdentity.whatMakesDifferent.map((quality) => (
+                                  <span
+                                    key={quality}
+                                    className="px-3 py-1.5 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-sm font-medium"
+                                  >
+                                    {quality}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        // Edit Mode
+                        <div className="space-y-4">
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Company Slogan</label>
+                        <input
+                          type="text"
+                            value={companyInfo.companySlogan || ''}
+                            onChange={(e) => updateCompanyInfo('companySlogan', e.target.value)}
+                            placeholder="Enter your company slogan"
+                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
+                          <div className="flex gap-3">
+                            <div className="bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 flex-1">
+                                <label className="block text-xs text-gray-600 mb-1">Years in Business</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={companyInfo.experienceYears || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Only allow numbers
+                                  if (value === '' || /^\d+$/.test(value)) {
+                                    updateCompanyInfo('experienceYears', value);
+                                  }
+                                }}
+                                placeholder="0"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm focus:outline-none"
+                              />
+                            </div>
+                            <div className="bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 flex-1">
+                                <label className="block text-xs text-gray-600 mb-1">Jobs Completed (Estimate)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                  value={companyInfo.jobsCompleted || ''}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    // Only allow numbers
+                                    if (value === '' || /^\d+$/.test(value)) {
+                                      updateCompanyInfo('jobsCompleted', value);
+                                    }
+                                  }}
+                                placeholder="0"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-3">Company Qualities (select 3)</label>
+                          <div className="flex flex-wrap gap-3">
+                            {[...companyQualities, ...customCompanyQualities].map((quality) => {
+                              const isSelected = (companyInfo.whatMakesDifferent || []).includes(quality);
+                              const isDisabled = !isSelected && (companyInfo.whatMakesDifferent || []).length >= 3;
+                              return (
+                                <button
+                                  key={quality}
+                                  type="button"
+                                  onClick={() => toggleCompanyQuality(quality)}
+                                  disabled={isDisabled}
+                                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                    isSelected
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                      : isDisabled
+                                      ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
+                                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                  } shadow-sm hover:shadow-md`}
+                                >
+                                  <span>{quality}</span>
+                                </button>
+                              );
+                            })}
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all">
+                              <input
+                                type="text"
+                                value={newCompanyQuality}
+                                onChange={(e) => setNewCompanyQuality(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addCustomCompanyQuality()}
+                                placeholder="Add quality..."
+                            className="bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-sm w-32"
+                        />
+                        <button
+                          type="button"
+                                onClick={addCustomCompanyQuality}
+                            className="text-blue-600 hover:text-blue-700"
+                                disabled={!newCompanyQuality.trim()}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                        {/* Save Button */}
+                        <div className="flex justify-end gap-2">
+                          {brandIdentitySaveAttempted && (
+                            !companyInfo.companySlogan?.trim() &&
+                            !companyInfo.experienceYears?.toString().trim() &&
+                            !companyInfo.jobsCompleted?.toString().trim() &&
+                            (!companyInfo.whatMakesDifferent || companyInfo.whatMakesDifferent.length === 0)
+                          ) && (
+                            <span className="text-red-600 text-sm font-medium flex items-center">
+                              <span className="text-red-500">*</span> Please enter at least one field
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleSaveBrandIdentity}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                          >
+                            Save
+                          </button>
+              </div>
+                        </div>
+                      )}
+                    </div>
+                </div>
+                      </div>
+                    )}
+                
+                    {/* Customer Reviews Content */}
+                    {selectedTab === 'Customer Reviews' && (
+                      <div>
+                {/* Customer Reviews */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Customer Reviews</h3>
+                  </div>
+                  
+                    <div className="section-spacing">
+                      {/* Customer Reviews Section */}
+                      <div className="reviews-section">
+                        <div className="section-spacing">
+                            {/* Saved Reviews - Display Mode or Edit Mode */}
+                            {savedCustomerReviews.map((review, index) => (
+                              editingReviewIndex === index ? (
+                                // Edit Mode - Show textarea in place
+                                <div key={`edit-${index}`} className="review-item relative mb-4">
+                                  <textarea
+                                    value={companyInfo.customerReviews?.[0] || review}
+                                    onChange={(e) => {
+                                      updateCompanyInfo('customerReviews', [e.target.value]);
+                                    }}
+                                    rows={4}
+                                    placeholder="Enter a customer review..."
+                                    className="review-textarea review-textarea-md"
+                                  />
+                                  <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        type="button"
+                                      onClick={() => {
+                                        // Save edited review
+                                        const editedReview = companyInfo.customerReviews?.[0] || review;
+                                        if (editedReview && editedReview.trim() !== '') {
+                                          const updatedSavedReviews = [...savedCustomerReviews];
+                                          updatedSavedReviews[index] = editedReview;
+                                          setSavedCustomerReviews(updatedSavedReviews);
+                                          setEditingReviewIndex(null);
+                                          updateCompanyInfo('customerReviews', []);
+                                        }
+                                      }}
+                                      className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                    >
+                                      <Check className="w-4 h-4 text-gray-600 group-hover:text-green-600" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        // Cancel editing
+                                        setEditingReviewIndex(null);
+                                        updateCompanyInfo('customerReviews', []);
+                                      }}
+                                      className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                      type="button"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-gray-600 group-hover:text-red-600" />
+                      </button>
+                    </div>
+                                </div>
+                              ) : (
+                                // Display Mode
+                                <div key={`saved-${index}`} className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 relative">
+                                  <p className="text-gray-700 italic text-sm leading-relaxed pr-20">{review}</p>
+                                  <div className="absolute top-3 right-3 flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // Enter edit mode for this review
+                                        setEditingReviewIndex(index);
+                                        updateCompanyInfo('customerReviews', [review]);
+                                      }}
+                                      className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                    >
+                                      <Pencil className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const updatedSavedReviews = savedCustomerReviews.filter((_, i) => i !== index);
+                                        setSavedCustomerReviews(updatedSavedReviews);
+                                      }}
+                                      className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                      type="button"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-gray-600 group-hover:text-red-600" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            ))}
+
+                            {/* New Reviews - Skip first item if editing a saved review */}
+                            {(companyInfo.customerReviews || [])
+                              .filter((_, index) => editingReviewIndex === null || index > 0)
+                              .map((review, displayIndex) => {
+                                // Calculate actual index in the array
+                                const actualIndex = editingReviewIndex === null ? displayIndex : displayIndex + 1;
+                                return (
+                              <div key={actualIndex} className="review-item relative">
+                                <textarea
+                                  value={review || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = [...(companyInfo.customerReviews || [])];
+                                    updatedReviews[actualIndex] = e.target.value;
+                                    updateCompanyInfo('customerReviews', updatedReviews);
+                                  }}
+                                  rows={4}
+                                  placeholder="Enter a customer review..."
+                                  className="review-textarea review-textarea-md"
+                                />
+                                <div className="absolute top-2 right-2 flex gap-2">
+                                <button
+                                    type="button"
+                                  onClick={() => {
+                                      // Save this review
+                                      if (review && review.trim() !== '') {
+                                        setSavedCustomerReviews([...savedCustomerReviews, review]);
+                                        // Remove from editable list
+                                    const updatedReviews = (companyInfo.customerReviews || []).filter((_, i) => i !== actualIndex);
+                                    updateCompanyInfo('customerReviews', updatedReviews);
+                                      }
+                                    }}
+                                    className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                  >
+                                    <Check className="w-4 h-4 text-gray-600 group-hover:text-green-600" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const updatedReviews = (companyInfo.customerReviews || []).filter((_, i) => i !== actualIndex);
+                                      updateCompanyInfo('customerReviews', updatedReviews);
+                                    }}
+                                    className="group p-2 rounded-lg border border-transparent hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                                  type="button"
+                                >
+                                    <Trash2 className="w-4 h-4 text-gray-600 group-hover:text-red-600" />
+                                </button>
+                                </div>
+                              </div>
+                                );
+                              })}
+                            
+                            {/* Add Review Button - Show when total reviews (saved + being added) is less than 3 */}
+                            {(() => {
+                              // Calculate new reviews count (exclude first item if editing a saved review)
+                              const newReviewsCount = editingReviewIndex !== null && (companyInfo.customerReviews || []).length > 0 
+                                ? (companyInfo.customerReviews || []).length - 1 
+                                : (companyInfo.customerReviews || []).length;
+                              const totalCount = savedCustomerReviews.length + newReviewsCount;
+                              return totalCount < 3 && (
+                                <button
+                                  onClick={() => {
+                                    const updatedReviews = [...(companyInfo.customerReviews || []), ''];
+                                    updateCompanyInfo('customerReviews', updatedReviews);
+                                  }}
+                                  className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  type="button"
+                                  disabled={totalCount >= 3}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  <span className="text-sm font-medium">Add Review ({totalCount}/3)</span>
+                                </button>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+              )}
+                
+                    {/* Online Reviews Content */}
+                    {selectedTab === 'Online Reviews' && (
+                      <div>
+                {/* Online Reviews */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                      <Globe className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Online Reviews</h3>
+                    {(() => {
+                      const { completed, total } = getOnlineReviewsCompletionLocal();
+                      const isComplete = completed === total;
+                      return (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          <span>{completed}/{total}</span>
+                        </div>
+                      );
+                    })()}
             </div>
 
-            {/* Forms Section */}
-            <div className="bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Forms</h2>
-              
-              {/* Paper-shaped buttons */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
-                  <FileText className="w-6 h-6 mb-2 text-blue-600 group-hover:text-blue-700 transition-colors" />
-                  <span className="text-sm font-medium text-gray-900 text-center leading-tight">Customize Estimate</span>
+                    <div className="section-spacing">
+                      {/* Display Mode */}
+                      {savedOnlineReviews && !editingOnlineReviews ? (
+                        <div className="space-y-3">
+                          {[
+                            { key: 'google', label: 'Google' },
+                            { key: 'facebook', label: 'Facebook' },
+                            { key: 'nextdoor', label: 'Nextdoor' },
+                            { key: 'yelp', label: 'Yelp' },
+                            { key: 'homeadvisor', label: 'HomeAdvisor' }
+                          ].filter(platform => {
+                            const review = savedOnlineReviews[platform.key];
+                            return review && (review.averageRating || review.totalReviews || review.fiveStarReviews);
+                          }).map((platform) => {
+                            const review = savedOnlineReviews[platform.key];
+                            return (
+                              <div key={platform.key} className="border border-gray-200 rounded-2xl px-5 py-4 bg-slate-50/60 relative flex items-center">
+                                  <div className="flex-1 grid grid-cols-4 gap-6 items-center">
+                                    <div className="font-semibold text-gray-900">
+                                      {platform.label}
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Avg Rating</label>
+                                      <p className="text-sm text-gray-900">{review.averageRating || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Total Reviews</label>
+                                      <p className="text-sm text-gray-900">{review.totalReviews || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">5-Star Reviews</label>
+                                      <p className="text-sm text-gray-900">{review.fiveStarReviews || '-'}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end gap-2 ml-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingOnlineReviews(true);
+                                        updateCompanyInfo('onlineReviews', savedOnlineReviews);
+                                      }}
+                                      className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                      aria-label="Edit online review"
+                                    >
+                                      <Pencil className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updatedReviews = { ...savedOnlineReviews };
+                                        delete updatedReviews[platform.key];
+                                        setSavedOnlineReviews(updatedReviews);
+                                      }}
+                                      className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-100 rounded-md transition-colors"
+                                      aria-label="Delete online review"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
+                                    </button>
+                                  </div>
+                                </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* Edit Mode */
+                        <div>
+                        <div className="space-y-4 mt-4">
+                          {[
+                            { key: 'google', label: 'Google' },
+                            { key: 'facebook', label: 'Facebook' },
+                            { key: 'nextdoor', label: 'Nextdoor' },
+                            { key: 'yelp', label: 'Yelp' },
+                            { key: 'homeadvisor', label: 'HomeAdvisor' }
+                          ].map((platform) => (
+                            <div key={platform.key} className="grid grid-cols-4 gap-4 items-center p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                              <div className="font-semibold text-gray-900 min-w-[120px]">
+                                {platform.label}
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Avg Rating (out of 5)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="5"
+                                  step="0.1"
+                                  value={companyInfo.onlineReviews?.[platform.key]?.averageRating || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = {
+                                      ...(companyInfo.onlineReviews || {}),
+                                      [platform.key]: {
+                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
+                                        averageRating: e.target.value
+                                      }
+                                    };
+                                    updateCompanyInfo('onlineReviews', updatedReviews);
+                                  }}
+                                  placeholder="0.0"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Total Reviews</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={companyInfo.onlineReviews?.[platform.key]?.totalReviews || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = {
+                                      ...(companyInfo.onlineReviews || {}),
+                                      [platform.key]: {
+                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
+                                        totalReviews: e.target.value
+                                      }
+                                    };
+                                    updateCompanyInfo('onlineReviews', updatedReviews);
+                                  }}
+                                  placeholder="0"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">5-Star Reviews</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={companyInfo.onlineReviews?.[platform.key]?.fiveStarReviews || ''}
+                                  onChange={(e) => {
+                                    const updatedReviews = {
+                                      ...(companyInfo.onlineReviews || {}),
+                                      [platform.key]: {
+                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
+                                        fiveStarReviews: e.target.value
+                                      }
+                                    };
+                                    updateCompanyInfo('onlineReviews', updatedReviews);
+                                  }}
+                                  placeholder="0"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Save Button */}
+                        <div className="flex justify-end gap-2 mt-6">
+                          {onlineReviewsSaveAttempted && (!companyInfo.onlineReviews || !Object.keys(companyInfo.onlineReviews || {}).some(platform => {
+                            const review = companyInfo.onlineReviews[platform];
+                            return (review.averageRating && review.averageRating !== '') ||
+                                   (review.totalReviews && review.totalReviews !== '') ||
+                                   (review.fiveStarReviews && review.fiveStarReviews !== '');
+                          })) && (
+                            <span className="text-red-600 text-sm font-medium flex items-center">
+                              <span className="text-red-500">*</span> Please enter at least one review
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleSaveOnlineReviews}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                          >
+                            Save
+                </button>
+                        </div>
+                        </div>
+                      )}
+                    </div>
+                </div>
+                      </div>
+                    )}
+                    
+                    {/* Forms Content */}
+                    {selectedTab === 'Forms' && (
+                      <div>
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-fuchsia-100 flex items-center justify-center flex-shrink-0">
+                              <FileText className="w-5 h-5 text-fuchsia-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 flex-1">Forms</h3>
+                          </div>
+                          
+                          {/* Forms Grid - 2x2 */}
+                          <div className="grid grid-cols-2 gap-6">
+                            <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-6 cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-400 hover:shadow-lg shadow-md">
+                              <FileText className="w-8 h-8 mb-3 text-blue-600 group-hover:text-blue-700 transition-colors" />
+                              <span className="text-base font-medium text-gray-900 text-center leading-tight">Customize Estimate</span>
                 </button>
 
-                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-purple-50 hover:border-purple-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
-                  <FileSignature className="w-6 h-6 mb-2 text-purple-600 group-hover:text-purple-700 transition-colors" />
-                  <span className="text-sm font-medium text-gray-900 text-center leading-tight">Customize Contract</span>
+                            <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-6 cursor-pointer transition-all hover:bg-purple-50 hover:border-purple-400 hover:shadow-lg shadow-md">
+                              <FileSignature className="w-8 h-8 mb-3 text-purple-600 group-hover:text-purple-700 transition-colors" />
+                              <span className="text-base font-medium text-gray-900 text-center leading-tight">Customize Contract</span>
                 </button>
 
-                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-amber-50 hover:border-amber-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
-                  <Receipt className="w-6 h-6 mb-2 text-amber-600 group-hover:text-amber-700 transition-colors" />
-                  <span className="text-sm font-medium text-gray-900 text-center leading-tight">Customize Invoice</span>
-                </button>
+                            <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-6 cursor-pointer transition-all hover:bg-amber-50 hover:border-amber-400 hover:shadow-lg shadow-md">
+                              <Receipt className="w-8 h-8 mb-3 text-amber-600 group-hover:text-amber-700 transition-colors" />
+                              <span className="text-base font-medium text-gray-900 text-center leading-tight">Customize Invoice</span>
+                            </button>
 
-                <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-4 cursor-pointer transition-all hover:bg-rose-50 hover:border-rose-400 hover:shadow-lg max-w-[182px] mx-auto shadow-md">
-                  <HeartHandshake className="w-6 h-6 mb-2 text-rose-500 group-hover:text-rose-600 transition-colors" />
-                  <span className="text-sm font-medium text-gray-900 text-center leading-tight">Thank You Note</span>
+                            <button className="group relative flex flex-col items-center justify-center aspect-[3/4] bg-white border-2 border-slate-300 rounded-lg p-6 cursor-pointer transition-all hover:bg-rose-50 hover:border-rose-400 hover:shadow-lg shadow-md">
+                              <HeartHandshake className="w-8 h-8 mb-3 text-rose-500 group-hover:text-rose-600 transition-colors" />
+                              <span className="text-base font-medium text-gray-900 text-center leading-tight">Thank You Note</span>
                 </button>
               </div>
             </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>);
 };
 
