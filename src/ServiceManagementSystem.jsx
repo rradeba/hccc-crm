@@ -348,7 +348,7 @@ const ServiceManagementSystem = () => {
     },
     { 
       id: 2, 
-      name: 'Add Job Demos', 
+      name: 'Job Demos', 
       principle: 'Focus your effort on leads that have a genuine need, budget, and authority.',
       description: 'Use criteria like BANT (Budget, Authority, Need, Timing) to filter prospects. Avoid wasting resources on unqualified leads.',
       order: 1,
@@ -364,13 +364,29 @@ const ServiceManagementSystem = () => {
         customerReviews: []
       }
     },
-    { 
-      id: 4, 
-      name: 'Before & After', 
+    {
+      id: 4,
+      name: 'Before & After',
       principle: 'Visual proof of transformation builds trust and demonstrates results.',
       description: 'Showcase before and after photos/videos of your completed jobs to highlight the quality and impact of your work.',
       order: 3,
       mediaItems: [{ id: Date.now() + 2, media: null, description: '', service: '' }]
+    },
+    {
+      id: 5,
+      name: 'Infographics',
+      principle: 'Visual content communicates complex information quickly and memorably.',
+      description: 'Share infographics to educate customers about your services, processes, and value proposition.',
+      order: 4,
+      mediaItems: [{ id: Date.now() + 3, media: null, description: '', service: '' }]
+    },
+    {
+      id: 6,
+      name: 'Job Highlight',
+      principle: 'Showcase your best work to impress potential customers.',
+      description: 'Add photos of exceptional jobs you want to highlight to demonstrate your expertise and quality.',
+      order: 5,
+      mediaItems: [{ id: Date.now() + 4, media: null, description: '', service: '' }]
     }
   ]);
   const [leadFollowupEnabled, setLeadFollowupEnabled] = useState(false);
@@ -484,6 +500,101 @@ const ServiceManagementSystem = () => {
     customerReviews: []
   });
   const [collapsedContactDetails, setCollapsedContactDetails] = useState(true);
+
+  // Brand Identity state
+  const [savedBrandIdentity, setSavedBrandIdentity] = useState(null);
+  const [editingBrandIdentity, setEditingBrandIdentity] = useState(false);
+  const [brandIdentitySaveAttempted, setBrandIdentitySaveAttempted] = useState(false);
+  const [customCompanyQualities, setCustomCompanyQualities] = useState([]);
+  const [newCompanyQuality, setNewCompanyQuality] = useState('');
+
+  // Customer Reviews state
+  const [savedCustomerReviews, setSavedCustomerReviews] = useState([]);
+  const [customerReviewErrors, setCustomerReviewErrors] = useState({});
+
+  // Promotions state
+  const [savedSalesFlowPromotions, setSavedSalesFlowPromotions] = useState([]);
+  const [promotionErrors, setPromotionErrors] = useState({});
+
+  // Online Reviews state
+  const [savedOnlineReviews, setSavedOnlineReviews] = useState(null);
+  const [editingOnlineReviews, setEditingOnlineReviews] = useState(false);
+  const [onlineReviewsSaveAttempted, setOnlineReviewsSaveAttempted] = useState(false);
+
+  // Company qualities options
+  const companyQualities = [
+    'Safety above everything',
+    'Professional service always',
+    'Quality you can see',
+    'Honest, transparent pricing',
+    'We show up',
+    'Respect for your home',
+    'Clean, careful work',
+    'No-damage guarantee',
+    'Customer-first mindset',
+    'Reliable scheduling',
+    'Fast, efficient service',
+    'Pride in workmanship',
+    'Job done right',
+    'Clear communication',
+    'Local community focused',
+    'Eco-friendly cleaning',
+    'Trained, certified staff',
+    'Full accountability'
+  ];
+
+  // Brand Identity helper functions
+  const toggleCompanyQuality = (quality) => {
+    const current = companyInfo.whatMakesDifferent || [];
+    if (current.includes(quality)) {
+      updateCompanyInfo('whatMakesDifferent', current.filter(q => q !== quality));
+    } else if (current.length < 3) {
+      updateCompanyInfo('whatMakesDifferent', [...current, quality]);
+    }
+  };
+
+  const addCustomCompanyQuality = () => {
+    if (newCompanyQuality.trim() && !customCompanyQualities.includes(newCompanyQuality.trim())) {
+      setCustomCompanyQualities([...customCompanyQualities, newCompanyQuality.trim()]);
+      setNewCompanyQuality('');
+    }
+  };
+
+  const handleSaveBrandIdentity = () => {
+    setBrandIdentitySaveAttempted(true);
+    const hasContent =
+      companyInfo.companySlogan?.trim() ||
+      companyInfo.experienceYears?.toString().trim() ||
+      companyInfo.jobsCompleted?.toString().trim() ||
+      (companyInfo.whatMakesDifferent && companyInfo.whatMakesDifferent.length > 0);
+
+    if (hasContent) {
+      setSavedBrandIdentity({
+        companySlogan: companyInfo.companySlogan,
+        experienceYears: companyInfo.experienceYears,
+        jobsCompleted: companyInfo.jobsCompleted,
+        whatMakesDifferent: companyInfo.whatMakesDifferent
+      });
+      setEditingBrandIdentity(false);
+      setBrandIdentitySaveAttempted(false);
+    }
+  };
+
+  const handleSaveOnlineReviews = () => {
+    setOnlineReviewsSaveAttempted(true);
+    const hasReview = companyInfo.onlineReviews && Object.keys(companyInfo.onlineReviews || {}).some(platform => {
+      const review = companyInfo.onlineReviews[platform];
+      return (review.averageRating && review.averageRating !== '') ||
+             (review.totalReviews && review.totalReviews !== '') ||
+             (review.fiveStarReviews && review.fiveStarReviews !== '');
+    });
+
+    if (hasReview) {
+      setSavedOnlineReviews({ ...companyInfo.onlineReviews });
+      setEditingOnlineReviews(false);
+      setOnlineReviewsSaveAttempted(false);
+    }
+  };
 
   // Pricing Tool state
   const [pricingFormats, setPricingFormats] = useState([{
@@ -789,6 +900,35 @@ const ServiceManagementSystem = () => {
             updateFlowStep={updateFlowStep}
             companyInfo={companyInfo}
             updateCompanyInfo={updateCompanyInfo}
+            savedBrandIdentity={savedBrandIdentity}
+            setSavedBrandIdentity={setSavedBrandIdentity}
+            editingBrandIdentity={editingBrandIdentity}
+            setEditingBrandIdentity={setEditingBrandIdentity}
+            brandIdentitySaveAttempted={brandIdentitySaveAttempted}
+            setBrandIdentitySaveAttempted={setBrandIdentitySaveAttempted}
+            companyQualities={companyQualities}
+            customCompanyQualities={customCompanyQualities}
+            setCustomCompanyQualities={setCustomCompanyQualities}
+            newCompanyQuality={newCompanyQuality}
+            setNewCompanyQuality={setNewCompanyQuality}
+            toggleCompanyQuality={toggleCompanyQuality}
+            addCustomCompanyQuality={addCustomCompanyQuality}
+            handleSaveBrandIdentity={handleSaveBrandIdentity}
+            savedCustomerReviews={savedCustomerReviews}
+            setSavedCustomerReviews={setSavedCustomerReviews}
+            customerReviewErrors={customerReviewErrors}
+            setCustomerReviewErrors={setCustomerReviewErrors}
+            savedSalesFlowPromotions={savedSalesFlowPromotions}
+            setSavedSalesFlowPromotions={setSavedSalesFlowPromotions}
+            promotionErrors={promotionErrors}
+            setPromotionErrors={setPromotionErrors}
+            savedOnlineReviews={savedOnlineReviews}
+            setSavedOnlineReviews={setSavedOnlineReviews}
+            editingOnlineReviews={editingOnlineReviews}
+            setEditingOnlineReviews={setEditingOnlineReviews}
+            onlineReviewsSaveAttempted={onlineReviewsSaveAttempted}
+            setOnlineReviewsSaveAttempted={setOnlineReviewsSaveAttempted}
+            handleSaveOnlineReviews={handleSaveOnlineReviews}
           />
         )}
 

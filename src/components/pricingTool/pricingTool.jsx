@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronDown, X, Wrench, ArrowRight, Percent, ShoppingCart, Gift, DollarSign, Bot, Send, FileText, FileSignature, Receipt, HeartHandshake, Phone, Star, MapPin, Clock, Award, Shield, ShieldCheck, Search, Pencil, RotateCw } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, X, Wrench, ArrowRight, Percent, ShoppingCart, Gift, DollarSign, Bot, Send, FileText, FileSignature, Receipt, HeartHandshake, Phone, Star, MapPin, Clock, Award, Shield, ShieldCheck, Search, Pencil } from 'lucide-react';
 import './pricingTool.css';
 
 const PricingTool = ({
@@ -46,7 +46,6 @@ const PricingTool = ({
   const [savedPromotions, setSavedPromotions] = useState([]);
   const [promotionErrors, setPromotionErrors] = useState({}); // Track validation errors by promotion ID
   const [priceErrors, setPriceErrors] = useState({}); // Track validation errors by price format ID
-  const [restartPromotionModal, setRestartPromotionModal] = useState(null); // Track which expired promotion is being restarted
   const [expiredPromotions, setExpiredPromotions] = useState([
     // Sample expired promotions
     {
@@ -85,28 +84,13 @@ const PricingTool = ({
       endDate: '2024-10-31',
       isIndefinite: false,
       savedAt: '2024-09-01T00:00:00.000Z'
-    },
-    {
-      id: 'expired-4',
-      title: 'Spring Cleaning Special',
-      promotionType: 'percentOff',
-      percentOff: '15',
-      percentOffServices: ['Roof Cleaning', 'Gutter Cleaning', 'Window Cleaning'],
-      startDate: '2024-03-01',
-      endDate: '2024-05-31',
-      isIndefinite: false,
-      savedAt: '2024-03-01T00:00:00.000Z'
     }
   ]);
   const [editingPromotionId, setEditingPromotionId] = useState(null);
-  const [editingActivePromotionId, setEditingActivePromotionId] = useState(null); // For active promotions being edited inline
-  const [editingActivePromotionData, setEditingActivePromotionData] = useState(null); // Store the editing data for active promotions
   
   // State for saved prices (separate from active prices being edited)
   const [activePrices, setActivePrices] = useState([]);
-  const [editingPriceId, setEditingPriceId] = useState(null); // For prices being edited in Add Price section
-  const [editingActivePriceId, setEditingActivePriceId] = useState(null); // For active prices being edited inline
-  const [editingActivePriceData, setEditingActivePriceData] = useState(null); // Store the editing data for active prices
+  const [editingPriceId, setEditingPriceId] = useState(null);
   
   const [openPercentDropdown, setOpenPercentDropdown] = useState(null);
   const [openPackageFormulaDropdown, setOpenPackageFormulaDropdown] = useState(null);
@@ -129,38 +113,6 @@ const PricingTool = ({
     });
     return usedServices;
   };
-  
-  // Ensure blank price component always exists at the top
-  useEffect(() => {
-    const hasBlank = pricingFormats.some(f => 
-      (!f.services || f.services.length === 0) && 
-      (!f.pricingStructure?.rates || f.pricingStructure.rates.length === 0) &&
-      (!f.pricingStructure?.expenses || f.pricingStructure.expenses.length === 0) &&
-      (!f.pricingStructure?.multipliers || f.pricingStructure.multipliers.length === 0) &&
-      (!f.pricingStructure?.fees || f.pricingStructure.fees.length === 0) &&
-      !f.savedAt // Not being edited
-    );
-    
-    if (!hasBlank && pricingFormats.length > 0) {
-      // Add blank component at the top
-      const blankPrice = {
-        id: Date.now(),
-        services: [],
-        price: '',
-        unit: '',
-        basePrice: '',
-        jobDifficultyMultiplier: '',
-        storyMultiplier: '',
-        pricingStructure: {
-          rates: [],
-          expenses: [],
-          multipliers: [],
-          fees: []
-        },
-      };
-      setPricingFormats((prev) => [blankPrice, ...prev]);
-    }
-  }, [pricingFormats.length]); // Only check when count changes
   
   // Check for expired promotions and move them to expired section
   useEffect(() => {
@@ -218,7 +170,7 @@ const PricingTool = ({
         id: Date.now(),
         title: '',
         services: [],
-        promotionType: 'percentOff',
+        promotionType: '',
         percentOff: '',
         percentOffServices: [],
         packageType: 'buyOneGetOne',
@@ -524,16 +476,13 @@ const PricingTool = ({
               </div>
             </div>
 
-            {/* Add Price and Active Prices Section */}
-            <div className="bg-white rounded-3xl p-6 mb-6" style={{border: '1px solid #f3f4f6'}}>
-                <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-gray-500" />
-                  Add Price
-                </h3>
+            {/* Pricing Format Section */}
+            <div className="pricing-format-section">
+              {/* Add Price Subsection */}
+              <div className="bg-white rounded-3xl p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Add Price</h3>
               <div className="section-spacing">
-                  {pricingFormats
-                    .filter(format => !format.isEditingFromActive) // Hide prices being edited inline in Active Prices
-                    .map((format) => {
+                  {pricingFormats.map((format) => {
                     const usedServices = getUsedServices();
                     const isBlank = (!format.services || format.services.length === 0) && 
                       (!format.pricingStructure?.rates || format.pricingStructure.rates.length === 0) &&
@@ -549,6 +498,16 @@ const PricingTool = ({
                       {/* Service Header with Plus Button */}
                         <div 
                           className="service-header"
+                          onClick={() => {
+                            setPricingFormats((prev) =>
+                              prev.map((row) =>
+                                row.id === format.id
+                                  ? { ...row, isPricingPanelsCollapsed: !row.isPricingPanelsCollapsed }
+                                  : row
+                              )
+                            );
+                          }}
+                          style={{ cursor: 'pointer' }}
                         >
                         <div className="service-tags-container">
                           {format.services && format.services.length > 0 && (
@@ -596,6 +555,23 @@ const PricingTool = ({
                             )}
                           </div>
                         </div>
+                        {/* Caret to expand/collapse Pricing Components and Formula - Far Right */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPricingFormats((prev) =>
+                              prev.map((row) =>
+                                row.id === format.id
+                                  ? { ...row, isPricingPanelsCollapsed: !row.isPricingPanelsCollapsed }
+                                  : row
+                              )
+                            );
+                          }}
+                          className="text-gray-600 hover:text-gray-800 flex-shrink-0 ml-auto"
+                        >
+                          <ChevronDown className={`w-5 h-5 transition-transform ${format.isPricingPanelsCollapsed ? '' : 'rotate-180'}`} />
+                        </button>
                         </div>
                             {openPricingDropdown === format.id && (
                                 <div className="pricing-dropdown pricing-dropdown-container">
@@ -631,7 +607,9 @@ const PricingTool = ({
                                                   row.id === format.id 
                                                     ? { 
                                                         ...row, 
-                                                        services: newServices
+                                                        services: newServices,
+                                                        // Expand when a service is added
+                                                        isPricingPanelsCollapsed: newServices.length > 0 ? false : row.isPricingPanelsCollapsed
                                                       } 
                                                     : row
                                                 )
@@ -682,7 +660,9 @@ const PricingTool = ({
                                                   row.id === format.id 
                                                     ? { 
                                                         ...row, 
-                                                        services: newServices
+                                                        services: newServices,
+                                                        // Expand when a service is added
+                                                        isPricingPanelsCollapsed: newServices.length > 0 ? false : row.isPricingPanelsCollapsed
                                                       } 
                                                     : row
                                                 )
@@ -733,7 +713,9 @@ const PricingTool = ({
                                                   row.id === format.id 
                                                     ? { 
                                                         ...row, 
-                                                        services: newServices
+                                                        services: newServices,
+                                                        // Expand when a service is added
+                                                        isPricingPanelsCollapsed: newServices.length > 0 ? false : row.isPricingPanelsCollapsed
                                                       } 
                                                     : row
                                                 )
@@ -785,7 +767,9 @@ const PricingTool = ({
                                                   row.id === format.id 
                                                     ? { 
                                                         ...row, 
-                                                        services: newServices
+                                                        services: newServices,
+                                                        // Expand when a service is added
+                                                        isPricingPanelsCollapsed: newServices.length > 0 ? false : row.isPricingPanelsCollapsed
                                                       } 
                                                     : row
                                                 )
@@ -861,6 +845,7 @@ const PricingTool = ({
                             )}
                       
                       {/* Pricing Structure Diagram */}
+                      {!format.isPricingPanelsCollapsed && (
                       <div>
                         {/* Divider above Pricing Components */}
                         <div className="pricing-formula-divider" style={{ marginTop: '0.25rem', marginBottom: '0.5rem' }}></div>
@@ -897,7 +882,7 @@ const PricingTool = ({
                                       </div>
                                     </div>
                                   )}
-                                  <div className="relative flex-1 min-w-0 border border-gray-200 rounded-2xl px-4 py-3 bg-white flex flex-col" style={{ minHeight: '280px', overflow: 'visible' }}>
+                                  <div className="relative flex-1 min-w-0 border-2 border-gray-300 rounded-2xl px-4 py-3 bg-slate-50/60 flex flex-col" style={{ minHeight: '280px', overflow: 'visible' }}>
                                     {/* Section Label */}
                                     <label className="block text-sm font-semibold text-gray-700 mb-2 flex-shrink-0">{sectionLabel}</label>
                                     
@@ -1349,41 +1334,41 @@ const PricingTool = ({
                                                                   const isCustomUnit = customPerUnitOptions.includes(unit) && !unitOptions.includes(unit);
                                                                   return (
                                                                     <div key={unit} className="flex items-center group">
-                                                                  <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                      e.stopPropagation();
-                                                                      const newPerUnit = unit;
-                                                        const newItems = selectedItems.map(i => {
-                                                          if (typeof i === 'object' && i.option === itemOption) {
-                                                            return { ...i, perUnit: newPerUnit };
-                                                          }
-                                                          return i;
-                                                        });
-                                                        setPricingFormats((prev) =>
-                                                          prev.map((row) =>
-                                                            row.id === format.id
-                                                              ? {
-                                                                  ...row,
-                                                                  pricingStructure: {
-                                                                    ...row.pricingStructure,
-                                                                    [sectionType]: newItems
-                                                                  }
-                                                                }
-                                                              : row
-                                                          )
-                                                        );
-                                                                      setOpenPerUnitDropdown(prev => ({
-                                                                        ...prev,
-                                                                        [`${format.id}-expenses-${index}-perUnit`]: false
-                                                                      }));
-                                                                    }}
+                                                                      <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                          e.stopPropagation();
+                                                                          const newPerUnit = unit;
+                                                                          const newItems = selectedItems.map(i => {
+                                                                            if (typeof i === 'object' && i.option === itemOption) {
+                                                                              return { ...i, perUnit: newPerUnit };
+                                                                            }
+                                                                            return i;
+                                                                          });
+                                                                          setPricingFormats((prev) =>
+                                                                            prev.map((row) =>
+                                                                              row.id === format.id
+                                                                                ? {
+                                                                                    ...row,
+                                                                                    pricingStructure: {
+                                                                                      ...row.pricingStructure,
+                                                                                      [sectionType]: newItems
+                                                                                    }
+                                                                                  }
+                                                                                : row
+                                                                            )
+                                                                          );
+                                                                          setOpenPerUnitDropdown(prev => ({
+                                                                            ...prev,
+                                                                            [`${format.id}-expenses-${index}-perUnit`]: false
+                                                                          }));
+                                                                        }}
                                                                         className={`flex-1 text-left px-3 py-2 text-sm font-normal text-gray-700 hover:bg-slate-50 transition-colors ${
-                                                                      itemPerUnit === unit ? 'bg-blue-50 text-blue-700' : ''
-                                                                    }`}
-                                                                  >
-                                                                    {unit}
-                                                                  </button>
+                                                                          itemPerUnit === unit ? 'bg-blue-50 text-blue-700' : ''
+                                                                        }`}
+                                                                      >
+                                                                        {unit}
+                                                                      </button>
                                                                       {isCustomUnit && (
                                                                         <button
                                                                           type="button"
@@ -1595,9 +1580,12 @@ const PricingTool = ({
                           )}
                         </div>
 
+                        {/* Divider Line - Always show between Pricing Components and Pricing Formula */}
+                        <div className="pricing-formula-divider" style={{ marginTop: '1.5rem', marginBottom: '1rem' }}></div>
+
                         {/* Formula Summary */}
                         <>
-                          <h4 className="pricing-formula-title mt-6">Pricing Formula</h4>
+                          <h4 className="pricing-formula-title">Pricing Formula</h4>
                         {(() => {
                         const structure = format.pricingStructure || {};
                         const rates = Array.isArray(structure.rates) ? structure.rates : [];
@@ -1701,7 +1689,7 @@ const PricingTool = ({
                       });
 
                       return (
-                          <div className="-mt-2">
+                          <div className="-mt-2 mb-12">
                             {/* Single Unified Formula */}
                             <div className="flex flex-wrap items-center gap-3 text-sm min-h-[2rem]">
                               {allFormulaElements.length > 0 ? (
@@ -1743,7 +1731,7 @@ const PricingTool = ({
                                 
                                 return (
                                   <span key={idx} className="flex items-center gap-3">
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-white border-[0.5px] border-gray-300 ">
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white border border-gray-200 ">
                                       <span className="font-medium text-gray-800">
                                         {displayValue && (
                                           <span className="font-semibold text-blue-600 mr-1.5">{displayValue}</span>
@@ -1767,9 +1755,10 @@ const PricingTool = ({
                     })()}
                       </>
                         </div>
+                                                )}
                     {/* Save Button and Delete Button for this price */}
                     {!isBlank && (
-                      <div className="flex justify-end items-center gap-2 pt-2 mt-4">
+                      <div className="flex justify-end items-center gap-2 pt-2 border-t border-gray-200 mt-4">
                         {priceErrors[format.id] && (
                           <span className="text-red-600 text-sm">* {priceErrors[format.id]}</span>
                         )}
@@ -1815,19 +1804,19 @@ const PricingTool = ({
                               return;
                             }
                             
-                            // Check if this is editing an existing price (has savedAt property, editingPriceId matches, or isEditingFromActive)
-                            const isEditing = format.savedAt || editingPriceId === format.id || format.isEditingFromActive;
+                            // Check if this is editing an existing price (has savedAt property or editingPriceId matches)
+                            const isEditing = format.savedAt || editingPriceId === format.id;
                             
                             if (isEditing) {
                               // Update existing price in activePrices (restore it with updated data)
                               const savedAt = format.savedAt || new Date().toISOString();
                               setActivePrices((prev) => {
-                                // Check if it already exists
+                                // Check if it already exists (shouldn't, but just in case)
                                 const exists = prev.some(p => p.id === format.id);
                                 if (exists) {
                                   return prev.map((p) =>
                                     p.id === format.id
-                                      ? { ...format, savedAt: p.savedAt } // Preserve original savedAt
+                                      ? { ...format, savedAt }
                                       : p
                                   );
                                 } else {
@@ -1835,32 +1824,18 @@ const PricingTool = ({
                                   return [...prev, { ...format, savedAt }];
                                 }
                               });
-                              // Clear editing state
-                              if (format.isEditingFromActive) {
-                                setEditingActivePriceId(null);
-                              }
                             } else {
                               // Save new price to activePrices
                               const priceToSave = { ...format, savedAt: new Date().toISOString() };
                               setActivePrices((prev) => [...prev, priceToSave]);
                             }
                             
-                            // Remove from active pricing formats and ensure blank component exists at top
+                            // Remove from active pricing formats
                             setPricingFormats((prev) => {
                               const filtered = prev.filter((row) => row.id !== format.id);
-                              // Check if there's already a blank component
-                              const hasBlank = filtered.some(f => 
-                                (!f.services || f.services.length === 0) && 
-                                (!f.pricingStructure?.rates || f.pricingStructure.rates.length === 0) &&
-                                (!f.pricingStructure?.expenses || f.pricingStructure.expenses.length === 0) &&
-                                (!f.pricingStructure?.multipliers || f.pricingStructure.multipliers.length === 0) &&
-                                (!f.pricingStructure?.fees || f.pricingStructure.fees.length === 0) &&
-                                !f.savedAt
-                              );
-                              
-                              // Always ensure there's a blank component at the top
-                              if (!hasBlank) {
-                                const blankPrice = {
+                              // Add a new blank collapsed price if none exist
+                              if (filtered.length === 0) {
+                                return [{
                                   id: Date.now(),
                                   services: [],
                                   price: '',
@@ -1868,25 +1843,21 @@ const PricingTool = ({
                                   basePrice: '',
                                   jobDifficultyMultiplier: '',
                                   storyMultiplier: '',
+                                  isPricingPanelsCollapsed: true, // Collapsed by default
                                   pricingStructure: {
                                     rates: [],
                                     expenses: [],
                                     multipliers: [],
                                     fees: []
                                   },
-                                };
-                                return [blankPrice, ...filtered];
+                                }];
                               }
                               return filtered;
                             });
                             
                             // Clear editing state
                             if (isEditing) {
-                              if (format.isEditingFromActive) {
-                                setEditingActivePriceId(null);
-                              } else {
                               setEditingPriceId(null);
-                              }
                             }
                           }}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium "
@@ -1897,22 +1868,18 @@ const PricingTool = ({
                         <button
                           type="button"
                           onClick={() => {
-                            // Check if this is an edited price (has savedAt property, editingPriceId matches, or isEditingFromActive)
-                            const isEditedPrice = format.savedAt || editingPriceId === format.id || format.isEditingFromActive;
+                            // Check if this is an edited price (has savedAt property or editingPriceId matches)
+                            const isEditedPrice = format.savedAt || editingPriceId === format.id;
                             
                             if (isEditedPrice) {
-                              // If it's an edited price from active prices, remove from activePrices too
-                              if (format.isEditingFromActive) {
-                                setActivePrices((prev) => prev.filter((p) => p.id !== format.id));
-                                setEditingActivePriceId(null);
-                              } else {
-                                // Clear editing state
-                                if (editingPriceId === format.id) {
-                                  setEditingPriceId(null);
-                                }
-                              }
-                              // Remove from pricingFormats
+                              // If it's an edited price, remove it completely (don't restore to activePrices)
                               setPricingFormats((prev) => prev.filter((row) => row.id !== format.id));
+                              // Clear editing state
+                              if (editingPriceId === format.id) {
+                                setEditingPriceId(null);
+                              }
+                              // Note: The price was already removed from activePrices when editing started,
+                              // so deleting it here means it's permanently deleted
                             } else {
                               // If it's a new price, clear the services (titles) and reset
                                 setPricingFormats((prev) =>
@@ -1921,6 +1888,7 @@ const PricingTool = ({
                                                               ? {
                                                                   ...row,
                                         services: [],
+                                        isPricingPanelsCollapsed: true,
                                                                   pricingStructure: {
                                           rates: [],
                                           expenses: [],
@@ -1937,25 +1905,24 @@ const PricingTool = ({
                           aria-label="Delete title"
                         >
                           <Trash2 className="w-5 h-5" />
-                                                </button>
+                        </button>
                                               </div>
                                       )}
                                     </div>
                               );
                             })}
+                        </div>
                       </div>
 
               {/* Active Prices Subsection */}
-              <h3 className="text-lg font-semibold text-gray-700 mb-4 mt-8 flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-                Active Prices
-              </h3>
+              <div className="bg-white rounded-3xl p-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Active Prices</h3>
                 {activePrices.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <p className="italic">No saved prices yet. Create and save a price above to see it here.</p>
                   </div>
                 ) : (
-                  <div className={`space-y-3 ${activePrices.length > 3 ? 'max-h-[600px] overflow-y-auto pr-2' : ''}`}>
+                  <div className="space-y-3">
                     {activePrices.map((savedPrice) => {
                       // Calculate pricing formula (same logic as Add Price section)
                       const structure = savedPrice.pricingStructure || {};
@@ -2059,1241 +2026,26 @@ const PricingTool = ({
                         }
                       });
 
-                      const isEditing = editingActivePriceId === savedPrice.id;
-                      const editingData = isEditing ? editingActivePriceData : savedPrice;
-
                       return (
                         <div
                           key={savedPrice.id}
-                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative flex items-start gap-3"
+                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative"
                         >
-                          {isEditing ? (
-                            // Render the full form inline by finding format in pricingFormats
-                            // This allows reuse of all existing form logic
-                            (() => {
-                              const editingFormat = pricingFormats.find(f => f.id === savedPrice.id && f.isEditingFromActive);
-                              if (!editingFormat) return null;
-                              
-                              // Use the same format object but render inline
-                              const format = editingFormat;
-                              const usedServices = getUsedServices();
-                              
-                              const activeDropdownKey = `active-${savedPrice.id}`;
-                              
-                              return (
-                                <div className="flex-1 w-full format-row">
-                                  {/* Service Header */}
-                                  <div className="service-header">
-                                    <div className="service-tags-container">
-                                      {format.services && format.services.length > 0 && (
-                                        <>
-                                          {format.services.map((service) => (
-                                            <span key={service} className="service-tag">
-                                              {service}
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setPricingFormats((prev) =>
-                                                    prev.map((row) =>
-                                                      row.id === format.id
-                                                        ? { ...row, services: (row.services || []).filter(s => s !== service) }
-                                                        : row
-                                                    )
-                                                  );
-                                                }}
-                                                className="service-tag-delete"
-                                                aria-label={`Remove ${service}`}
-                                              >
-                                                <X className="service-tag-delete-icon" />
-                                              </button>
-                                            </span>
-                                          ))}
-                                        </>
-                                      )}
-                                      <div className="add-service-button-container">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setOpenPricingDropdown(openPricingDropdown === activeDropdownKey ? null : activeDropdownKey);
-                                          }}
-                                          className="add-service-button"
-                                        >
-                                          <Plus className="add-service-icon" />
-                                        </button>
-                                        {(!format.services || format.services.length === 0) && (
-                                          <span className="add-service-placeholder">Add Services</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Service Dropdown */}
-                                  {openPricingDropdown === activeDropdownKey && (
-                                    <div className="pricing-dropdown pricing-dropdown-container">
-                                      <div className="dropdown-content">
-                                        {/* Soft Washing Group */}
-                                        <div className="service-group">
-                                          <div className="service-group-header">Soft Washing</div>
-                                          <div className="service-list">
-                                            {[...softWashingServices, ...customSoftWashingServices]
-                                              .filter(service => {
-                                                const isInCurrentFormat = format.services && format.services.includes(service);
-                                                const isUsedInSaved = usedServices.has(service);
-                                                return isInCurrentFormat || !isUsedInSaved;
-                                              })
-                                              .map((service) => (
-                                                <label key={service} className="service-item-label">
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={format.services && format.services.includes(service)}
-                                                    onChange={(e) => {
-                                                      const currentServices = format.services || [];
-                                                      const newServices = e.target.checked
-                                                        ? [...currentServices, service]
-                                                        : currentServices.filter(s => s !== service);
-                                                      setPricingFormats((prev) =>
-                                                        prev.map((row) =>
-                                                          row.id === format.id
-                                                            ? { ...row, services: newServices }
-                                                            : row
-                                                        )
-                                                      );
-                                                    }}
-                                                    className="service-checkbox"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    disabled={!format.services?.includes(service) && usedServices.has(service)}
-                                                  />
-                                                  <span className={`service-label-text ${!format.services?.includes(service) && usedServices.has(service) ? 'opacity-50' : ''}`}>
-                                                    {service}
-                                                    {!format.services?.includes(service) && usedServices.has(service) && (
-                                                      <span className="text-xs text-gray-400 ml-1">(already used)</span>
-                                                    )}
-                                                  </span>
-                                                </label>
-                                              ))}
-                                          </div>
-                                        </div>
-                                        
-                                        {/* Pressure Washing Group */}
-                                        <div>
-                                          <div className="px-3 py-2 bg-slate-100 text-sm font-semibold text-gray-700 sticky top-0">
-                                            Pressure Washing
-                                          </div>
-                                          <div className="space-y-1">
-                                            {[...pressureWashingServices, ...customPressureWashingServices]
-                                              .filter(service => {
-                                                const isInCurrentFormat = format.services && format.services.includes(service);
-                                                const isUsedInSaved = usedServices.has(service);
-                                                return isInCurrentFormat || !isUsedInSaved;
-                                              })
-                                              .map((service) => (
-                                                <label
-                                                  key={service}
-                                                  className={`flex items-center px-3 py-2 hover:bg-slate-50 ${!format.services?.includes(service) && usedServices.has(service) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                                >
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={format.services && format.services.includes(service)}
-                                                    onChange={(e) => {
-                                                      const currentServices = format.services || [];
-                                                      const newServices = e.target.checked
-                                                        ? [...currentServices, service]
-                                                        : currentServices.filter(s => s !== service);
-                                                      setPricingFormats((prev) =>
-                                                        prev.map((row) =>
-                                                          row.id === format.id
-                                                            ? { ...row, services: newServices }
-                                                            : row
-                                                        )
-                                                      );
-                                                    }}
-                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    disabled={!format.services?.includes(service) && usedServices.has(service)}
-                                                  />
-                                                  <span className={`ml-2 text-sm ${!format.services?.includes(service) && usedServices.has(service) ? 'text-gray-400' : 'text-gray-700'}`}>
-                                                    {service}
-                                                    {!format.services?.includes(service) && usedServices.has(service) && (
-                                                      <span className="text-xs text-gray-400 ml-1">(already used)</span>
-                                                    )}
-                                                  </span>
-                                                </label>
-                                              ))}
-                                          </div>
-                                        </div>
-                                        
-                                        {/* Specialty Cleaning Group */}
-                                        <div>
-                                          <div className="px-3 py-2 bg-slate-100 text-sm font-semibold text-gray-700 sticky top-0">
-                                            Specialty Cleaning
-                                          </div>
-                                          <div className="space-y-1">
-                                            {[...specialtyCleaningServices, ...customSpecialtyCleaningServices]
-                                              .filter(service => {
-                                                const isInCurrentFormat = format.services && format.services.includes(service);
-                                                const isUsedInSaved = usedServices.has(service);
-                                                return isInCurrentFormat || !isUsedInSaved;
-                                              })
-                                              .map((service) => (
-                                                <label
-                                                  key={service}
-                                                  className={`flex items-center px-3 py-2 hover:bg-slate-50 ${!format.services?.includes(service) && usedServices.has(service) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                                >
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={format.services && format.services.includes(service)}
-                                                    onChange={(e) => {
-                                                      const currentServices = format.services || [];
-                                                      const newServices = e.target.checked
-                                                        ? [...currentServices, service]
-                                                        : currentServices.filter(s => s !== service);
-                                                      setPricingFormats((prev) =>
-                                                        prev.map((row) =>
-                                                          row.id === format.id
-                                                            ? { ...row, services: newServices }
-                                                            : row
-                                                        )
-                                                      );
-                                                    }}
-                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    disabled={!format.services?.includes(service) && usedServices.has(service)}
-                                                  />
-                                                  <span className={`ml-2 text-sm ${!format.services?.includes(service) && usedServices.has(service) ? 'text-gray-400' : 'text-gray-700'}`}>
-                                                    {service}
-                                                    {!format.services?.includes(service) && usedServices.has(service) && (
-                                                      <span className="text-xs text-gray-400 ml-1">(already used)</span>
-                                                    )}
-                                                  </span>
-                                                </label>
-                                              ))}
-                                          </div>
-                                        </div>
-                                        
-                                        {/* Window Cleaning Group */}
-                                        {showWindowCleaning && (
-                                          <div>
-                                            <div className="px-3 py-2 bg-slate-100 text-sm font-semibold text-gray-700 sticky top-0">
-                                              Window Cleaning
-                                            </div>
-                                            <div className="space-y-1">
-                                              {[...windowCleaningServices, ...customWindowCleaningServices]
-                                                .filter(service => {
-                                                  const isInCurrentFormat = format.services && format.services.includes(service);
-                                                  const isUsedInSaved = usedServices.has(service);
-                                                  return isInCurrentFormat || !isUsedInSaved;
-                                                })
-                                                .map((service) => (
-                                                  <label
-                                                    key={service}
-                                                    className={`flex items-center px-3 py-2 hover:bg-slate-50 ${!format.services?.includes(service) && usedServices.has(service) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                                  >
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={format.services && format.services.includes(service)}
-                                                      onChange={(e) => {
-                                                        const currentServices = format.services || [];
-                                                        const newServices = e.target.checked
-                                                          ? [...currentServices, service]
-                                                          : currentServices.filter(s => s !== service);
-                                                        setPricingFormats((prev) =>
-                                                          prev.map((row) =>
-                                                            row.id === format.id
-                                                              ? { ...row, services: newServices }
-                                                              : row
-                                                          )
-                                                        );
-                                                      }}
-                                                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                      onClick={(e) => e.stopPropagation()}
-                                                      disabled={!format.services?.includes(service) && usedServices.has(service)}
-                                                    />
-                                                    <span className={`ml-2 text-sm ${!format.services?.includes(service) && usedServices.has(service) ? 'text-gray-400' : 'text-gray-700'}`}>
-                                                      {service}
-                                                      {!format.services?.includes(service) && usedServices.has(service) && (
-                                                        <span className="text-xs text-gray-400 ml-1">(already used)</span>
-                                                      )}
-                                                    </span>
-                                                  </label>
-                                                ))}
-                                            </div>
-                                          </div>
-                                        )}
-                                        
-                                        {/* Paver Sealing Group */}
-                                        {showPaverSealing && (() => {
-                                          const isInCurrentFormat = format.services && format.services.includes('Paver Sealing');
-                                          const isUsedInSaved = usedServices.has('Paver Sealing');
-                                          const canUse = isInCurrentFormat || !isUsedInSaved;
-                                          
-                                          return canUse ? (
-                                            <div>
-                                              <div className="px-3 py-2 bg-slate-100 text-sm font-semibold text-gray-700 sticky top-0">
-                                                Paver Sealing
-                                              </div>
-                                              <div className="space-y-1">
-                                                <label className={`flex items-center px-3 py-2 hover:bg-slate-50 ${!isInCurrentFormat && isUsedInSaved ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={isInCurrentFormat}
-                                                    onChange={(e) => {
-                                                      const currentServices = format.services || [];
-                                                      const newServices = e.target.checked
-                                                        ? [...currentServices, 'Paver Sealing']
-                                                        : currentServices.filter(s => s !== 'Paver Sealing');
-                                                      setPricingFormats((prev) =>
-                                                        prev.map((row) =>
-                                                          row.id === format.id
-                                                            ? { ...row, services: newServices }
-                                                            : row
-                                                        )
-                                                      );
-                                                    }}
-                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    disabled={!isInCurrentFormat && isUsedInSaved}
-                                                  />
-                                                  <span className={`ml-2 text-sm ${!isInCurrentFormat && isUsedInSaved ? 'text-gray-400' : 'text-gray-700'}`}>
-                                                    Paver Sealing
-                                                    {!isInCurrentFormat && isUsedInSaved && (
-                                                      <span className="text-xs text-gray-400 ml-1">(already used)</span>
-                                                    )}
-                                                  </span>
-                                                </label>
-                                              </div>
-                                            </div>
-                                          ) : null;
-                                        })()}
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Pricing Structure */}
-                                  <div>
-                                    <div className="pricing-formula-divider" style={{ marginTop: '0.25rem', marginBottom: '0.5rem' }}></div>
-                                    <div className="flex items-center justify-between py-1">
-                                      <h4 className="text-sm font-semibold text-gray-700">Pricing Components</h4>
-                                    </div>
-                                    
-                                    <div className="space-y-6">
-                                      <div className="relative pricing-structure-container" style={{ overflow: 'visible' }}>
-                                        {['rates', 'expenses', 'fees', 'multipliers'].map((sectionType, sectionIndex) => {
-                                          const sectionLabel = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
-                                          const baseOptions = pricingStructureOptions[sectionType] || [];
-                                          const customOptions = customPricingStructureOptions?.[sectionType] || [];
-                                          const sectionOptions = [...baseOptions, ...customOptions].sort();
-                                          const selectedItems = format.pricingStructure?.[sectionType] || [];
-                                          const dropdownKey = `${activeDropdownKey}-${sectionType}`;
-                                          const isDropdownOpen = openPricingStructureDropdown?.[dropdownKey] || false;
-                                          
-                                          return (
-                                            <React.Fragment key={sectionType}>
-                                              {sectionIndex > 0 && (
-                                                <div className="flex items-center justify-center flex-shrink-0 pricing-plus-sign">
-                                                  <div className="w-6 h-6 rounded-full bg-gray-200 border border-gray-300 flex items-center justify-center">
-                                                    <Plus className="w-3 h-3 text-gray-600" />
-                                                  </div>
-                                                </div>
-                                              )}
-                                              <div className="relative flex-1 min-w-0 border border-gray-200 rounded-2xl px-4 py-3 bg-white flex flex-col" style={{ minHeight: '280px', overflow: 'visible' }}>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2 flex-shrink-0">{sectionLabel}</label>
-                                                
-                                                <div className="relative mb-2 pricing-structure-dropdown-container flex-shrink-0">
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => setOpenPricingStructureDropdown(prev => ({
-                                                      ...prev,
-                                                      [dropdownKey]: !prev[dropdownKey]
-                                                    }))}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
-                                                  >
-                                                    <span className="text-gray-500">Select...</span>
-                                                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
-                                                  </button>
-                                                  {isDropdownOpen && (
-                                                    <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-300 rounded-lg max-h-64 overflow-y-auto pricing-structure-dropdown-container">
-                                                      <div className="p-2 space-y-1">
-                                                        {sectionOptions.map((option) => {
-                                                          const needsValue = sectionType === 'rates' || sectionType === 'expenses' || sectionType === 'multipliers' || sectionType === 'fees';
-                                                          const isSelected = needsValue
-                                                            ? selectedItems.some(item => (typeof item === 'object' ? item.option : item) === option)
-                                                            : selectedItems.includes(option);
-                                                          return (
-                                                            <label
-                                                              key={option}
-                                                              className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer group"
-                                                            >
-                                                              <input
-                                                                type="checkbox"
-                                                                checked={isSelected}
-                                                                onChange={(e) => {
-                                                                  const currentItems = format.pricingStructure?.[sectionType] || [];
-                                                                  if (needsValue) {
-                                                                    if (sectionType === 'expenses') {
-                                                                      const newItems = e.target.checked
-                                                                        ? [...currentItems, { option, value: 0, perUnit: unitOptions[0] || 'Square Foot' }]
-                                                                        : currentItems.filter(item => (typeof item === 'object' ? item.option : item) !== option);
-                                                                      setPricingFormats((prev) =>
-                                                                        prev.map((row) =>
-                                                                          row.id === format.id
-                                                                            ? {
-                                                                                ...row,
-                                                                                pricingStructure: {
-                                                                                  ...row.pricingStructure,
-                                                                                  [sectionType]: newItems
-                                                                                }
-                                                                              }
-                                                                            : row
-                                                                        )
-                                                                      );
-                                                                    } else {
-                                                                      const newItems = e.target.checked
-                                                                        ? [...currentItems, { option, value: 0 }]
-                                                                        : currentItems.filter(item => (typeof item === 'object' ? item.option : item) !== option);
-                                                                      setPricingFormats((prev) =>
-                                                                        prev.map((row) =>
-                                                                          row.id === format.id
-                                                                            ? {
-                                                                                ...row,
-                                                                                pricingStructure: {
-                                                                                  ...row.pricingStructure,
-                                                                                  [sectionType]: newItems
-                                                                                }
-                                                                              }
-                                                                            : row
-                                                                        )
-                                                                      );
-                                                                    }
-                                                                  }
-                                                                }}
-                                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                              />
-                                                              <span className="ml-2 text-sm text-gray-700 flex-1">{option}</span>
-                                                              {customOptions.includes(option) && (
-                                                                <button
-                                                                  type="button"
-                                                                  onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    e.preventDefault();
-                                                                    setCustomPricingStructureOptions(prev => ({
-                                                                      ...prev,
-                                                                      [sectionType]: (prev[sectionType] || []).filter(opt => opt !== option)
-                                                                    }));
-                                                                    const currentItems = format.pricingStructure?.[sectionType] || [];
-                                                                    const newItems = needsValue
-                                                                      ? currentItems.filter(item => (typeof item === 'object' ? item.option : item) !== option)
-                                                                      : currentItems.filter(item => item !== option);
-                                                                    if (newItems.length !== currentItems.length) {
-                                                                      setPricingFormats((prev) =>
-                                                                        prev.map((row) =>
-                                                                          row.id === format.id
-                                                                            ? {
-                                                                                ...row,
-                                                                                pricingStructure: {
-                                                                                  ...row.pricingStructure,
-                                                                                  [sectionType]: newItems
-                                                                                }
-                                                                              }
-                                                                            : row
-                                                                        )
-                                                                      );
-                                                                    }
-                                                                  }}
-                                                                  className="ml-2 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                                                                  aria-label="Delete custom item"
-                                                                >
-                                                                  <X className="w-3.5 h-3.5" />
-                                                                </button>
-                                                              )}
-                                                            </label>
-                                                          );
-                                                        })}
-                                                        <div className="border-t border-gray-200 mt-2 pt-2 px-2">
-                                                          <div className="flex items-center gap-2 w-full">
-                                                            <input
-                                                              type="text"
-                                                              value={customInputValues[sectionType] || ''}
-                                                              onChange={(e) => {
-                                                                setCustomInputValues(prev => ({
-                                                                  ...prev,
-                                                                  [sectionType]: e.target.value
-                                                                }));
-                                                              }}
-                                                              onKeyPress={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                  e.preventDefault();
-                                                                  const customValue = customInputValues[sectionType]?.trim();
-                                                                  if (customValue && !sectionOptions.includes(customValue)) {
-                                                                    setCustomPricingStructureOptions(prev => ({
-                                                                      ...prev,
-                                                                      [sectionType]: [...(prev[sectionType] || []), customValue]
-                                                                    }));
-                                                                    setCustomInputValues(prev => ({
-                                                                      ...prev,
-                                                                      [sectionType]: ''
-                                                                    }));
-                                                                  }
-                                                                }
-                                                              }}
-                                                              placeholder={`Add custom ${sectionLabel.toLowerCase()}...`}
-                                                              className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                              onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const customValue = customInputValues[sectionType]?.trim();
-                                                                if (customValue && !sectionOptions.includes(customValue)) {
-                                                                  setCustomPricingStructureOptions(prev => ({
-                                                                    ...prev,
-                                                                    [sectionType]: [...(prev[sectionType] || []), customValue]
-                                                                  }));
-                                                                  setCustomInputValues(prev => ({
-                                                                    ...prev,
-                                                                    [sectionType]: ''
-                                                                  }));
-                                                                }
-                                                              }}
-                                                              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex-shrink-0 whitespace-nowrap"
-                                                              disabled={!customInputValues[sectionType]?.trim()}
-                                                            >
-                                                              <Plus className="w-3 h-3" />
-                                                            </button>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                
-                                                <div className="flex-shrink-0 selected-items-panel" style={{ height: '200px', maxHeight: '200px', overflow: 'visible', position: 'relative' }}>
-                                                  <div style={{ height: '100%', maxHeight: '200px', overflowY: 'auto', overflowX: 'visible' }}>
-                                                    {selectedItems.length > 0 ? (
-                                                      <div className="space-y-1.5">
-                                                        {selectedItems.map((item, index) => {
-                                                          const needsValue = sectionType === 'rates' || sectionType === 'expenses' || sectionType === 'multipliers' || sectionType === 'fees';
-                                                          const itemOption = needsValue && typeof item === 'object' ? item.option : item;
-                                                          const itemValue = needsValue && typeof item === 'object' ? (item.value || 0) : null;
-                                                          const itemPerUnit = sectionType === 'expenses' && typeof item === 'object' ? (item.perUnit || unitOptions[0] || 'Square Foot') : null;
-                                                          const itemKey = needsValue ? `${itemOption}-${index}` : item;
-                                                          
-                                                          return (
-                                                            <div
-                                                              key={itemKey}
-                                                              className="flex flex-col gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-slate-200 min-w-0 w-full overflow-visible selected-item-row"
-                                                              style={{ maxWidth: '100%', boxSizing: 'border-box' }}
-                                                            >
-                                                              <div className="flex items-start justify-between w-full gap-2">
-                                                                <div className="text-xs font-medium break-words selected-item-title flex-1" style={{ wordBreak: 'break-word', lineHeight: '1.2' }}>{itemOption}</div>
-                                                                <button
-                                                                  type="button"
-                                                                  onClick={() => {
-                                                                    const newItems = needsValue
-                                                                      ? selectedItems.filter(i => (typeof i === 'object' ? i.option : i) !== itemOption)
-                                                                      : selectedItems.filter(i => i !== item);
-                                                                    setPricingFormats((prev) =>
-                                                                      prev.map((row) =>
-                                                                        row.id === format.id
-                                                                          ? {
-                                                                              ...row,
-                                                                              pricingStructure: {
-                                                                                ...row.pricingStructure,
-                                                                                [sectionType]: newItems
-                                                                              }
-                                                                            }
-                                                                          : row
-                                                                      )
-                                                                    );
-                                                                  }}
-                                                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors shrink-0"
-                                                                  aria-label="Remove item"
-                                                                  style={{ width: '24px', minWidth: '24px', padding: '3px' }}
-                                                                >
-                                                                  <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                              </div>
-                                                              
-                                                              <div className="flex flex-col gap-2 w-full">
-                                                                {sectionType === 'rates' && (
-                                                                  <div className="flex items-center gap-1 w-full">
-                                                                    <span className="text-xs text-blue-600 shrink-0 w-3">$</span>
-                                                                    <input
-                                                                      type="number"
-                                                                      step="0.01"
-                                                                      min="0"
-                                                                      value={itemValue === 0 ? '' : itemValue}
-                                                                      onChange={(e) => {
-                                                                        const inputValue = e.target.value;
-                                                                        const newValue = inputValue === '' ? 0 : (parseFloat(inputValue) || 0);
-                                                                        const newItems = selectedItems.map(i => {
-                                                                          if (typeof i === 'object' && i.option === itemOption) {
-                                                                            return { ...i, value: newValue };
-                                                                          }
-                                                                          return i;
-                                                                        });
-                                                                        setPricingFormats((prev) =>
-                                                                          prev.map((row) =>
-                                                                            row.id === format.id
-                                                                              ? {
-                                                                                  ...row,
-                                                                                  pricingStructure: {
-                                                                                    ...row.pricingStructure,
-                                                                                    [sectionType]: newItems
-                                                                                  }
-                                                                                }
-                                                                              : row
-                                                                          )
-                                                                        );
-                                                                      }}
-                                                                      onBlur={(e) => {
-                                                                        if (e.target.value === '') {
-                                                                          const newItems = selectedItems.map(i => {
-                                                                            if (typeof i === 'object' && i.option === itemOption) {
-                                                                              return { ...i, value: 0 };
-                                                                            }
-                                                                            return i;
-                                                                          });
-                                                                          setPricingFormats((prev) =>
-                                                                            prev.map((row) =>
-                                                                              row.id === format.id
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    pricingStructure: {
-                                                                                      ...row.pricingStructure,
-                                                                                      [sectionType]: newItems
-                                                                                    }
-                                                                                  }
-                                                                                : row
-                                                                            )
-                                                                          );
-                                                                        }
-                                                                      }}
-                                                                      className="flex-1 min-w-0 px-2 py-1 border border-blue-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-blue-700"
-                                                                      placeholder="0.00"
-                                                                      style={{ maxWidth: '100%', width: '100%', boxSizing: 'border-box' }}
-                                                                    />
-                                                                  </div>
-                                                                )}
-                                                                {sectionType === 'multipliers' && (
-                                                                  <div className="flex items-center gap-1 w-full relative">
-                                                                    <input
-                                                                      type="number"
-                                                                      step="0.1"
-                                                                      min="0"
-                                                                      max="100"
-                                                                      value={itemValue === 0 ? '' : itemValue}
-                                                                      onChange={(e) => {
-                                                                        const inputValue = e.target.value;
-                                                                        const newValue = inputValue === '' ? 0 : (parseFloat(inputValue) || 0);
-                                                                        const newItems = selectedItems.map(i => {
-                                                                          if (typeof i === 'object' && i.option === itemOption) {
-                                                                            return { ...i, value: newValue };
-                                                                          }
-                                                                          return i;
-                                                                        });
-                                                                        setPricingFormats((prev) =>
-                                                                          prev.map((row) =>
-                                                                            row.id === format.id
-                                                                              ? {
-                                                                                  ...row,
-                                                                                  pricingStructure: {
-                                                                                    ...row.pricingStructure,
-                                                                                    [sectionType]: newItems
-                                                                                  }
-                                                                                }
-                                                                              : row
-                                                                          )
-                                                                        );
-                                                                      }}
-                                                                      onBlur={(e) => {
-                                                                        if (e.target.value === '') {
-                                                                          const newItems = selectedItems.map(i => {
-                                                                            if (typeof i === 'object' && i.option === itemOption) {
-                                                                              return { ...i, value: 0 };
-                                                                            }
-                                                                            return i;
-                                                                          });
-                                                                          setPricingFormats((prev) =>
-                                                                            prev.map((row) =>
-                                                                              row.id === format.id
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    pricingStructure: {
-                                                                                      ...row.pricingStructure,
-                                                                                      [sectionType]: newItems
-                                                                                    }
-                                                                                  }
-                                                                                : row
-                                                                            )
-                                                                          );
-                                                                        }
-                                                                      }}
-                                                                      className="flex-1 min-w-0 w-full px-2 pr-6 py-1 border border-blue-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-blue-700"
-                                                                      placeholder="0"
-                                                                      style={{ maxWidth: '100%', width: '100%' }}
-                                                                    />
-                                                                    <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 pointer-events-none">%</span>
-                                                                  </div>
-                                                                )}
-                                                                {sectionType === 'expenses' && (
-                                                                  <>
-                                                                    <div className="flex items-center gap-1 w-full">
-                                                                      <span className="text-xs text-blue-600 shrink-0 w-3">$</span>
-                                                                      <input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        min="0"
-                                                                        value={itemValue === 0 ? '' : itemValue}
-                                                                        onChange={(e) => {
-                                                                          const inputValue = e.target.value;
-                                                                          const newValue = inputValue === '' ? 0 : (parseFloat(inputValue) || 0);
-                                                                          const newItems = selectedItems.map(i => {
-                                                                            if (typeof i === 'object' && i.option === itemOption) {
-                                                                              return { ...i, value: newValue };
-                                                                            }
-                                                                            return i;
-                                                                          });
-                                                                          setPricingFormats((prev) =>
-                                                                            prev.map((row) =>
-                                                                              row.id === format.id
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    pricingStructure: {
-                                                                                      ...row.pricingStructure,
-                                                                                      [sectionType]: newItems
-                                                                                    }
-                                                                                  }
-                                                                                : row
-                                                                            )
-                                                                          );
-                                                                        }}
-                                                                        className="flex-1 min-w-0 px-2 py-1 border border-blue-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-blue-700"
-                                                                        placeholder="0.00"
-                                                                        style={{ maxWidth: '100%', width: '100%', boxSizing: 'border-box' }}
-                                                                      />
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1 w-full">
-                                                                      <span className="text-xs text-blue-600 shrink-0" style={{ minWidth: '28px', width: '28px' }}>Per</span>
-                                                                      <div className="relative flex-1 min-w-0 pricing-structure-dropdown-container">
-                                                                        <button
-                                                                          type="button"
-                                                                          id={`per-unit-button-active-${savedPrice.id}-${sectionType}-${index}`}
-                                                                          onClick={() => {
-                                                                            const perUnitDropdownKey = `${activeDropdownKey}-expenses-${index}-perUnit`;
-                                                                            setOpenPerUnitDropdown(prev => ({
-                                                                              ...prev,
-                                                                              [perUnitDropdownKey]: !prev[perUnitDropdownKey]
-                                                                            }));
-                                                                          }}
-                                                                          className="flex-1 min-w-0 px-2 py-1 border border-blue-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-blue-700 flex items-center justify-between w-full"
-                                                                          style={{ maxWidth: '100%', boxSizing: 'border-box' }}
-                                                                        >
-                                                                          <span className="truncate">{itemPerUnit || 'Select...'}</span>
-                                                                          <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform flex-shrink-0 ${openPerUnitDropdown[`${activeDropdownKey}-expenses-${index}-perUnit`] ? 'transform rotate-180' : ''}`} />
-                                                                        </button>
-                                                                        {openPerUnitDropdown[`${activeDropdownKey}-expenses-${index}-perUnit`] && (
-                                                                          <div 
-                                                                            id={`per-unit-dropdown-active-${savedPrice.id}-${sectionType}-${index}`}
-                                                                            className="fixed z-[9999] bg-white border border-gray-300 rounded-lg max-h-64 overflow-y-auto pricing-structure-dropdown-container"
-                                                                            ref={(el) => {
-                                                                              if (el) {
-                                                                                const button = document.getElementById(`per-unit-button-active-${savedPrice.id}-${sectionType}-${index}`);
-                                                                                if (button) {
-                                                                                  const rect = button.getBoundingClientRect();
-                                                                                  el.style.top = `${rect.bottom + 4}px`;
-                                                                                  el.style.left = `${rect.left}px`;
-                                                                                  el.style.width = `${rect.width}px`;
-                                                                                }
-                                                                              }
-                                                                            }}
-                                                                          >
-                                                                            <div className="p-2 space-y-1">
-                                                                              {[...unitOptions, ...customPerUnitOptions].map((unit) => {
-                                                                                const isCustomUnit = customPerUnitOptions.includes(unit) && !unitOptions.includes(unit);
-                                                                                return (
-                                                                                  <div key={unit} className="flex items-center group">
-                                                                                    <button
-                                                                                      type="button"
-                                                                                      onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        const newPerUnit = unit;
-                                                                                        const newItems = selectedItems.map(i => {
-                                                                                          if (typeof i === 'object' && i.option === itemOption) {
-                                                                                            return { ...i, perUnit: newPerUnit };
-                                                                                          }
-                                                                                          return i;
-                                                                                        });
-                                                                                        setPricingFormats((prev) =>
-                                                                                          prev.map((row) =>
-                                                                                            row.id === format.id
-                                                                                              ? {
-                                                                                                  ...row,
-                                                                                                  pricingStructure: {
-                                                                                                    ...row.pricingStructure,
-                                                                                                    [sectionType]: newItems
-                                                                                                  }
-                                                                                                }
-                                                                                              : row
-                                                                                          )
-                                                                                        );
-                                                                                        setOpenPerUnitDropdown(prev => ({
-                                                                                          ...prev,
-                                                                                          [`${activeDropdownKey}-expenses-${index}-perUnit`]: false
-                                                                                        }));
-                                                                                      }}
-                                                                                      className={`flex-1 text-left px-3 py-2 text-sm font-normal text-gray-700 hover:bg-slate-50 transition-colors ${
-                                                                                        itemPerUnit === unit ? 'bg-blue-50 text-blue-700' : ''
-                                                                                      }`}
-                                                                                    >
-                                                                                      {unit}
-                                                                                    </button>
-                                                                                    {isCustomUnit && (
-                                                                                      <button
-                                                                                        type="button"
-                                                                                        onClick={(e) => {
-                                                                                          e.stopPropagation();
-                                                                                          e.preventDefault();
-                                                                                          setCustomPerUnitOptions(prev => prev.filter(opt => opt !== unit));
-                                                                                          setPricingFormats((prev) =>
-                                                                                            prev.map((row) => {
-                                                                                              if (row.pricingStructure?.expenses) {
-                                                                                                const updatedExpenses = row.pricingStructure.expenses.map(exp => {
-                                                                                                  if (typeof exp === 'object' && exp.perUnit === unit) {
-                                                                                                    return { ...exp, perUnit: unitOptions[0] || 'Square Foot' };
-                                                                                                  }
-                                                                                                  return exp;
-                                                                                                });
-                                                                                                return {
-                                                                                                  ...row,
-                                                                                                  pricingStructure: {
-                                                                                                    ...row.pricingStructure,
-                                                                                                    expenses: updatedExpenses
-                                                                                                  }
-                                                                                                };
-                                                                                              }
-                                                                                              return row;
-                                                                                            })
-                                                                                          );
-                                                                                        }}
-                                                                                        className="ml-2 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 p-1"
-                                                                                        aria-label="Delete custom unit"
-                                                                                      >
-                                                                                        <X className="w-3.5 h-3.5" />
-                                                                                      </button>
-                                                                                    )}
-                                                                                  </div>
-                                                                                );
-                                                                              })}
-                                                                              <div className="border-t border-gray-200 mt-2 pt-2">
-                                                                                <div className="flex items-center gap-2 w-full px-2">
-                                                                                  <input
-                                                                                    type="text"
-                                                                                    value={customPerUnitInput}
-                                                                                    onChange={(e) => {
-                                                                                      setCustomPerUnitInput(e.target.value);
-                                                                                    }}
-                                                                                    onKeyPress={(e) => {
-                                                                                      if (e.key === 'Enter') {
-                                                                                        e.preventDefault();
-                                                                                        const customValue = customPerUnitInput?.trim();
-                                                                                        if (customValue && !unitOptions.includes(customValue) && !customPerUnitOptions.includes(customValue)) {
-                                                                                          setCustomPerUnitOptions(prev => [...prev, customValue]);
-                                                                                          const newItems = selectedItems.map(i => {
-                                                                                            if (typeof i === 'object' && i.option === itemOption) {
-                                                                                              return { ...i, perUnit: customValue };
-                                                                                            }
-                                                                                            return i;
-                                                                                          });
-                                                                                          setPricingFormats((prev) =>
-                                                                                            prev.map((row) =>
-                                                                                              row.id === format.id
-                                                                                                ? {
-                                                                                                    ...row,
-                                                                                                    pricingStructure: {
-                                                                                                      ...row.pricingStructure,
-                                                                                                      [sectionType]: newItems
-                                                                                                    }
-                                                                                                  }
-                                                                                                : row
-                                                                                            )
-                                                                                          );
-                                                                                          setCustomPerUnitInput('');
-                                                                                          setOpenPerUnitDropdown(prev => ({
-                                                                                            ...prev,
-                                                                                            [`${activeDropdownKey}-expenses-${index}-perUnit`]: false
-                                                                                          }));
-                                                                                        }
-                                                                                      }
-                                                                                    }}
-                                                                                    placeholder="Add custom per unit..."
-                                                                                    className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                                                    onClick={(e) => e.stopPropagation()}
-                                                                                  />
-                                                                                  <button
-                                                                                    type="button"
-                                                                                    onClick={(e) => {
-                                                                                      e.stopPropagation();
-                                                                                      const customValue = customPerUnitInput?.trim();
-                                                                                      if (customValue && !unitOptions.includes(customValue) && !customPerUnitOptions.includes(customValue)) {
-                                                                                        setCustomPerUnitOptions(prev => [...prev, customValue]);
-                                                                                        const newItems = selectedItems.map(i => {
-                                                                                          if (typeof i === 'object' && i.option === itemOption) {
-                                                                                            return { ...i, perUnit: customValue };
-                                                                                          }
-                                                                                          return i;
-                                                                                        });
-                                                                                        setPricingFormats((prev) =>
-                                                                                          prev.map((row) =>
-                                                                                            row.id === format.id
-                                                                                              ? {
-                                                                                                  ...row,
-                                                                                                  pricingStructure: {
-                                                                                                    ...row.pricingStructure,
-                                                                                                    [sectionType]: newItems
-                                                                                                  }
-                                                                                                }
-                                                                                              : row
-                                                                                          )
-                                                                                        );
-                                                                                        setCustomPerUnitInput('');
-                                                                                        setOpenPerUnitDropdown(prev => ({
-                                                                                          ...prev,
-                                                                                          [`${activeDropdownKey}-expenses-${index}-perUnit`]: false
-                                                                                        }));
-                                                                                      }
-                                                                                    }}
-                                                                                    disabled={!customPerUnitInput?.trim()}
-                                                                                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex-shrink-0 whitespace-nowrap"
-                                                                                  >
-                                                                                    <Plus className="w-3 h-3" />
-                                                                                  </button>
-                                                                                </div>
-                                                                              </div>
-                                                                            </div>
-                                                                          </div>
-                                                                        )}
-                                                                      </div>
-                                                                    </div>
-                                                                  </>
-                                                                )}
-                                                                {sectionType === 'fees' && (
-                                                                  <div className="flex items-center gap-1 w-full">
-                                                                    <span className="text-xs text-blue-600 shrink-0 w-3">$</span>
-                                                                    <input
-                                                                      type="number"
-                                                                      step="0.01"
-                                                                      min="0"
-                                                                      value={itemValue === 0 ? '' : itemValue}
-                                                                      onChange={(e) => {
-                                                                        const inputValue = e.target.value;
-                                                                        const newValue = inputValue === '' ? 0 : (parseFloat(inputValue) || 0);
-                                                                        const newItems = selectedItems.map(i => {
-                                                                          if (typeof i === 'object' && i.option === itemOption) {
-                                                                            return { ...i, value: newValue };
-                                                                          }
-                                                                          return i;
-                                                                        });
-                                                                        setPricingFormats((prev) =>
-                                                                          prev.map((row) =>
-                                                                            row.id === format.id
-                                                                              ? {
-                                                                                  ...row,
-                                                                                  pricingStructure: {
-                                                                                    ...row.pricingStructure,
-                                                                                    [sectionType]: newItems
-                                                                                  }
-                                                                                }
-                                                                              : row
-                                                                          )
-                                                                        );
-                                                                      }}
-                                                                      onBlur={(e) => {
-                                                                        if (e.target.value === '') {
-                                                                          const newItems = selectedItems.map(i => {
-                                                                            if (typeof i === 'object' && i.option === itemOption) {
-                                                                              return { ...i, value: 0 };
-                                                                            }
-                                                                            return i;
-                                                                          });
-                                                                          setPricingFormats((prev) =>
-                                                                            prev.map((row) =>
-                                                                              row.id === format.id
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    pricingStructure: {
-                                                                                      ...row.pricingStructure,
-                                                                                      [sectionType]: newItems
-                                                                                    }
-                                                                                  }
-                                                                                : row
-                                                                            )
-                                                                          );
-                                                                        }
-                                                                      }}
-                                                                      className="flex-1 min-w-0 px-2 py-1 border border-blue-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-blue-700"
-                                                                      placeholder="0.00"
-                                                                      style={{ maxWidth: '100%', width: '100%', boxSizing: 'border-box' }}
-                                                                    />
-                                                                  </div>
-                                                                )}
-                                                              </div>
-                                                            </div>
-                                                          );
-                                                        })}
-                                                      </div>
-                                                    ) : (
-                                                      <div className="text-xs text-gray-400 text-center py-4">No items selected</div>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </React.Fragment>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Pricing Formula */}
-                                    <h4 className="pricing-formula-title mt-6">Pricing Formula</h4>
-                                    {(() => {
-                                      const structure = format.pricingStructure || {};
-                                      const rates = Array.isArray(structure.rates) ? structure.rates : [];
-                                      const expenses = Array.isArray(structure.expenses) ? structure.expenses : [];
-                                      const multipliers = Array.isArray(structure.multipliers) ? structure.multipliers : [];
-                                      const fees = Array.isArray(structure.fees) ? structure.fees : [];
-                                      
-                                      const rateValues = rates
-                                        .filter(r => r && typeof r === 'object' && r.value)
-                                        .map(r => parseFloat(r.value) || 0);
-                                      const rateTotal = rateValues.reduce((sum, val) => sum + val, 0);
-                                      
-                                      const expenseValues = expenses
-                                        .filter(e => e && typeof e === 'object' && e.value)
-                                        .map(e => parseFloat(e.value) || 0);
-                                      const expenseTotal = expenseValues.reduce((sum, val) => sum + val, 0);
-                                      
-                                      const multiplierValues = multipliers
-                                        .filter(m => m && typeof m === 'object' && m.value)
-                                        .map(m => parseFloat(m.value) || 0);
-                                      const multiplierTotal = multiplierValues.reduce((sum, val) => sum + val, 0);
-                                      const multiplierFactor = multiplierTotal > 0 ? (1 + multiplierTotal / 100) : 1;
-                                      
-                                      const feeValues = fees
-                                        .filter(f => f && typeof f === 'object' && f.value)
-                                        .map(f => parseFloat(f.value) || 0);
-                                      const feeTotal = feeValues.reduce((sum, val) => sum + val, 0);
-                                      
-                                      const baseTotal = rateTotal + expenseTotal;
-                                      const adjustedTotal = baseTotal * multiplierFactor;
-                                      const finalPrice = adjustedTotal + feeTotal;
-                                      
-                                      const allFormulaElements = [];
-                                      
-                                      rates.forEach((r) => {
-                                        const rateObj = r && typeof r === 'object' ? r : { option: r, value: null };
-                                        if (rateObj.value && parseFloat(rateObj.value) > 0) {
-                                          allFormulaElements.push({
-                                            type: 'rate',
-                                            label: rateObj.option,
-                                            value: parseFloat(rateObj.value),
-                                            display: `$${parseFloat(rateObj.value).toFixed(2)}`,
-                                            hasValue: true,
-                                            inputValue: parseFloat(rateObj.value),
-                                            inputUnit: null
-                                          });
-                                        }
-                                      });
-                                      
-                                      expenses.forEach((e) => {
-                                        const expObj = e && typeof e === 'object' ? e : { option: e, value: null, perUnit: null };
-                                        if (expObj.value && parseFloat(expObj.value) > 0) {
-                                          allFormulaElements.push({
-                                            type: 'expense',
-                                            label: expObj.option,
-                                            value: parseFloat(expObj.value),
-                                            display: `$${parseFloat(expObj.value).toFixed(2)}${expObj.perUnit ? `/${expObj.perUnit}` : ''}`,
-                                            perUnit: expObj.perUnit,
-                                            hasValue: true,
-                                            inputValue: parseFloat(expObj.value),
-                                            inputUnit: expObj.perUnit || null
-                                          });
-                                        }
-                                      });
-                                      
-                                      multipliers.forEach((m) => {
-                                        const multObj = m && typeof m === 'object' ? m : { option: m, value: null };
-                                        const multValue = multObj.value ? parseFloat(multObj.value) : 0;
-                                        if (multValue > 0) {
-                                          const multAmount = baseTotal > 0 ? (baseTotal * multValue / 100) : 0;
-                                          allFormulaElements.push({
-                                            type: 'multiplier',
-                                            label: multObj.option,
-                                            value: multAmount,
-                                            display: `$${multAmount.toFixed(2)}`,
-                                            percentage: multValue,
-                                            hasValue: true,
-                                            inputValue: multValue
-                                          });
-                                        }
-                                      });
-                                      
-                                      fees.forEach((f) => {
-                                        const feeObj = f && typeof f === 'object' ? f : { option: f, value: null };
-                                        if (feeObj.value && parseFloat(feeObj.value) > 0) {
-                                          allFormulaElements.push({
-                                            type: 'fee',
-                                            label: feeObj.option,
-                                            value: parseFloat(feeObj.value),
-                                            display: `$${parseFloat(feeObj.value).toFixed(2)}`,
-                                            hasValue: true,
-                                            inputValue: parseFloat(feeObj.value)
-                                          });
-                                        }
-                                      });
-                                      
-                                      return (
-                                        <div className="-mt-2">
-                                          <div className="flex flex-wrap items-center gap-3 text-sm min-h-[2rem]">
-                                            {allFormulaElements.length > 0 ? (
-                                              allFormulaElements.map((element, idx) => {
-                                                const typeLabel = {
-                                                  rate: 'Rate',
-                                                  expense: 'Expense',
-                                                  multiplier: 'Multiplier',
-                                                  fee: 'Fee'
-                                                }[element.type] || '';
-                                                
-                                                let displayValue = '';
-                                                if (element.inputValue !== null && element.inputValue !== undefined) {
-                                                  if (element.type === 'multiplier' && element.percentage !== undefined) {
-                                                    displayValue = `${element.percentage}%`;
-                                                  } else if (element.inputUnit) {
-                                                    displayValue = `$${element.inputValue.toFixed(2)}/${element.inputUnit}`;
-                                                  } else if (element.type === 'rate' || element.type === 'fee') {
-                                                    displayValue = `$${element.inputValue.toFixed(2)}`;
-                                                  } else {
-                                                    displayValue = `$${element.inputValue.toFixed(2)}`;
-                                                  }
-                                                }
-                                                
-                                                return (
-                                                  <span key={idx} className="flex items-center gap-3">
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-white border-[0.5px] border-gray-300 ">
-                                                      <span className="font-medium text-gray-800">
-                                                        {displayValue && (
-                                                          <span className="font-semibold text-blue-600 mr-1.5">{displayValue}</span>
-                                                        )}
-                                                        {element.label}
-                                                        {typeLabel && element.type !== 'rate' && <span className="ml-1.5 text-xs font-normal text-gray-500">{typeLabel}</span>}
-                                                      </span>
-                                                    </span>
-                                                    {idx < allFormulaElements.length - 1 && (
-                                                      <span className="text-xl font-semibold text-gray-500 mx-1">+</span>
-                                                    )}
-                                                  </span>
-                                                );
-                                              })
-                                            ) : (
-                                              <span className="text-gray-400 text-sm italic">No pricing components added yet</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      );
-                                    })()}
-                                  </div>
-                                  
-                                  {/* Save/Cancel Buttons */}
-                                  <div className="flex justify-end items-center gap-2 pt-4 mt-4 border-t border-gray-200">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        // Cancel editing - remove from pricingFormats
-                                        setPricingFormats((prev) => prev.filter((row) => !(row.id === savedPrice.id && row.isEditingFromActive)));
-                                        setEditingActivePriceId(null);
-                                        setEditingActivePriceData(null);
-                                      }}
-                                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        // Validate before saving
-                                        if (!format.services || format.services.length === 0) {
-                                          alert('Please add at least one service');
-                                          return;
-                                        }
-                                        
-                                        const structure = format.pricingStructure || {};
-                                        const rates = Array.isArray(structure.rates) ? structure.rates : [];
-                                        const expenses = Array.isArray(structure.expenses) ? structure.expenses : [];
-                                        const multipliers = Array.isArray(structure.multipliers) ? structure.multipliers : [];
-                                        const fees = Array.isArray(structure.fees) ? structure.fees : [];
-                                        
-                                        const hasRateValue = rates.some(r => r && typeof r === 'object' && r.value && parseFloat(r.value) > 0);
-                                        const hasExpenseValue = expenses.some(e => e && typeof e === 'object' && e.value && parseFloat(e.value) > 0);
-                                        const hasMultiplierValue = multipliers.some(m => m && typeof m === 'object' && m.value && parseFloat(m.value) > 0);
-                                        const hasFeeValue = fees.some(f => f && typeof f === 'object' && f.value && parseFloat(f.value) > 0);
-                                        
-                                        if (!hasRateValue && !hasExpenseValue && !hasMultiplierValue && !hasFeeValue) {
-                                          alert('Please add at least one pricing component with a value');
-                                          return;
-                                        }
-                                        
-                                        // Save changes - update activePrices and remove from pricingFormats
-                                        setActivePrices((prev) =>
-                                          prev.map((p) =>
-                                            p.id === savedPrice.id
-                                              ? { ...format, savedAt: p.savedAt }
-                                              : p
-                                          )
-                                        );
-                                        setPricingFormats((prev) => prev.filter((row) => !(row.id === savedPrice.id && row.isEditingFromActive)));
-                                        setEditingActivePriceId(null);
-                                        setEditingActivePriceData(null);
-                                      }}
-                                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                                    >
-                                      Save
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            // Display mode
-                            <div className="flex items-start justify-between flex-1">
+                          <div className="flex items-start justify-between">
                             <div className="flex-1">
-                                {/* Services Title */}
-                                <div className="text-xs font-medium text-gray-500 mb-1.5">Services</div>
-                                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                  {(savedPrice.services || []).length > 0 ? (
-                                    (savedPrice.services || []).map((service, idx) => (
-                                      <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white border-[0.5px] border-gray-300">
-                                        <span className="font-medium text-gray-800 text-base">
-                                          {service}
-                                        </span>
-                                      </span>
-                                    ))
-                                  ) : (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white border-[0.5px] border-gray-300">
-                                      <span className="font-medium text-gray-800 text-base">
-                                        Untitled Price
-                                      </span>
-                                    </span>
-                                  )}
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="text-base font-semibold text-gray-900">
+                                  {(savedPrice.services || []).length > 0 
+                                    ? (savedPrice.services || []).join(', ')
+                                    : 'Untitled Price'}
+                                </h4>
                               </div>
                               
                               {/* Pricing Formula Display */}
                               {allFormulaElements.length > 0 && (
                                 <div className="mt-3 pt-3 border-t border-gray-200">
-                                    <div className="text-xs font-medium text-gray-500 mb-1.5">Formula for each selected:</div>
-                                    <div className="flex flex-wrap items-center gap-3 text-base min-h-[2rem]">
+                                  <h5 className="text-sm font-semibold text-gray-700 mb-2">Pricing Formula</h5>
+                                  <div className="flex flex-wrap items-center gap-3 text-sm min-h-[2rem]">
                                   {allFormulaElements.map((element, idx) => {
                                     const typeLabel = {
                                       rate: 'Rate',
@@ -3332,17 +2084,17 @@ const PricingTool = ({
                                     
                                     return (
                                         <span key={idx} className="flex items-center gap-3">
-                                            <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white border-[0.5px] border-gray-300 ">
-                                              <span className="font-medium text-gray-800 text-base">
+                                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white border border-gray-200 ">
+                                            <span className="font-medium text-gray-800">
                                               {displayValue && (
                                                 <span className="font-semibold text-blue-600 mr-1.5">{displayValue}</span>
                                               )}
                                               {element.label}
-                                                {typeLabel && element.type !== 'rate' && <span className="ml-1.5 text-sm font-normal text-gray-500">{typeLabel}</span>}
+                                              {typeLabel && element.type !== 'rate' && <span className="ml-1.5 text-xs font-normal text-gray-500">{typeLabel}</span>}
                                             </span>
                                         </span>
                                         {idx < allFormulaElements.length - 1 && (
-                                              <span className="text-2xl font-semibold text-gray-500 mx-1">+</span>
+                                            <span className="text-xl font-semibold text-gray-500 mx-1">+</span>
                                         )}
                                       </span>
                                     );
@@ -3355,27 +2107,26 @@ const PricingTool = ({
                 <button
                   type="button"
                   onClick={() => {
-                                    // Add to pricingFormats temporarily to reuse form structure, but render inline
-                                    const priceToEdit = { ...savedPrice, isEditingFromActive: true };
+                                  // Move price to Add Price section below blank prices
                                   setPricingFormats((prev) => {
-                                      // Ensure blank component exists at top
+                                    // Separate blank prices from non-blank ones
                                     const blankPrices = prev.filter(f => 
                                       (!f.services || f.services.length === 0) && 
                                       (!f.pricingStructure?.rates || f.pricingStructure.rates.length === 0) &&
                                       (!f.pricingStructure?.expenses || f.pricingStructure.expenses.length === 0) &&
                                       (!f.pricingStructure?.multipliers || f.pricingStructure.multipliers.length === 0) &&
-                                        (!f.pricingStructure?.fees || f.pricingStructure.fees.length === 0) &&
-                                        !f.savedAt &&
-                                        !f.isEditingFromActive
+                                      (!f.pricingStructure?.fees || f.pricingStructure.fees.length === 0)
                                     );
                                     const nonBlankPrices = prev.filter(f => 
-                                        !blankPrices.includes(f) && f.id !== savedPrice.id && !f.isEditingFromActive
+                                      !blankPrices.includes(f) && f.id !== savedPrice.id
                                     );
-                                      // Add edited price at bottom (but it will be rendered inline in Active Prices)
-                                      return [...blankPrices, ...nonBlankPrices, priceToEdit];
+                                    // Insert edited price below blank prices, above other non-blank prices
+                                    // Mark it as being edited by preserving savedAt
+                                    return [...blankPrices, { ...savedPrice, isPricingPanelsCollapsed: false }, ...nonBlankPrices];
                                   });
-                                    setEditingActivePriceId(savedPrice.id);
-                                    setEditingActivePriceData({ ...savedPrice });
+                                  // Remove from active prices temporarily (we'll restore on save)
+                                  setActivePrices((prev) => prev.filter((p) => p.id !== savedPrice.id));
+                                  setEditingPriceId(savedPrice.id);
                                 }}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                                 aria-label="Edit price"
@@ -3396,12 +2147,12 @@ const PricingTool = ({
                 </button>
                             </div>
                           </div>
-                          )}
                         </div>
                       );
                     })}
                   </div>
                 )}
+              </div>
             </div>
 
             {/* Divider separating Pricing Tool from Run Promotion */}
@@ -3414,15 +2165,12 @@ const PricingTool = ({
               </div>
               
               {/* Add Promotions Subsection */}
-              <div className="bg-white rounded-3xl p-6 mt-6 mb-6" style={{border: '1px solid #f3f4f6'}}>
-                <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-gray-500" />
-                  Add Promotions
-                </h3>
+              <div className="bg-white rounded-3xl p-6 mt-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Add Promotions</h3>
               <div className="space-y-3">
-                  {promotions.filter(p => !p.isEditingFromActive).map((promotion) => {
+                  {promotions.map((promotion) => {
                     // Check if promotion is blank (no saved data)
-                    const isBlank = !promotion.title && !promotion.startDate && !promotion.endDate && !promotion.isIndefinite &&
+                    const isBlank = !promotion.title && !promotion.promotionType && !promotion.startDate && !promotion.endDate && !promotion.isIndefinite &&
                       (!promotion.percentOffServices || promotion.percentOffServices.length === 0) &&
                       (!promotion.packageServices || promotion.packageServices.length === 0) &&
                       (!promotion.packageFormula?.initialServices || promotion.packageFormula.initialServices.length === 0);
@@ -3436,189 +2184,56 @@ const PricingTool = ({
                     <div className="flex flex-col md:flex-row md:items-center gap-3">
                       <div className="w-full md:w-1/3">
                         <label className="block text-xs font-medium text-gray-600 mb-1">Promotion Type</label>
-                        <div className="relative w-full" data-promotion-dropdown>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const dropdownKey = `${promotion.id}-promotion-type`;
-                              setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer flex items-center justify-between"
-                            data-promotion-dropdown
-                          >
-                            <span>{promotion.promotionType === 'percentOff' ? 'Percent Off' : promotion.promotionType === 'package' ? 'Package Deal' : promotion.promotionType === 'buyGet' ? 'Buy/Get' : 'Select...'}</span>
-                            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openPackageFormulaDropdown === `${promotion.id}-promotion-type` ? 'transform rotate-180' : ''}`} />
-                          </button>
-                          {openPackageFormulaDropdown === `${promotion.id}-promotion-type` && (
-                            <div className="absolute z-50 mt-1 top-full left-0 w-full bg-white border border-gray-300 rounded-lg max-h-64 overflow-y-auto" data-promotion-dropdown>
-                              <div className="py-1">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newPromotionType = '';
-                                    const previousPromotionType = promotion.promotionType;
-                                    
-                                    if (previousPromotionType !== newPromotionType) {
-                                      setPromotions((prev) =>
-                                        prev.map((row) => {
-                                          if (row.id === promotion.id) {
-                                            const clearedPromotion = {
-                                              ...row,
-                                              promotionType: newPromotionType,
-                                              percentOff: '',
-                                              percentOffServices: [],
-                                              packagePrice: '',
-                                              packageServices: [],
-                                              packageFormula: {
-                                                initialServices: [],
-                                                additionalServices: []
-                                              },
-                                              packageType: 'buyOneGetOne'
-                                            };
-                                            return clearedPromotion;
-                                          }
-                                          return row;
-                                        })
-                                      );
-                                    }
-                                    setOpenPackageFormulaDropdown(null);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors ${!promotion.promotionType ? 'bg-slate-50' : ''}`}
-                                >
-                                  Select...
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newPromotionType = 'percentOff';
-                                    const previousPromotionType = promotion.promotionType;
-                                    
-                                    if (previousPromotionType !== newPromotionType) {
-                                      setPromotions((prev) =>
-                                        prev.map((row) => {
-                                          if (row.id === promotion.id) {
-                                            const clearedPromotion = {
-                                              ...row,
-                                              promotionType: newPromotionType,
-                                              percentOff: '',
-                                              percentOffServices: [],
-                                              packagePrice: '',
-                                              packageServices: [],
-                                              packageFormula: {
-                                                initialServices: [],
-                                                additionalServices: []
-                                              },
-                                              packageType: 'buyOneGetOne'
-                                            };
-                                            return clearedPromotion;
-                                          }
-                                          return row;
-                                        })
-                                      );
-                                    } else {
-                            setPromotions((prev) =>
-                              prev.map((row) =>
-                                          row.id === promotion.id ? { ...row, promotionType: newPromotionType } : row
-                                        )
-                                      );
-                                    }
-                                    setOpenPackageFormulaDropdown(null);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors ${promotion.promotionType === 'percentOff' ? 'bg-slate-50' : ''}`}
-                                >
-                                  Percent Off
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newPromotionType = 'package';
-                                    const previousPromotionType = promotion.promotionType;
-                                    
-                                    if (previousPromotionType !== newPromotionType) {
-                                      setPromotions((prev) =>
-                                        prev.map((row) => {
-                                          if (row.id === promotion.id) {
-                                            const clearedPromotion = {
-                                              ...row,
-                                              promotionType: newPromotionType,
-                                              percentOff: '',
-                                              percentOffServices: [],
-                                              packagePrice: '',
-                                              packageServices: [],
-                                              packageFormula: {
-                                                initialServices: [],
-                                                additionalServices: []
-                                              },
-                                              packageType: 'buyOneGetOne'
-                                            };
-                                            return clearedPromotion;
-                                          }
-                                          return row;
-                                        })
-                                      );
-                                    } else {
-                                      setPromotions((prev) =>
-                                        prev.map((row) =>
-                                          row.id === promotion.id ? { ...row, promotionType: newPromotionType } : row
-                                        )
-                                      );
-                                    }
-                                    setOpenPackageFormulaDropdown(null);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors ${promotion.promotionType === 'package' ? 'bg-slate-50' : ''}`}
-                                >
-                                  Package Deal
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newPromotionType = 'buyGet';
-                                    const previousPromotionType = promotion.promotionType;
-                                    
-                                    if (previousPromotionType !== newPromotionType) {
-                                      setPromotions((prev) =>
-                                        prev.map((row) => {
-                                          if (row.id === promotion.id) {
-                                            const clearedPromotion = {
-                                              ...row,
-                                              promotionType: newPromotionType,
-                                              percentOff: '',
-                                              percentOffServices: [],
-                                              packagePrice: '',
-                                              packageServices: [],
-                                              packageFormula: {
-                                                initialServices: [],
-                                                additionalServices: []
-                                              },
-                                              packageType: 'buyOneGetOne'
-                                            };
-                                            return clearedPromotion;
-                                          }
-                                          return row;
-                                        })
-                                      );
-                                    } else {
-                                      setPromotions((prev) =>
-                                        prev.map((row) =>
-                                          row.id === promotion.id ? { ...row, promotionType: newPromotionType } : row
-                                        )
-                                      );
-                                    }
-                                    setOpenPackageFormulaDropdown(null);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors ${promotion.promotionType === 'buyGet' ? 'bg-slate-50' : ''}`}
-                                >
-                                  Buy/Get
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <select
+                          value={promotion.promotionType || ''}
+                          onChange={(e) => {
+                            const newPromotionType = e.target.value;
+                            const previousPromotionType = promotion.promotionType;
+                            
+                            // If changing promotion type, clear all previous promotion type data
+                            if (previousPromotionType !== newPromotionType) {
+                              setPromotions((prev) =>
+                                prev.map((row) => {
+                                  if (row.id === promotion.id) {
+                                    // Clear all promotion type specific fields
+                                    const clearedPromotion = {
+                                      ...row,
+                                      promotionType: newPromotionType,
+                                      // Clear percentOff fields
+                                      percentOff: '',
+                                      percentOffServices: [],
+                                      // Clear package fields
+                                      packagePrice: '',
+                                      packageServices: [],
+                                      // Clear buyGet fields
+                                      packageFormula: {
+                                        initialServices: [],
+                                        additionalServices: []
+                                      },
+                                      packageType: 'buyOneGetOne'
+                                    };
+                                    return clearedPromotion;
+                                  }
+                                  return row;
+                                })
+                              );
+                            } else {
+                              // If not changing type, just update normally
+                              setPromotions((prev) =>
+                                prev.map((row) =>
+                                  row.id === promotion.id ? { ...row, promotionType: newPromotionType } : row
+                                )
+                              );
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 promotion-type-select"
+                          style={{ paddingRight: '2.5rem' }}
+                        >
+                          <option value="" className="text-gray-400">Select...</option>
+                          <option value="percentOff" className="text-gray-700">Percent Off</option>
+                          <option value="package" className="text-gray-700">Package Deal</option>
+                          <option value="buyGet" className="text-gray-700">Buy/Get</option>
+                        </select>
                       </div>
                       <div className="w-full md:w-1/3">
                         <label className="block text-xs font-medium text-gray-600 mb-1">Promotion Title</label>
@@ -3668,11 +2283,11 @@ const PricingTool = ({
                                         const dropdownKey = `${promotion.id}-percent-service`;
                                         setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
                                       }}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer flex items-center justify-between"
+                                      className="px-4 py-2.5 rounded-lg text-sm font-medium border-2 border-gray-300 bg-white text-gray-400  focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center gap-2 w-full"
                                       data-promotion-dropdown
                                     >
                                       <span>Select...</span>
-                                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openPackageFormulaDropdown === `${promotion.id}-percent-service` ? 'transform rotate-180' : ''}`} />
+                                      <ChevronDown className="w-4 h-4 ml-auto text-gray-400" />
                                     </button>
                                     {openPackageFormulaDropdown === `${promotion.id}-percent-service` && (
                                       <div className="absolute z-50 mt-1 top-full left-0 w-full pricing-dropdown pricing-dropdown-container" data-promotion-dropdown>
@@ -3968,7 +2583,7 @@ const PricingTool = ({
                                         const dropdownKey = `${promotion.id}-package-services`;
                                         setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
                                       }}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer flex items-center justify-between"
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between"
                                       data-promotion-dropdown
                                     >
                                       <span>Select...</span>
@@ -4237,6 +2852,7 @@ const PricingTool = ({
                             <div className="flex gap-8 items-start">
                               {/* Buy Label and Initial Services - Multiple Services Stacked */}
                               <div className="flex flex-col items-start gap-3 flex-1">
+                                <div className="flex items-center justify-between w-full">
                                   <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
                                       <ShoppingCart className="w-4 h-4 text-gray-600" />
@@ -4246,20 +2862,7 @@ const PricingTool = ({
                                       <span className="text-xs text-gray-500">Services customer purchases</span>
                                     </div>
                                   </div>
-                                <div className="flex flex-col gap-2 w-full">
                                     <div className="relative w-full" data-promotion-dropdown>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const dropdownKey = `${promotion.id}-initial`;
-                                        setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
-                                      }}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer flex items-center justify-between"
-                                      data-promotion-dropdown
-                                    >
-                                      <span>Add Services</span>
-                                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openPackageFormulaDropdown === `${promotion.id}-initial` ? 'transform rotate-180' : ''}`} />
-                                    </button>
                                       {openPackageFormulaDropdown === `${promotion.id}-initial` && (
                                         <div className="absolute z-50 mt-1 top-full left-0 w-full pricing-dropdown pricing-dropdown-container" data-promotion-dropdown>
                                           <div className="dropdown-content">
@@ -4475,10 +3078,24 @@ const PricingTool = ({
                                         </div>
                                       )}
                                     </div>
+                                </div>
+                                <div className="flex flex-col gap-2 w-full">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const dropdownKey = `${promotion.id}-initial`;
+                                      setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
+                                    }}
+                                    className="text-sm text-gray-600 py-2 px-4 bg-gray-50 rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors text-left flex items-center justify-between"
+                                    data-promotion-dropdown
+                                  >
+                                    <span>Add Services</span>
+                                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openPackageFormulaDropdown === `${promotion.id}-initial` ? 'transform rotate-180' : ''}`} />
+                                  </button>
                                   <div className="flex flex-wrap gap-1 w-full">
                                   {(promotion.packageFormula?.initialServices || []).map((service, index) => (
                                       <div key={index} className="flex items-center" data-service-index={index}>
-                                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border-2 border-blue-200">
+                                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border-2 border-blue-200 ">
                                         <span>{service}</span>
                                         <button
                                           type="button"
@@ -4521,6 +3138,7 @@ const PricingTool = ({
 
                               {/* Get Label and Additional Services - Always show */}
                               <div className="flex flex-col items-start gap-3 flex-1">
+                                  <div className="flex items-center justify-between w-full">
                                     <div className="flex items-center gap-2">
                                       <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
                                         <Gift className="w-4 h-4 text-gray-600" />
@@ -4530,20 +3148,7 @@ const PricingTool = ({
                                         <span className="text-xs text-gray-500">Bonus services with discount</span>
                                       </div>
                                     </div>
-                                <div className="flex flex-col gap-2 w-full">
                                     <div className="relative w-full" data-promotion-dropdown>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const dropdownKey = `${promotion.id}-add-service`;
-                                        setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
-                                      }}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer flex items-center justify-between"
-                                      data-promotion-dropdown
-                                    >
-                                      <span>Add Services</span>
-                                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openPackageFormulaDropdown === `${promotion.id}-add-service` ? 'transform rotate-180' : ''}`} />
-                                    </button>
                                       {openPackageFormulaDropdown === `${promotion.id}-add-service` && (
                                         <div className="absolute z-50 mt-1 top-full left-0 w-full pricing-dropdown pricing-dropdown-container" data-promotion-dropdown>
                                           <div className="dropdown-content">
@@ -4825,12 +3430,25 @@ const PricingTool = ({
                                       )}
                                     </div>
                                   </div>
+                                  <div className="flex flex-col gap-2 w-full">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const dropdownKey = `${promotion.id}-add-service`;
+                                        setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
+                                      }}
+                                      className="text-sm text-gray-600 py-2 px-4 bg-gray-50 rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors text-left flex items-center justify-between"
+                                      data-promotion-dropdown
+                                    >
+                                      <span>Add Services</span>
+                                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openPackageFormulaDropdown === `${promotion.id}-add-service` ? 'transform rotate-180' : ''}`} />
+                                    </button>
                                     <div className="flex flex-wrap gap-1 w-full">
                                     {(promotion.packageFormula?.additionalServices || []).map((additionalService, index) => (
                                         <div key={index} className="flex items-center">
-                                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border-2 border-blue-200">
-                                          <span>{additionalService.service}</span>
-                                          <div className="relative percent-dropdown-container flex-shrink-0">
+                                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 text-blue-700 border-2 border-blue-200 ">
+                                          <span className="text-sm font-medium">{additionalService.service}</span>
+                                          <div className="relative percent-dropdown-container">
                                             <button
                                               type="button"
                                               onClick={(e) => {
@@ -4926,14 +3544,15 @@ const PricingTool = ({
                                                 )
                                               );
                                             }}
-                                            className="p-0.5 text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
+                                            className="p-1 text-blue-700 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors ml-1"
                                             aria-label="Remove service"
                                           >
-                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <Trash2 className="w-4 h-4" />
                                           </button>
                                         </div>
                                       </div>
                                     ))}
+                                    </div>
                                   </div>
                                 </div>
                             </div>
@@ -4943,38 +3562,57 @@ const PricingTool = ({
                       ) : null}
                     </div>
 
-                    {/* Third Row - Date Range */}
+                    {/* Third Row - Date Range - Only show if promotion type is selected */}
+                    {promotion.promotionType && (
                       <div className="flex flex-col gap-3">
-                        {/* Date Inputs */}
+                        {/* Indefinite Checkbox */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`indefinite-${promotion.id}`}
+                            checked={promotion.isIndefinite || false}
+                            onChange={(e) => {
+                              setPromotions((prev) =>
+                                prev.map((row) =>
+                                  row.id === promotion.id
+                                    ? {
+                                        ...row,
+                                        isIndefinite: e.target.checked,
+                                        startDate: e.target.checked ? '' : row.startDate,
+                                        endDate: e.target.checked ? '' : row.endDate,
+                                      }
+                                    : row
+                                )
+                              );
+                            }}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <label htmlFor={`indefinite-${promotion.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                            Run promotion indefinitely
+                          </label>
+                        </div>
+                        
+                        {/* Date Inputs - Disabled when indefinite */}
+                        {!promotion.isIndefinite && (
                     <div className="flex flex-col md:flex-row md:items-center gap-3">
                       <div className="w-full md:w-1/2">
                         <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
                         <input
                           type="date"
-                                value={promotion.isIndefinite ? '' : (promotion.startDate || '')}
-                          onChange={(e) => {
-                            const dateValue = e.target.value;
-                            console.log('Start date changed:', dateValue, 'for promotion:', promotion.id);
+                                value={promotion.startDate || ''}
+                          onChange={(e) =>
                             setPromotions((prev) =>
                               prev.map((row) =>
-                                row.id === promotion.id ? { ...row, startDate: dateValue } : row
+                                row.id === promotion.id ? { ...row, startDate: e.target.value } : row
                               )
-                            );
-                          }}
+                            )
+                          }
                                 min={new Date().toISOString().split('T')[0]}
-                                disabled={promotion.isIndefinite}
-                                placeholder="mm/dd/yyyy"
                                 onKeyDown={(e) => e.preventDefault()}
-                                onSelectStart={(e) => {
-                                  e.preventDefault();
+                                onFocus={(e) => {
+                                  e.target.showPicker?.();
                                 }}
-                                onMouseDown={(e) => {
-                                  // Call showPicker - mousedown is a direct user gesture
-                                  if (!promotion.isIndefinite && e.target.showPicker) {
-                                    e.target.showPicker();
-                                  }
-                                }}
-                                className={`w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 date-input-no-select ${promotion.isIndefinite ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                                 style={{ color: 'rgb(75 85 99)' }}
                         />
                       </div>
@@ -4991,54 +3629,22 @@ const PricingTool = ({
                             )
                           }
                                 min={promotion.startDate || new Date().toISOString().split('T')[0]}
-                                disabled={promotion.isIndefinite}
                                 onKeyDown={(e) => e.preventDefault()}
-                                onSelectStart={(e) => e.preventDefault()}
-                                onMouseDown={(e) => {
-                                  // Call showPicker directly - mousedown is a direct user gesture
-                                  if (!promotion.isIndefinite && e.target.showPicker) {
-                                    e.target.showPicker();
-                                  }
+                                onFocus={(e) => {
+                                  e.target.showPicker?.();
                                 }}
-                                className={`w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 date-input-no-select ${promotion.isIndefinite ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                                 style={{ color: 'rgb(75 85 99)' }}
                         />
                       </div>
                     </div>
-                    
-                    {/* Run promotion indefinitely checkbox */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`indefinite-${promotion.id}`}
-                        checked={promotion.isIndefinite || false}
-                        onChange={(e) => {
-                          const isChecked = e.target.checked;
-                          setPromotions((prev) =>
-                            prev.map((row) => {
-                              if (row.id === promotion.id) {
-                                const updated = { ...row, isIndefinite: isChecked };
-                                // When checking "Run promotion indefinitely", clear start date to show placeholder
-                                if (isChecked) {
-                                  updated.startDate = '';
-                                }
-                                return updated;
-                              }
-                              return row;
-                            })
-                          );
-                        }}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label htmlFor={`indefinite-${promotion.id}`} className="text-sm text-gray-700 cursor-pointer">
-                        Run promotion indefinitely
-                      </label>
+                        )}
                   </div>
-                  </div>
+                    )}
                     
                     {/* Save Button and Delete Button for this promotion */}
                     {!isBlank && (
-                      <div className="flex justify-end items-center gap-2 pt-2 mt-4">
+                      <div className="flex justify-end items-center gap-2 pt-2 border-t border-gray-200 mt-4">
                         {promotionErrors[promotion.id] && (
                           <span className="text-red-600 text-sm">* {promotionErrors[promotion.id]}</span>
                         )}
@@ -5052,63 +3658,43 @@ const PricingTool = ({
                               return updated;
                             });
                             
-                            // Check isIndefinite explicitly - handle boolean true or truthy values
-                            // The checkbox sets it as a boolean, but we'll be safe and check for truthy
-                            const isIndefinite = Boolean(promotion.isIndefinite);
-                            
-                            // Debug: log the promotion state
-                            console.log('=== SAVE ATTEMPT ===');
-                            console.log('Promotion state:', {
-                              id: promotion.id,
-                              isIndefinite: promotion.isIndefinite,
-                              isIndefiniteType: typeof promotion.isIndefinite,
-                              isIndefiniteCheck: isIndefinite,
-                              startDate: promotion.startDate,
-                              endDate: promotion.endDate,
-                              title: promotion.title,
-                              promotionType: promotion.promotionType,
-                              percentOff: promotion.percentOff,
-                              percentOffServices: promotion.percentOffServices
-                            });
-                            console.log('Will skip endDate validation?', isIndefinite);
-                            
                             // Validate all required fields
                             if (!promotion.title || !promotion.title.trim()) {
-                              setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please enter a promotion title' }));
+                              setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                               return;
                             }
                             
                             if (!promotion.promotionType) {
-                              setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please select a promotion type' }));
+                              setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                               return;
                             }
                             
                             // Validate fields based on promotion type
                             if (promotion.promotionType === 'percentOff') {
                               if (!promotion.percentOff) {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please enter a percent off value' }));
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
                               if (!promotion.percentOffServices || promotion.percentOffServices.length === 0) {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please select at least one service' }));
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
                             } else if (promotion.promotionType === 'package') {
                               if (!promotion.packagePrice || promotion.packagePrice.trim() === '') {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please enter a package price' }));
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
                               if (!promotion.packageServices || promotion.packageServices.length === 0) {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please select at least one service' }));
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
                             } else if (promotion.promotionType === 'buyGet') {
                               if (!promotion.packageFormula?.initialServices || promotion.packageFormula.initialServices.length === 0) {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please select at least one "Buy" service' }));
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
                               if (!promotion.packageFormula?.additionalServices || promotion.packageFormula.additionalServices.length === 0) {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please select at least one "Get" service' }));
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
                               // Check that all "Get" services have a percent off selected
@@ -5116,50 +3702,30 @@ const PricingTool = ({
                                 (as) => as.percentOff !== undefined && as.percentOff !== null && as.percentOff !== ''
                               );
                               if (!hasAllPercentOff) {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please set percent off for all "Get" services' }));
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
                             }
                             
                             // Validate dates
-                              // Start date validation: if indefinite is checked, we'll set it to today when saving
-                              // Otherwise, require user to select a start date
-                              if (!isIndefinite) {
-                                const startDateValue = promotion.startDate ? String(promotion.startDate).trim() : '';
-                                if (!startDateValue || startDateValue.length === 0) {
-                                  setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please select a start date' }));
+                            if (!promotion.isIndefinite) {
+                              if (!promotion.startDate) {
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
                               }
-                              }
-                              
-                              // Only require endDate if promotion is not indefinite
-                              if (!isIndefinite && !promotion.endDate) {
-                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please select an end date' }));
+                              if (!promotion.endDate) {
+                                setPromotionErrors((prev) => ({ ...prev, [promotion.id]: 'Please fill in all required fields' }));
                                 return;
+                              }
                             }
                             
                             // Save promotion to savedPromotions or expiredPromotions based on end date
-                            // If indefinite and start date is empty, set it to today for the saved promotion only
-                            const promotionToSave = { 
-                              ...promotion, 
-                              savedAt: new Date().toISOString(),
-                              startDate: (isIndefinite && !promotion.startDate) 
-                                ? new Date().toISOString().split('T')[0] 
-                                : promotion.startDate
-                            };
+                            const promotionToSave = { ...promotion, savedAt: new Date().toISOString() };
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
                             
-                            // If promotion is indefinite, always add to active promotions
-                            // Use same check as validation
-                            const isIndefiniteSave = Boolean(promotionToSave.isIndefinite);
-                            console.log('Save check - isIndefinite:', promotionToSave.isIndefinite, 'isIndefiniteSave:', isIndefiniteSave);
-                            if (isIndefiniteSave) {
-                              console.log('Saving as indefinite promotion');
-                              setSavedPromotions((prev) => [...prev, promotionToSave]);
-                            } else if (promotionToSave.endDate) {
-                              console.log('Saving as dated promotion with end date');
                             // Check if expired
+                            if (!promotionToSave.isIndefinite && promotionToSave.endDate) {
                               const endDate = new Date(promotionToSave.endDate);
                               endDate.setHours(0, 0, 0, 0);
                               
@@ -5171,8 +3737,7 @@ const PricingTool = ({
                                 setSavedPromotions((prev) => [...prev, promotionToSave]);
                               }
                             } else {
-                              console.log('Saving as dated promotion without end date');
-                              // No end date and not indefinite - add to active promotions
+                              // No end date or indefinite - add to active promotions
                               setSavedPromotions((prev) => [...prev, promotionToSave]);
                             }
                             
@@ -5185,7 +3750,7 @@ const PricingTool = ({
                         id: Date.now(),
                                   title: '',
                         services: [],
-                                  promotionType: 'percentOff',
+                                  promotionType: '',
                         percentOff: '',
                         percentOffServices: [],
                         packageType: 'buyOneGetOne',
@@ -5217,54 +3782,25 @@ const PricingTool = ({
                           aria-label="Delete promotion"
                         >
                           <Trash2 className="w-5 h-5" />
-                </button>
+                        </button>
                       </div>
                     )}
                   </div>
                   );
                 })}
                 </div>
-              
-              {/* Render editing promotions inline in Active Promotions */}
-              {promotions.filter(p => p.isEditingFromActive).map((editingPromotion) => {
-                // Find the corresponding saved promotion
-                const savedPromotion = savedPromotions.find(sp => sp.id === editingPromotion.id);
-                if (!savedPromotion) return null;
-                
-                // Reuse the form structure from Add Promotions
-                // We'll render it here inline in Active Promotions
-                return (
-                  <div key={`editing-${editingPromotion.id}`} className="pt-6 mt-6">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-                      Active Promotions
-                    </h3>
-                    <div className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative flex items-start gap-3">
-                      <div className="flex-1 w-full space-y-3">
-                        {/* Render the full form structure here - will be added */}
-                        <p className="text-sm text-gray-600">Full form structure will be rendered here</p>
               </div>
-                    </div>
-                  </div>
-                );
-              })}
               
               {/* Saved Promotions Subsection */}
-              <div className="pt-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-                  Active Promotions
-                </h3>
+              <div className="bg-white rounded-3xl p-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Active Promotions</h3>
                 {savedPromotions.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <p className="italic">No active promotions yet. Create and save a promotion above to see it here.</p>
                   </div>
                 ) : (
-                  <div className={`space-y-3 ${savedPromotions.length > 3 ? 'max-h-[600px] overflow-y-auto pr-2' : ''}`}>
+                  <div className="space-y-3">
                     {savedPromotions.map((savedPromotion) => {
-                      const isEditing = editingActivePromotionId === savedPromotion.id;
-                      const promotion = isEditing ? editingActivePromotionData : savedPromotion;
-                      
                       const getPromotionTypeLabel = (type) => {
                         switch(type) {
                           case 'percentOff': return 'Percent Off';
@@ -5296,27 +3832,9 @@ const PricingTool = ({
                       return (
                         <div
                           key={savedPromotion.id}
-                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative flex items-start gap-3"
+                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative"
                         >
-                          {isEditing ? (
-                            // Inline editing form - render form inline using editingActivePromotionData
-                            // Find the promotion in promotions array to reuse form structure
-                            (() => {
-                              const editingPromotion = promotions.find(p => p.id === savedPromotion.id && p.isEditingFromActive);
-                              const promotionToRender = editingPromotion || promotion;
-                              
-                              // Render the form inline - we'll reuse the form structure from Add Promotions
-                              // The form will be rendered by mapping over promotions array and finding this one
-                              // For now, render a message indicating the form should be rendered
-                              // The actual form rendering will happen in the promotions.map section below
-                              return (
-                                <div className="flex-1 w-full text-sm text-gray-500 italic">
-                                  Editing... (Form will render inline)
-                                </div>
-                              );
-                            })()
-                          ) : (
-                          <div className="flex items-start justify-between flex-1">
+                          <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h4 className="text-base font-semibold text-gray-900">{savedPromotion.title || 'Untitled Promotion'}</h4>
@@ -5328,11 +3846,11 @@ const PricingTool = ({
                                 {savedPromotion.promotionType === 'buyGet' ? (
                                   <>
                                     {(savedPromotion.packageFormula?.initialServices || []).length > 0 && (
-                                      <p className="text-sm text-gray-600 mb-1"><span className="font-medium">Buy:</span> {(savedPromotion.packageFormula.initialServices || []).join(', ')}</p>
+                                      <p className="text-sm font-medium text-gray-600 mb-1">Buy: {(savedPromotion.packageFormula.initialServices || []).join(', ')}</p>
                                     )}
                                     {(savedPromotion.packageFormula?.additionalServices || []).length > 0 && (
-                                      <p className="text-sm text-gray-600 mb-1">
-                                        <span className="font-medium">Get:</span> {(savedPromotion.packageFormula.additionalServices || []).map(s => {
+                                      <p className="text-sm font-medium text-gray-600 mb-1">
+                                        Get: {(savedPromotion.packageFormula.additionalServices || []).map(s => {
                                           const service = typeof s === 'object' ? s.service : s;
                                           const percentOff = typeof s === 'object' ? s.percentOff : null;
                                           if (percentOff === 100) {
@@ -5347,33 +3865,30 @@ const PricingTool = ({
                                   </>
                                 ) : (
                                   <>
-                                    <p className="text-sm font-medium mb-1">
-                                      {savedPromotion.promotionType === 'percentOff' 
-                                        ? `${savedPromotion.percentOff || 'N/A'}% off`
-                                        : `$${savedPromotion.packagePrice || '0.00'}`}
-                                    </p>
+                                    <p className="font-medium mb-1">{getPromotionDetails().split(' - ')[0] || getPromotionDetails()}</p>
                                     {savedPromotion.promotionType === 'percentOff' && (savedPromotion.percentOffServices || []).length > 0 && (
-                                      <p className="text-sm mt-1"><span className="font-medium">Services:</span> {(savedPromotion.percentOffServices || []).join(', ')}</p>
+                                      <p className="text-xs text-gray-500 mt-1">Services: {(savedPromotion.percentOffServices || []).join(', ')}</p>
                                     )}
                                     {savedPromotion.promotionType === 'package' && (savedPromotion.packageServices || []).length > 0 && (
-                                      <p className="text-sm mt-1"><span className="font-medium">Services:</span> {(savedPromotion.packageServices || []).join(', ')}</p>
+                                      <p className="text-xs text-gray-500 mt-1">Services: {(savedPromotion.packageServices || []).join(', ')}</p>
                                     )}
                                   </>
                                 )}
                               </div>
                               {(savedPromotion.startDate || savedPromotion.endDate || savedPromotion.isIndefinite) && (
                                 <>
-                                <p className="text-xs text-gray-500">
-                                  {savedPromotion.isIndefinite ? (
-                                    'Running indefinitely'
-                                  ) : (
-                                    <>
-                                      {savedPromotion.startDate && `Start: ${new Date(savedPromotion.startDate).toLocaleDateString()}`}
-                                      {savedPromotion.startDate && savedPromotion.endDate && ' • '}
-                                      {savedPromotion.endDate && `End: ${new Date(savedPromotion.endDate).toLocaleDateString()}`}
-                                    </>
-                                  )}
-                                </p>
+                                  <p className="text-xs text-gray-500">
+                                    {savedPromotion.isIndefinite ? (
+                                      'Running indefinitely'
+                                    ) : (
+                                      <>
+                                        {savedPromotion.startDate && `Start: ${new Date(savedPromotion.startDate).toLocaleDateString()}`}
+                                        {savedPromotion.startDate && savedPromotion.endDate && ' • '}
+                                        {savedPromotion.endDate && `End: ${new Date(savedPromotion.endDate).toLocaleDateString()}`}
+                                      </>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">Services: House Washing, Roof Cleaning</p>
                                 </>
                               )}
                             </div>
@@ -5381,20 +3896,15 @@ const PricingTool = ({
                 <button
                                 type="button"
                   onClick={() => {
-                                      // Add promotion to promotions array with flag for inline editing
-                                      setPromotions((prev) => {
-                                        if (!prev.find(p => p.id === savedPromotion.id && p.isEditingFromActive)) {
-                                          return [...prev, { ...savedPromotion, isEditingFromActive: true }];
-                                        }
-                                        return prev;
-                                      });
-                                      setEditingActivePromotionId(savedPromotion.id);
-                                      setEditingActivePromotionData({ ...savedPromotion });
-                                    }}
-                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                                    aria-label="Edit promotion"
-                                  >
-                                    <Pencil className="w-4 h-4" />
+                                  // Move promotion back to active promotions for editing
+                                  setPromotions((prev) => [...prev, { ...savedPromotion }]);
+                                  // Remove from saved promotions
+                                  setSavedPromotions((prev) => prev.filter((p) => p.id !== savedPromotion.id));
+                                  setEditingPromotionId(savedPromotion.id);
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                              >
+                                Edit
                               </button>
                               <button
                                 type="button"
@@ -5410,7 +3920,6 @@ const PricingTool = ({
                 </button>
               </div>
                           </div>
-                          )}
                         </div>
                       );
                     })}
@@ -5419,17 +3928,14 @@ const PricingTool = ({
               </div>
               
               {/* Expired Promotions Subsection */}
-              <div className="pt-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
-                  Expired Promotions
-                </h3>
+              <div className="bg-white rounded-3xl p-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Expired Promotions</h3>
                 {expiredPromotions.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <p>No expired promotions.</p>
                   </div>
                 ) : (
-                  <div className={`space-y-3 ${expiredPromotions.length > 3 ? 'max-h-[480px] overflow-y-auto pr-2' : ''}`}>
+                  <div className="space-y-3">
                     {expiredPromotions.map((expiredPromotion) => {
                       const getPromotionTypeLabel = (type) => {
                         switch(type) {
@@ -5443,9 +3949,9 @@ const PricingTool = ({
                       return (
                         <div
                           key={expiredPromotion.id}
-                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative  opacity-75 flex items-start gap-3"
+                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative  opacity-75"
                         >
-                          <div className="flex items-start justify-between flex-1">
+                          <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h4 className="text-base font-semibold text-gray-900">{expiredPromotion.title || 'Untitled Promotion'}</h4>
@@ -5457,21 +3963,10 @@ const PricingTool = ({
                                 {expiredPromotion.promotionType === 'buyGet' ? (
                                   <>
                                     {(expiredPromotion.packageFormula?.initialServices || []).length > 0 && (
-                                      <p className="text-sm text-gray-600 mb-1"><span className="font-medium">Buy:</span> {(expiredPromotion.packageFormula.initialServices || []).join(', ')}</p>
+                                      <p className="text-sm font-medium text-gray-600 mb-1">Buy: {(expiredPromotion.packageFormula.initialServices || []).join(', ')}</p>
                                     )}
                                     {(expiredPromotion.packageFormula?.additionalServices || []).length > 0 && (
-                                      <p className="text-sm text-gray-600 mb-1">
-                                        <span className="font-medium">Get:</span> {(expiredPromotion.packageFormula.additionalServices || []).map(s => {
-                                          const service = typeof s === 'object' ? s.service : s;
-                                          const percentOff = typeof s === 'object' ? s.percentOff : null;
-                                          if (percentOff === 100) {
-                                            return `${service} (FREE)`;
-                                          } else if (percentOff) {
-                                            return `${service} (${percentOff}% off)`;
-                                          }
-                                          return service;
-                                        }).join(', ')}
-                                      </p>
+                                      <p className="text-sm font-medium text-gray-600 mb-1">Get: {(expiredPromotion.packageFormula.additionalServices || []).map(s => typeof s === 'object' ? s.service : s).join(', ')}</p>
                                     )}
                                   </>
                                 ) : (
@@ -5482,31 +3977,24 @@ const PricingTool = ({
                                         : `$${expiredPromotion.packagePrice || '0.00'}`}
                                     </p>
                                     {expiredPromotion.promotionType === 'percentOff' && (expiredPromotion.percentOffServices || []).length > 0 && (
-                                      <p className="text-sm mt-1"><span className="font-medium">Services:</span> {(expiredPromotion.percentOffServices || []).join(', ')}</p>
+                                      <p className="text-sm font-medium mt-1">Services: {(expiredPromotion.percentOffServices || []).join(', ')}</p>
                                     )}
                                     {expiredPromotion.promotionType === 'package' && (expiredPromotion.packageServices || []).length > 0 && (
-                                      <p className="text-sm mt-1"><span className="font-medium">Services:</span> {(expiredPromotion.packageServices || []).join(', ')}</p>
+                                      <p className="text-sm font-medium mt-1">Services: {(expiredPromotion.packageServices || []).join(', ')}</p>
                                     )}
                                   </>
                                 )}
                               </div>
                               {expiredPromotion.endDate && (
                                 <>
-                                <p className="text-xs text-gray-500">
-                                  Expired: {new Date(expiredPromotion.endDate).toLocaleDateString()}
-                                </p>
+                                  <p className="text-xs text-gray-500">
+                                    Expired: {new Date(expiredPromotion.endDate).toLocaleDateString()}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">Services: House Washing, Roof Cleaning</p>
                                 </>
                               )}
                             </div>
                             <div className="flex items-center gap-2 ml-4">
-                              <button
-                                type="button"
-                                onClick={() => setRestartPromotionModal(expiredPromotion)}
-                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors"
-                                aria-label="Restart promotion"
-                              >
-                                <RotateCw className="w-4 h-4" />
-                              </button>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -5528,140 +4016,6 @@ const PricingTool = ({
                 )}
               </div>
             </div>
-            </div>
-
-            {/* Restart Promotion Modal */}
-            {restartPromotionModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setRestartPromotionModal(null)}>
-                <div className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900">Restart Promotion</h3>
-                    <button
-                      type="button"
-                      onClick={() => setRestartPromotionModal(null)}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {/* Title */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                      <input
-                        type="text"
-                        value={restartPromotionModal.title || ''}
-                        onChange={(e) => setRestartPromotionModal({ ...restartPromotionModal, title: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter promotion title"
-                      />
-                    </div>
-
-                    {/* Start Date */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                      <input
-                        type="date"
-                        value={restartPromotionModal.startDate || ''}
-                        onChange={(e) => setRestartPromotionModal({ ...restartPromotionModal, startDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    {/* End Date */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                      <input
-                        type="date"
-                        value={restartPromotionModal.endDate || ''}
-                        onChange={(e) => setRestartPromotionModal({ ...restartPromotionModal, endDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    {/* Promotion Type Display (read-only) */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Promotion Type</label>
-                      <div className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-600">
-                        {restartPromotionModal.promotionType === 'percentOff' ? 'Percent Off' : 
-                         restartPromotionModal.promotionType === 'package' ? 'Package Deal' : 
-                         restartPromotionModal.promotionType === 'buyGet' ? 'Buy/Get' : 'N/A'}
-                      </div>
-                    </div>
-
-                    {/* Promotion Details Display */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Promotion Details</label>
-                      <div className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-600">
-                        {restartPromotionModal.promotionType === 'percentOff' && (
-                          <div>
-                            <p><strong>{restartPromotionModal.percentOff || 'N/A'}% off</strong></p>
-                            {restartPromotionModal.percentOffServices && restartPromotionModal.percentOffServices.length > 0 && (
-                              <p className="mt-1">Services: {restartPromotionModal.percentOffServices.join(', ')}</p>
-                            )}
-                          </div>
-                        )}
-                        {restartPromotionModal.promotionType === 'package' && (
-                          <div>
-                            <p><strong>${restartPromotionModal.packagePrice || '0.00'}</strong></p>
-                            {restartPromotionModal.packageServices && restartPromotionModal.packageServices.length > 0 && (
-                              <p className="mt-1">Services: {restartPromotionModal.packageServices.join(', ')}</p>
-                            )}
-                          </div>
-                        )}
-                        {restartPromotionModal.promotionType === 'buyGet' && (
-                          <div>
-                            {restartPromotionModal.packageFormula?.initialServices && restartPromotionModal.packageFormula.initialServices.length > 0 && (
-                              <p><strong>Buy:</strong> {restartPromotionModal.packageFormula.initialServices.join(', ')}</p>
-                            )}
-                            {restartPromotionModal.packageFormula?.additionalServices && restartPromotionModal.packageFormula.additionalServices.length > 0 && (
-                              <p className="mt-1"><strong>Get:</strong> {restartPromotionModal.packageFormula.additionalServices.map(s => {
-                                const service = typeof s === 'object' ? s.service : s;
-                                const percentOff = typeof s === 'object' ? s.percentOff : null;
-                                if (percentOff === 100) return `${service} (FREE)`;
-                                if (percentOff) return `${service} (${percentOff}% off)`;
-                                return service;
-                              }).join(', ')}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setRestartPromotionModal(null)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Generate a new ID for the restarted promotion to avoid conflicts
-                        const restartedPromotion = {
-                          ...restartPromotionModal,
-                          id: Date.now() + Math.random(), // New unique ID
-                          savedAt: new Date().toISOString() // Update savedAt timestamp
-                        };
-                        // Move promotion back to active promotions
-                        setSavedPromotions((prev) => [...prev, restartedPromotion]);
-                        // Remove from expired promotions
-                        setExpiredPromotions((prev) => prev.filter((p) => p.id !== restartPromotionModal.id));
-                        // Close modal
-                        setRestartPromotionModal(null);
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                    >
-                      Save & Restart
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
     </div>
   );
 };

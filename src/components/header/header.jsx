@@ -260,9 +260,8 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
               { id: 'dashboard', label: 'Dashboard' },
               { id: 'leads', label: 'Leads' },
               { id: 'customers', label: 'Customer Directory' },
-              { id: 'calendar', label: 'Calendar' },
-              { id: 'pricingTool', label: 'Pricing Tool' },
-              { id: 'customerCorrespondence', label: 'Customer Correspondence' },
+              // { id: 'calendar', label: 'Calendar' },
+              // { id: 'pricingTool', label: 'Pricing Tool' },
               { id: 'aiAgent', label: 'My Agent' },
               { id: 'business', label: 'My Business' }
             ].map(tab => {

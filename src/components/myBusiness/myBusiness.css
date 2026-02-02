@@ -917,3 +917,16 @@
   width: 1rem;
   height: 1rem;
 }
+
+/* Date Input Placeholder Styling */
+/* Make webkit datetime edit elements inherit color from the input */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: inherit;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: opacity(0.6);
+}

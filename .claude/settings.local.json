@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ping:*)",
+      "Bash(npm start)",
+      "Bash(more:*)",
+      "Bash(timeout:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, Plus, ChevronDown, FileText, FileSignature, Receipt, HeartHandshake, MoveDiagonal, Check, Pause, X, Mail } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Plus, ChevronDown, FileText, FileSignature, Receipt, HeartHandshake, Check, Pause, X, Mail, ArrowUp, Phone, Image, Video, MessageSquare, Star, ArrowRight, Briefcase, User, Globe } from 'lucide-react';
 import './leads.css';
 
 // SourceBadge component (same as in customerDirectory)
@@ -76,6 +76,165 @@ const Leads = ({
   handleServiceFileClick,
   openModal
 }) => {
+  // State to track which call history items are expanded (keyed by `${leadId}_${callIndex}`)
+  const [expandedCallItems, setExpandedCallItems] = useState({});
+
+  // State to track which attachment menu is open (keyed by `${leadId}_${medium}`)
+  const [openAttachmentMenu, setOpenAttachmentMenu] = useState(null);
+
+  // State to track attached files (keyed by `${leadId}_${medium}`)
+  const [attachedFiles, setAttachedFiles] = useState({});
+
+  // State to track sent messages (keyed by `${leadId}_${medium}`)
+  const [sentMessages, setSentMessages] = useState({});
+
+  // State to track message input values (keyed by `${leadId}_${medium}`)
+  const [messageInputs, setMessageInputs] = useState({});
+
+  // Ref for file input and current target
+  const fileInputRef = useRef(null);
+  const [currentFileTarget, setCurrentFileTarget] = useState(null);
+
+  // Sales Flow Hooks options
+  const salesFlowHooks = [
+    { name: 'Personal Greeting', icon: MessageSquare, color: 'text-blue-600' },
+    { name: 'Job Demos', icon: Star, color: 'text-purple-600' },
+    { name: 'Before & After', icon: ArrowRight, color: 'text-green-600' },
+    { name: 'Company Slogan', icon: MessageSquare, color: 'text-lime-600' },
+    { name: 'Experience', icon: Briefcase, color: 'text-amber-600' },
+    { name: 'Company Qualities', icon: Star, color: 'text-cyan-600' },
+    { name: 'Customer Reviews', icon: User, color: 'text-rose-600' },
+    { name: 'Online Reviews', icon: Globe, color: 'text-violet-600' }
+  ];
+
+  const toggleCallExpansion = (leadId, callIndex) => {
+    const key = `${leadId}_${callIndex}`;
+    setExpandedCallItems(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const toggleAttachmentMenu = (leadId, medium) => {
+    const key = `${leadId}_${medium}`;
+    setOpenAttachmentMenu(prev => prev === key ? null : key);
+  };
+
+  const handleHookSelect = (hookName) => {
+    // Handle hook selection - could insert into message
+    console.log('Selected hook:', hookName);
+    setOpenAttachmentMenu(null);
+  };
+
+  const handleMediaUpload = (leadId, medium) => {
+    // Set the current target for the file upload
+    setCurrentFileTarget(`${leadId}_${medium}`);
+    setOpenAttachmentMenu(null);
+    // Trigger the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file && currentFileTarget) {
+      // Create a preview URL for the file
+      const fileUrl = URL.createObjectURL(file);
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+
+      setAttachedFiles(prev => ({
+        ...prev,
+        [currentFileTarget]: {
+          file,
+          url: fileUrl,
+          name: file.name,
+          type: isImage ? 'image' : isVideo ? 'video' : 'file'
+        }
+      }));
+    }
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
+    setCurrentFileTarget(null);
+  };
+
+  const removeAttachedFile = (key) => {
+    setAttachedFiles(prev => {
+      const newFiles = { ...prev };
+      if (newFiles[key]?.url) {
+        URL.revokeObjectURL(newFiles[key].url);
+      }
+      delete newFiles[key];
+      return newFiles;
+    });
+  };
+
+  // Handle message input change
+  const handleMessageInputChange = (leadId, medium, value) => {
+    const key = `${leadId}_${medium}`;
+    setMessageInputs(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  // Handle sending a message
+  const handleSendMessage = (leadId, medium) => {
+    const key = `${leadId}_${medium}`;
+    const messageText = messageInputs[key]?.trim() || '';
+    const attachment = attachedFiles[key];
+
+    // Don't send if there's no content
+    if (!messageText && !attachment) return;
+
+    const newMessage = {
+      from: 'user',
+      text: messageText,
+      attachment: attachment ? {
+        type: attachment.type,
+        url: attachment.url,
+        name: attachment.name
+      } : null,
+      timestamp: new Date().toISOString()
+    };
+
+    // Add to sent messages
+    setSentMessages(prev => ({
+      ...prev,
+      [key]: [...(prev[key] || []), newMessage]
+    }));
+
+    // Clear the input and attachment
+    setMessageInputs(prev => ({
+      ...prev,
+      [key]: ''
+    }));
+
+    // Remove attachment (but don't revoke URL since it's now in sent messages)
+    setAttachedFiles(prev => {
+      const newFiles = { ...prev };
+      delete newFiles[key];
+      return newFiles;
+    });
+  };
+
+  // Close attachment menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openAttachmentMenu && !event.target.closest('.attachment-menu-wrapper')) {
+        setOpenAttachmentMenu(null);
+      }
+    };
+
+    if (openAttachmentMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [openAttachmentMenu]);
+
   // Render a lead section (Ready Jobs, In Progress, Paused, or Rejected)
   const renderLeadSection = (leads, sectionType) => {
     if (!leads || leads.length === 0) return null;
@@ -131,6 +290,41 @@ const Leads = ({
         ]
       };
       const transcript = chatScripts[selectedMedium] || chatScripts.Text;
+
+      // Call history data for the Call tab
+      const callHistory = [
+        {
+          date: '01/28/2026',
+          time: '2:34 PM',
+          duration: '3:42',
+          type: 'outgoing',
+          status: 'answered',
+          transcript: [
+            { speaker: 'Agent', text: `Hi ${leadFirstName}, this is Holy City Clean Co. calling about your cleaning service inquiry.` },
+            { speaker: 'Lead', text: 'Oh yes, hi! Thanks for getting back to me.' },
+            { speaker: 'Agent', text: 'Of course! I wanted to discuss your estimate and see if you had any questions.' },
+            { speaker: 'Lead', text: 'Yes, I was wondering about the scheduling options.' },
+            { speaker: 'Agent', text: 'We have availability next Tuesday and Thursday. Would either of those work for you?' },
+            { speaker: 'Lead', text: 'Tuesday would be perfect.' },
+          ]
+        },
+        {
+          date: '01/25/2026',
+          time: '10:15 AM',
+          duration: '1:23',
+          type: 'outgoing',
+          status: 'answered',
+          transcript: [
+            { speaker: 'Agent', text: `Hello, is this ${leadFirstName}? This is Holy City Clean Co.` },
+            { speaker: 'Lead', text: 'Yes, speaking.' },
+            { speaker: 'Agent', text: 'Great! I\'m following up on your service request. Do you have a moment to discuss?' },
+            { speaker: 'Lead', text: 'I\'m a bit busy right now, can you call back later?' },
+            { speaker: 'Agent', text: 'Absolutely! When would be a good time to reach you?' },
+          ]
+        },
+        { date: '01/22/2026', time: '4:50 PM', duration: '0:00', type: 'outgoing', status: 'no answer' },
+      ];
+
 
       const isExpanded = expandedLeads.has(lead.id);
       
@@ -322,48 +516,275 @@ const Leads = ({
                               </div>
                             ))}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => toggleChatPanel && toggleChatPanel(lead.id)}
-                            className="chat-toggle-button"
-                          >
-                            <span>{isChatExpanded ? 'Hide full thread' : 'Show full thread'}</span>
-                            <ChevronDown className={`chat-toggle-chevron ${isChatExpanded ? 'chat-toggle-chevron-expanded' : ''}`} />
-                          </button>
+                        </div>
+                      ) : selectedMedium === 'Call' ? (
+                        /* Call History View */
+                        <div className="call-history-container">
+                          <div className="call-history-list">
+                            {callHistory.map((call, idx) => {
+                              const isCallExpanded = expandedCallItems[`${lead.id}_${idx}`];
+                              const isExpandable = call.status === 'answered' && call.transcript;
+
+                              return (
+                                <div key={idx} className="call-history-item-wrapper">
+                                  <div
+                                    className={`call-history-item ${isExpandable ? 'call-history-item-expandable' : ''} ${isCallExpanded ? 'call-history-item-expanded' : ''}`}
+                                    onClick={() => isExpandable && toggleCallExpansion(lead.id, idx)}
+                                  >
+                                    <div className="call-history-icon-wrapper">
+                                      <Phone className={`call-history-icon ${call.type === 'outgoing' ? 'call-outgoing' : 'call-incoming'}`} />
+                                      {call.type === 'outgoing' && (
+                                        <span className="call-direction-arrow">↗</span>
+                                      )}
+                                    </div>
+                                    <div className="call-history-details">
+                                      <div className="call-history-top-row">
+                                        <span className="call-history-date">{call.date}</span>
+                                        <span className="call-history-time">{call.time}</span>
+                                      </div>
+                                      <div className="call-history-bottom-row">
+                                        <span className={`call-history-status ${call.status === 'answered' ? 'status-answered' : 'status-missed'}`}>
+                                          {call.status === 'answered' ? 'Answered' : 'No Answer'}
+                                        </span>
+                                        <span className="call-history-duration">{call.duration}</span>
+                                      </div>
+                                    </div>
+                                    {isExpandable && (
+                                      <ChevronDown className={`call-expand-chevron ${isCallExpanded ? 'call-expand-chevron-rotated' : ''}`} />
+                                    )}
+                                  </div>
+                                  {isCallExpanded && call.transcript && (
+                                    <div className="call-transcript">
+                                      <div className="call-transcript-header">Call Transcript</div>
+                                      <div className="call-transcript-messages">
+                                        {call.transcript.map((line, lineIdx) => (
+                                          <div key={lineIdx} className={`call-transcript-line ${line.speaker === 'Agent' ? 'transcript-agent' : 'transcript-lead'}`}>
+                                            <span className="transcript-speaker">{line.speaker}:</span>
+                                            <span className="transcript-text">{line.text}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : selectedMedium === 'Email' ? (
+                        /* Email View */
+                        <div className="email-view-wrapper">
+                          <div className="email-thread">
+                            {transcript.map((message, idx) => {
+                              const emailDate = new Date(Date.now() - (transcript.length - idx) * 86400000);
+                              return (
+                                <div key={`email-${lead.id}-${idx}`} className="email-item">
+                                  <div className="email-header">
+                                    <div className="email-from">
+                                      {message.from === 'assistant' ? 'Holy City Clean Co.' : lead.name || 'Customer'}
+                                    </div>
+                                    <div className="email-date">
+                                      {emailDate.toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                  <div className="email-subject">
+                                    Re: Service Inquiry
+                                  </div>
+                                  <div className="email-body">
+                                    {message.text}
+                                  </div>
+                                  <div className="email-footer">
+                                    {message.from === 'assistant' ? 'Sent' : 'Received'} {emailDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {/* Sent Emails */}
+                            {(sentMessages[`${lead.id}_email`] || []).map((message, idx) => (
+                              <div key={`sent-email-${lead.id}-${idx}`} className="email-item email-item-sent">
+                                <div className="email-header">
+                                  <div className="email-from">You</div>
+                                  <div className="email-date">
+                                    {new Date(message.timestamp).toLocaleDateString()}
+                                  </div>
+                                </div>
+                                <div className="email-subject">
+                                  Re: Service Inquiry
+                                </div>
+                                {message.attachment && (
+                                  <div className="sent-email-attachment">
+                                    {message.attachment.type === 'image' ? (
+                                      <img src={message.attachment.url} alt="Attachment" className="sent-attachment-image" />
+                                    ) : message.attachment.type === 'video' ? (
+                                      <video src={message.attachment.url} className="sent-attachment-video" controls />
+                                    ) : (
+                                      <div className="sent-attachment-file">
+                                        <FileText className="file-icon" />
+                                        <span>{message.attachment.name}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                <div className="email-body">
+                                  {message.text}
+                                </div>
+                                <div className="email-footer">
+                                  Sent {new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : (
-                        <>
+                        /* Text View with Messages and Input */
+                        <div className="chat-messages-wrapper">
                           <div className={`chat-active-messages ${isChatExpanded ? 'chat-active-messages-expanded' : ''}`}>
                             {transcript.map((message, idx) => (
                               <div
                                 key={`${selectedMedium}-${lead.id}-${idx}`}
                                 className={`chat-message ${message.from === 'assistant' ? 'chat-message-lead' : 'chat-message-assistant'}`}
                               >
-                                <div
-                                  className={`chat-message-bubble ${
-                                    message.from === 'assistant'
-                                      ? 'chat-message-bubble-active-assistant'
-                                      : 'chat-message-bubble-active-lead'
-                                  }`}
-                                >
-                                  {message.text}
-                                </div>
+                                {message.from === 'assistant' ? (
+                                  <div className="sent-message-wrapper">
+                                    <div className="chat-message-bubble chat-message-bubble-active-assistant">
+                                      {message.text}
+                                    </div>
+                                    <span className="sent-indicator">Sent <Check className="sent-check-icon" /></span>
+                                  </div>
+                                ) : (
+                                  <div className="chat-message-bubble chat-message-bubble-active-lead">
+                                    {message.text}
+                                  </div>
+                                )}
                               </div>
                             ))}
+                            {/* Sent Messages */}
+                            {(sentMessages[`${lead.id}_text`] || []).map((message, idx) => {
+                              const hasMedia = message.attachment && (message.attachment.type === 'image' || message.attachment.type === 'video');
+
+                              return (
+                                <div
+                                  key={`sent-text-${lead.id}-${idx}`}
+                                  className="chat-message chat-message-lead"
+                                >
+                                  <div className="sent-message-wrapper">
+                                    {hasMedia ? (
+                                      <>
+                                        <div className="sent-media-standalone">
+                                          {message.attachment.type === 'image' ? (
+                                            <img src={message.attachment.url} alt="Sent" className="sent-media-image" />
+                                          ) : (
+                                            <video src={message.attachment.url} className="sent-media-video" controls />
+                                          )}
+                                        </div>
+                                        {message.text && (
+                                          <div className="chat-message-bubble chat-message-bubble-active-assistant">
+                                            {message.text}
+                                          </div>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <div className="chat-message-bubble chat-message-bubble-active-assistant">
+                                        {message.attachment && (
+                                          <div className="sent-attachment">
+                                            <div className="sent-attachment-file">
+                                              <FileText className="file-icon" />
+                                              <span>{message.attachment.name}</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                        {message.text}
+                                      </div>
+                                    )}
+                                    <span className="sent-indicator">Sent <Check className="sent-check-icon" /></span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div className="typing-indicator">
-                            <span className="typing-dot"></span>
-                            <span>Typing...</span>
+                          {/* Text Message Input */}
+                          <div className="message-compose-inline">
+                            {attachedFiles[`${lead.id}_text`] && (
+                              <div className="attached-file-inline">
+                                {attachedFiles[`${lead.id}_text`].type === 'image' ? (
+                                  <img
+                                    src={attachedFiles[`${lead.id}_text`].url}
+                                    alt="Attached"
+                                    className="attached-image-inline"
+                                  />
+                                ) : (
+                                  <span className="attached-name-inline">{attachedFiles[`${lead.id}_text`].name}</span>
+                                )}
+                                <button
+                                  type="button"
+                                  className="remove-attachment-inline"
+                                  onClick={() => removeAttachedFile(`${lead.id}_text`)}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                            <div className="message-input-box-inline">
+                              <textarea
+                                placeholder="Text Message"
+                                className="message-textarea-inline"
+                                value={messageInputs[`${lead.id}_text`] || ''}
+                                onChange={(e) => handleMessageInputChange(lead.id, 'text', e.target.value)}
+                                rows={4}
+                              />
+                              <div className="message-buttons-inline">
+                                <div className="attachment-menu-wrapper">
+                                  <button
+                                    type="button"
+                                    className={`message-plus-btn-inline ${openAttachmentMenu === `${lead.id}_text` ? 'active' : ''}`}
+                                    onClick={() => toggleAttachmentMenu(lead.id, 'text')}
+                                  >
+                                    <Plus className="message-plus-icon" />
+                                  </button>
+                                  {openAttachmentMenu === `${lead.id}_text` && (
+                                    <div className="attachment-dropdown">
+                                      <div className="attachment-dropdown-section">
+                                        <div className="attachment-dropdown-label">Sales Flow Hooks</div>
+                                        {salesFlowHooks.map((hook) => {
+                                          const HookIcon = hook.icon;
+                                          return (
+                                            <button
+                                              key={hook.name}
+                                              type="button"
+                                              className="attachment-dropdown-item"
+                                              onClick={() => handleHookSelect(hook.name)}
+                                            >
+                                              <HookIcon className={`attachment-item-icon ${hook.color}`} />
+                                              <span>{hook.name}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                      <div className="attachment-dropdown-divider" />
+                                      <div className="attachment-dropdown-section">
+                                        <button
+                                          type="button"
+                                          className="attachment-dropdown-item"
+                                          onClick={() => handleMediaUpload(lead.id, 'text')}
+                                        >
+                                          <Image className="attachment-item-icon text-gray-500" />
+                                          <span>Select from files</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="message-send-btn-inline"
+                                  onClick={() => handleSendMessage(lead.id, 'text')}
+                                >
+                                  <ArrowUp className="message-send-arrow" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => toggleChatPanelSize && toggleChatPanelSize(lead.id)}
-                            className="chat-resize-button"
-                            aria-label="Toggle chat panel size"
-                          >
-                            <MoveDiagonal className="chat-resize-icon" />
-                          </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -498,6 +919,15 @@ const Leads = ({
 
   return (
     <div className="leads-container">
+      {/* Hidden file input for attachments */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+        style={{ display: 'none' }}
+      />
+
       {/* Header */}
       <div className="leads-header">
         <div>
