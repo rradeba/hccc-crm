@@ -121,61 +121,64 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
       <div className={`header-container ${headerColor}`}>
         <div className="header-inner">
           <div className="header-content">
-            <div className="header-logo-section">
-              <div className="logo-container">
-                {customHeaderIcon ? (
-                  <img 
-                    src={customHeaderIcon} 
-                    alt="Business logo" 
-                    className="logo-image"
-                  />
-                ) : (
-                <Building2 className="logo-icon" />
-                )}
+            <div className="header-top-row">
+              <div className="header-logo-section">
+                <div className="logo-container">
+                  {customHeaderIcon ? (
+                    <img
+                      src={customHeaderIcon}
+                      alt="Business logo"
+                      className="logo-image"
+                    />
+                  ) : (
+                  <Building2 className="logo-icon" />
+                  )}
+                </div>
+                <div className="header-title-section">
+                  <h1 className="header-title">Holy City Clean Co.</h1>
+                  <p className="header-subtitle">Customer Relationship Management</p>
+                </div>
               </div>
-            <div className="header-title-section">
-                <h1 className="header-title">Holy City Clean Co.</h1>
-                <p className="header-subtitle">Customer Relationship Management</p>
-            </div>
-              </div>
-            <div className="header-actions">
-              <div className="info-card">
-                <p className="info-label">Today's Date</p>
-                <p className="info-value">{new Date().toLocaleDateString()}</p>
-              </div>
-              <div className="info-card">
-                <p className="info-label">
-                  Weather {weather.location ? `(${weather.location})` : ''}
-                </p>
-                {isWeatherLoading ? (
-                  <p className="weather-loading">Loading…</p>
-                ) : weather.temperature != null ? (
-                  <div className="weather-display">
-                    <span className="weather-icon" role="img" aria-label={weather.description}>
-                      {weather.icon}
-                    </span>
-                    <span className="weather-temp">{weather.temperature}°F</span>
-                    <span className="weather-desc">{weather.description}</span>
+              <div className="header-right-section">
+                <div className="header-info-cards">
+                  <div className="info-card">
+                    <p className="info-label">Today's Date</p>
+                    <p className="info-value">{new Date().toLocaleDateString()}</p>
                   </div>
-                ) : (
-                  <p className="weather-error">{weatherError || 'Unavailable'}</p>
-                )}
-              </div>
-              <div className="relative" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className="settings-button"
-                  aria-label="Help"
-                  title="Help"
-                >
-                  <HelpCircle className="settings-icon" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOpenHeaderSettings(!openHeaderSettings)}
-                  className="settings-button"
-                  aria-label="Header settings"
-                >
+                  <div className="info-card">
+                    <p className="info-label">
+                      Weather {weather.location ? `(${weather.location})` : ''}
+                    </p>
+                    {isWeatherLoading ? (
+                      <p className="weather-loading">Loading…</p>
+                    ) : weather.temperature != null ? (
+                      <div className="weather-display">
+                        <span className="weather-icon" role="img" aria-label={weather.description}>
+                          {weather.icon}
+                        </span>
+                        <span className="weather-temp">{weather.temperature}°F</span>
+                        <span className="weather-desc">{weather.description}</span>
+                      </div>
+                    ) : (
+                      <p className="weather-error">{weatherError || 'Unavailable'}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="header-buttons" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="settings-button"
+                    aria-label="Help"
+                    title="Help"
+                  >
+                    <HelpCircle className="settings-icon" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOpenHeaderSettings(!openHeaderSettings)}
+                    className="settings-button"
+                    aria-label="Header settings"
+                  >
                   <Settings className="settings-icon" />
                 </button>
                 {openHeaderSettings && (
@@ -252,6 +255,7 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
           </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -260,10 +264,11 @@ const Header = ({ activeTab, setActiveTab, businessInfo }) => {
               { id: 'dashboard', label: 'Dashboard' },
               { id: 'leads', label: 'Leads' },
               { id: 'customers', label: 'Customer Directory' },
-              // { id: 'calendar', label: 'Calendar' },
-              // { id: 'pricingTool', label: 'Pricing Tool' },
+              { id: 'calendar', label: 'Calendar' },
+              { id: 'pricingTool', label: 'Pricing Tool' },
               { id: 'aiAgent', label: 'My Agent' },
-              { id: 'business', label: 'My Business' }
+              { id: 'business', label: 'My Business' },
+              { id: 'ads', label: 'My Ads' }
             ].map(tab => {
               const isActive = activeTab === tab.id;
               return (

@@ -77,12 +77,44 @@
   gap: 1rem;
 }
 
-@media (min-width: 1024px) {
-  .header-content {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0;
+/* Header Top Row - Always horizontal with title left and buttons right */
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Header Right Section - Info cards and buttons */
+.header-right-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Header Info Cards - Date and Weather in top row */
+.header-info-cards {
+  display: none;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Show info cards only on wider screens */
+@media (min-width: 900px) {
+  .header-info-cards {
+    display: flex;
+  }
+}
+
+/* Header Buttons - Help and Settings */
+.header-buttons {
+  position: relative;
+}
+
+/* Hide buttons on very narrow screens */
+@media (max-width: 480px) {
+  .header-buttons {
+    display: none !important;
   }
 }
 
@@ -146,20 +178,6 @@
   font-weight: 500;
 }
 
-/* Header Actions Section */
-.header-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-@media (min-width: 640px) {
-  .header-actions {
-    flex-direction: row;
-    align-items: center;
-    gap: 1.5rem;
-  }
-}
 
 /* Info Card */
 .info-card {
@@ -483,20 +501,9 @@
   text-decoration: underline;
 }
 
-/* Responsive: Hide date, weather, and settings on narrow screens */
+/* Responsive: Hide date and weather info cards on narrow screens */
 @media (max-width: 1023px) {
-  /* Hide date info card */
-  .header-actions .info-card:first-child {
-    display: none;
-  }
-  
-  /* Hide weather info card */
-  .header-actions .info-card:nth-child(2) {
-    display: none;
-  }
-  
-  /* Hide settings button */
-  .header-actions .relative {
+  .header-actions {
     display: none;
   }
 }

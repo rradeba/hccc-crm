@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Check, Building2, Phone, Upload, Trash2, Plus, ChevronDown, ChevronUp, X, ArrowRight, Star, MessageSquare, Mail, AlertCircle, Pencil, Sparkles, HandHeart, Images, Briefcase, Globe, User, Tag } from 'lucide-react';
+import { Settings, Check, Building2, Phone, Upload, Trash2, Plus, ChevronDown, ChevronUp, X, ArrowRight, Star, MessageSquare, Mail, AlertCircle, Pencil, Sparkles, HandHeart, Images, Briefcase, Globe, User, Tag, HelpCircle, Play, Pause, MoreVertical, Volume2, VolumeX, Maximize, Calendar } from 'lucide-react';
 import './myAgent.css';
 
 const MyAgent = ({
@@ -81,34 +81,64 @@ const MyAgent = ({
   // State for forward calls and texts toggle
   const [forwardToPersonalPhone, setForwardToPersonalPhone] = useState(false);
 
+  // State for number type selection (business vs assigned)
+  const [useAssignedNumber, setUseAssignedNumber] = useState(true);
+  const [phoneNumberDropdownOpen, setPhoneNumberDropdownOpen] = useState(false);
+
+  // State for pause agent emailing
+  const [pauseAgentEmailing, setPauseAgentEmailing] = useState(false);
+
   // State for Send Estimate - Request in person estimate toggle
   const [requestInPersonEstimate, setRequestInPersonEstimate] = useState(false);
   const [scheduleEstimateCall, setScheduleEstimateCall] = useState(false);
+  const [preferredCallTime, setPreferredCallTime] = useState([]);
+  const [preferredInPersonTime, setPreferredInPersonTime] = useState([]);
+  const [estimateContactMethods, setEstimateContactMethods] = useState({ call: true, text: true, email: false, inPerson: false });
+  const [showEstimateContactTooltip, setShowEstimateContactTooltip] = useState(false);
 
   // State for Lead Discovery - Schedule call if AI can't answer
   const [scheduleCallIfCantAnswer, setScheduleCallIfCantAnswer] = useState(true);
   const [allowCustomerCallback, setAllowCustomerCallback] = useState(false);
+  const [preferredCallbackTime, setPreferredCallbackTime] = useState([]);
+  const [showEscalateTooltip, setShowEscalateTooltip] = useState(false);
+  const [showCallbackTooltip, setShowCallbackTooltip] = useState(false);
   const [offerCallback, setOfferCallback] = useState({ enabled: false, collectAvailability: true, collectPreferredTime: true, collectCallReason: true, callbackWindow: '24 hours' });
 
   // State for Lead Discovery followup
-  const [leadDiscoveryFollowup, setLeadDiscoveryFollowup] = useState({ enabled: false, method: 'text', schedule: 'Daily', scheduleValue: '', times: ['9:00 AM'], day: 'Monday', dayOfMonth: '1st', duration: '', durationUnit: 'Days' });
+  const [leadDiscoveryFollowup, setLeadDiscoveryFollowup] = useState({ aiEnabled: false, enabled: false, method: 'text', waitTime: '24 hours', schedule: 'Day', scheduleValue: '', times: ['Morning'], days: ['Monday'], daysOfMonth: ['1st'], duration: '', durationUnit: 'Days' });
 
   // State for Send Estimate followup
-  const [sendEstimateFollowup, setSendEstimateFollowup] = useState({ enabled: false, method: 'text', schedule: 'Daily', scheduleValue: '', times: ['9:00 AM'], day: 'Monday', dayOfMonth: '1st', duration: '', durationUnit: 'Days' });
+  const [sendEstimateFollowup, setSendEstimateFollowup] = useState({ aiEnabled: false, enabled: false, method: 'text', schedule: 'Day', scheduleValue: '', times: ['Morning'], days: ['Monday'], daysOfMonth: ['1st'], duration: '', durationUnit: 'Days' });
 
   // State for Send Contract followup
-  const [sendContractFollowup, setSendContractFollowup] = useState({ enabled: false, method: 'text', schedule: 'Daily', scheduleValue: '', times: ['9:00 AM'], day: 'Monday', dayOfMonth: '1st', duration: '', durationUnit: 'Days' });
+  const [sendContractFollowup, setSendContractFollowup] = useState({ aiEnabled: false, enabled: false, method: 'text', schedule: 'Day', scheduleValue: '', times: ['Morning'], days: ['Monday'], daysOfMonth: ['1st'], duration: '', durationUnit: 'Days' });
   const [autoSendContract, setAutoSendContract] = useState(false);
   const [autoRemindJob, setAutoRemindJob] = useState({ enabled: false, dayOf: true, dayBefore: true, time: '9:00 AM' });
-  const [sendInvoiceFollowup, setSendInvoiceFollowup] = useState({ enabled: false, method: 'text', schedule: 'Daily', scheduleValue: '', times: ['9:00 AM'], day: 'Monday', dayOfMonth: '1st', duration: '', durationUnit: 'Days' });
+  const [sendInvoiceFollowup, setSendInvoiceFollowup] = useState({ aiEnabled: false, enabled: false, method: 'text', schedule: 'Day', scheduleValue: '', times: ['Morning'], days: ['Monday'], daysOfMonth: ['1st'], duration: '', durationUnit: 'Days' });
   const [autoSendInvoice, setAutoSendInvoice] = useState(false);
   const [autoSendThankYou, setAutoSendThankYou] = useState(false);
   const [autoSendJobReview, setAutoSendJobReview] = useState(false);
+  const [enableReviewRequest, setEnableReviewRequest] = useState(false);
+  const [selectedReviewPlatforms, setSelectedReviewPlatforms] = useState([]);
+  const [reviewPlatformLinks, setReviewPlatformLinks] = useState({});
+  const [reviewPlatformDropdownOpen, setReviewPlatformDropdownOpen] = useState(false);
+  const [savedReviewPlatforms, setSavedReviewPlatforms] = useState([]);
+  const [savedReviewLinks, setSavedReviewLinks] = useState({});
+  const [isEditingReviewPlatforms, setIsEditingReviewPlatforms] = useState(true);
+  const [afterJobSaveError, setAfterJobSaveError] = useState('');
+  const reviewPlatformOptions = [
+    { id: 'google', name: 'Google', icon: 'G' },
+    { id: 'facebook', name: 'Facebook', icon: 'f' },
+    { id: 'yelp', name: 'Yelp', icon: 'Y' },
+    { id: 'nextdoor', name: 'Nextdoor', icon: 'N' },
+    { id: 'angies_list', name: "Angi", icon: 'A' },
+    { id: 'bbb', name: 'BBB', icon: 'B' },
+    { id: 'thumbtack', name: 'Thumbtack', icon: 'T' },
+  ];
 
   // State for OAuth modals
   const [showFacebookOAuthModal, setShowFacebookOAuthModal] = useState(false);
   const [showInstagramOAuthModal, setShowInstagramOAuthModal] = useState(false);
-  const [showTikTokOAuthModal, setShowTikTokOAuthModal] = useState(false);
   const [showGmailOAuthModal, setShowGmailOAuthModal] = useState(false);
   const [showOutlookOAuthModal, setShowOutlookOAuthModal] = useState(false);
 
@@ -120,11 +150,12 @@ const MyAgent = ({
   const [leadResponseHooks, setLeadResponseHooks] = useState([]);
   const [leadResponseHooksOpen, setLeadResponseHooksOpen] = useState(false);
   const [leadResponseAICustomized, setLeadResponseAICustomized] = useState(true);
+  const [contactLeadMode, setContactLeadMode] = useState('ai'); // 'ai' or 'customize'
 
   // State for outreach method preferences
-  const [initialOutreach, setInitialOutreach] = useState({ method: 'text', contactWithin: 'Immediately', contactWithinValue: '', followupEnabled: false, followupSchedule: 'Daily', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDayOfMonth: '1st', followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
-  const [secondFallback, setSecondFallback] = useState({ method: 'call', contactWithin: 'Minutes', contactWithinValue: '5', followupEnabled: false, followupSchedule: 'Daily', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDayOfMonth: '1st', followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
-  const [thirdFallback, setThirdFallback] = useState({ method: 'email', contactWithin: 'Minutes', contactWithinValue: '10', followupEnabled: false, followupSchedule: 'Daily', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDayOfMonth: '1st', followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
+  const [initialOutreach, setInitialOutreach] = useState({ method: 'text', contactWithin: 'Immediately', contactWithinValue: '', aiFollowupEnabled: false, followupEnabled: false, followupWaitTime: '24 hours', followupSchedule: 'Day', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDaysOfMonth: ['1st'], followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
+  const [secondFallback, setSecondFallback] = useState({ method: 'call', contactWithin: 'Minutes', contactWithinValue: '5', aiFollowupEnabled: false, followupEnabled: false, followupWaitTime: '24 hours', followupSchedule: 'Day', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDaysOfMonth: ['1st'], followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
+  const [thirdFallback, setThirdFallback] = useState({ method: 'email', contactWithin: 'Minutes', contactWithinValue: '10', aiFollowupEnabled: false, followupEnabled: false, followupWaitTime: '24 hours', followupSchedule: 'Day', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDaysOfMonth: ['1st'], followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
   const [showSecondFallback, setShowSecondFallback] = useState(false);
   const [showThirdFallback, setShowThirdFallback] = useState(false);
 
@@ -137,8 +168,9 @@ const MyAgent = ({
   const initialHooksDropdownRef = useRef(null);
   const secondHooksDropdownRef = useRef(null);
   const thirdHooksDropdownRef = useRef(null);
+  const contactLeadTooltipRef = useRef(null);
 
-  // Click outside handler for hooks dropdowns
+  // Click outside handler for hooks dropdowns and tooltips
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (initialHooksDropdownRef.current && !initialHooksDropdownRef.current.contains(event.target)) {
@@ -155,6 +187,19 @@ const MyAgent = ({
       if (servicesDropdown && !servicesDropdown.contains(event.target)) {
         setOpenServicesDropdownId(null);
       }
+      // Close tooltips if click is outside
+      const escalateTooltip = document.querySelector('[data-tooltip="escalate"]');
+      const callbackTooltip = document.querySelector('[data-tooltip="callback"]');
+      const estimateContactTooltip = document.querySelector('[data-tooltip="estimate-contact"]');
+      if (escalateTooltip && !escalateTooltip.contains(event.target)) {
+        setShowEscalateTooltip(false);
+      }
+      if (callbackTooltip && !callbackTooltip.contains(event.target)) {
+        setShowCallbackTooltip(false);
+      }
+      if (estimateContactTooltip && !estimateContactTooltip.contains(event.target)) {
+        setShowEstimateContactTooltip(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -163,10 +208,22 @@ const MyAgent = ({
     };
   }, []);
 
+  // Listen for fullscreen exit to reset fullscreen state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setFullscreenVideoId(null);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   // Available contact methods
   const contactMethodOptions = [
     { id: 'text', label: 'Text' },
-    { id: 'call', label: 'Call' },
     { id: 'email', label: 'Email' }
   ];
 
@@ -174,8 +231,9 @@ const MyAgent = ({
   const contactWithinOptions = ['Immediately', 'Minutes', 'Hours', 'Days'];
 
   // Followup schedule options
-  const followupScheduleOptions = ['Daily', 'Days', 'Weekly', 'Weeks', 'Monthly', 'Months'];
-  const followupTimeOptions = ['6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM'];
+  const followupScheduleOptions = ['Day', 'Days', 'Week', 'Weeks', 'Month', 'Months'];
+  const followupWaitTimeOptions = ['12 hours', '24 hours', '2 days', '3 days', '5 days', '7 days'];
+  const followupTimeOptions = ['Morning', 'Noon', 'Afternoon', 'Evening'];
   const followupDayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const followupDayOfMonthOptions = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th', '18th', '19th', '20th', '21st', '22nd', '23rd', '24th', '25th', '26th', '27th', '28th', '29th', '30th'];
   const followupDurationUnitOptions = ['Days', 'Weeks', 'Months'];
@@ -191,8 +249,81 @@ const MyAgent = ({
   const [promotionsSaveAttempted, setPromotionsSaveAttempted] = useState(false);
   const [customerReviewsSaveAttempted, setCustomerReviewsSaveAttempted] = useState(false);
   const [openServicesDropdownId, setOpenServicesDropdownId] = useState(null);
+
+  // State for saved Job Demos
+  const [savedJobDemos, setSavedJobDemos] = useState([]);
+  // State for pending media items (hidden while editing a saved demo)
+  const [pendingJobDemoItems, setPendingJobDemoItems] = useState([]);
+  // State for video menu in saved demos
+  const [openVideoMenuId, setOpenVideoMenuId] = useState(null);
+  // State for video playing status
+  const [playingVideoId, setPlayingVideoId] = useState(null);
+  // State for video muted status
+  const [mutedVideoIds, setMutedVideoIds] = useState([]);
+  // State for fullscreen video
+  const [fullscreenVideoId, setFullscreenVideoId] = useState(null);
+  // State for job demo validation errors (keyed by item id)
+  const [jobDemoErrors, setJobDemoErrors] = useState({});
+  // State for saved Personal Greeting video
+  const [savedPersonalGreeting, setSavedPersonalGreeting] = useState(null);
+  // State for Personal Greeting save error
+  const [personalGreetingError, setPersonalGreetingError] = useState(false);
+  // State for saved Before & After
+  const [savedBeforeAfter, setSavedBeforeAfter] = useState([]);
+  // State for pending Before & After items (hidden while editing a saved item)
+  const [pendingBeforeAfterItems, setPendingBeforeAfterItems] = useState([]);
+  // State for Before & After validation errors
+  const [beforeAfterErrors, setBeforeAfterErrors] = useState({});
+  // State for expanded photo in Before & After
+  const [expandedBeforeAfterPhotoId, setExpandedBeforeAfterPhotoId] = useState(null);
+  // State for Before & After services dropdown
+  const [openBeforeAfterServicesDropdownId, setOpenBeforeAfterServicesDropdownId] = useState(null);
+  // State for saved Infographics
+  const [savedInfographics, setSavedInfographics] = useState([]);
+  // State for pending Infographics items (hidden while editing a saved item)
+  const [pendingInfographicsItems, setPendingInfographicsItems] = useState([]);
+  // State for Infographics validation errors
+  const [infographicsErrors, setInfographicsErrors] = useState({});
+  // State for expanded photo in Infographics
+  const [expandedInfographicsPhotoId, setExpandedInfographicsPhotoId] = useState(null);
+  // State for Infographics services dropdown
+  const [openInfographicsServicesDropdownId, setOpenInfographicsServicesDropdownId] = useState(null);
+  // State for saved Job Highlight
+  const [savedJobHighlight, setSavedJobHighlight] = useState([]);
+  // State for pending Job Highlight items (hidden while editing a saved item)
+  const [pendingJobHighlightItems, setPendingJobHighlightItems] = useState([]);
+  // State for Job Highlight validation errors
+  const [jobHighlightErrors, setJobHighlightErrors] = useState({});
+  // State for expanded photo in Job Highlight
+  const [expandedPhotoId, setExpandedPhotoId] = useState(null);
+  // State for Job Highlight services dropdown
+  const [openJobHighlightServicesDropdownId, setOpenJobHighlightServicesDropdownId] = useState(null);
+  // Refs for dropdown scroll positions (at component level to persist across re-renders)
+  const jobDemosDropdownScrollRef = useRef(0);
+  const jobHighlightDropdownScrollRef = useRef(0);
+  const beforeAfterDropdownScrollRef = useRef(0);
+  const infographicsDropdownScrollRef = useRef(0);
+  const customerReviewDropdownScrollRef = useRef(0);
+  // State for Customer Reviews services dropdown
+  const [openCustomerReviewServicesDropdownId, setOpenCustomerReviewServicesDropdownId] = useState(null);
   const [coldOutreachHooksOpen, setColdOutreachHooksOpen] = useState(false);
   const [coldOutreachAICustomized, setColdOutreachAICustomized] = useState(true);
+  // State for Lead Engagement Hooks tooltips
+  const [openHookTooltip, setOpenHookTooltip] = useState(null);
+
+  // Dedicated click outside handler for contact lead tooltip
+  useEffect(() => {
+    const handleClickOutsideTooltip = (event) => {
+      if (openHookTooltip === 'contact-lead' && contactLeadTooltipRef.current && !contactLeadTooltipRef.current.contains(event.target)) {
+        setOpenHookTooltip(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutsideTooltip);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideTooltip);
+    };
+  }, [openHookTooltip]);
 
   // Lead Engagement Hooks options with icons and colors
   const salesFlowHookOptions = [
@@ -205,7 +336,38 @@ const MyAgent = ({
     { name: 'Customer Reviews', icon: User, color: 'text-rose-600' },
     { name: 'Online Reviews', icon: Globe, color: 'text-violet-600' }
   ];
-  
+
+  // DescriptionInput component - uses local state to prevent media flickering
+  const DescriptionInput = ({ value, onChange, maxLength = 150, variant = 'default' }) => {
+    const [localValue, setLocalValue] = useState(value || '');
+    const inputRef = useRef(null);
+
+    // Update local value when parent value changes (e.g., on initial load)
+    useEffect(() => {
+      setLocalValue(value || '');
+    }, [value]);
+
+    const wrapperClass = variant === 'short' ? 'media-description-wrapper-short' : 'media-description-wrapper';
+
+    return (
+      <div className={wrapperClass}>
+        <textarea
+          ref={inputRef}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={() => {
+            if (localValue !== value) {
+              onChange(localValue);
+            }
+          }}
+          className="media-description-input"
+          placeholder="Add short description"
+          maxLength={maxLength}
+        />
+        <span className="media-description-counter">{localValue.length}/{maxLength}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="my-agent-container">
@@ -246,7 +408,7 @@ const MyAgent = ({
               <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                 <Phone className="w-5 h-5 text-red-600" />
               </div>
-              <span className="text-sm font-medium text-gray-700">SMS & Call</span>
+              <span className="text-sm font-medium text-gray-700">SMS</span>
             </button>
 
             {/* Email Tab */}
@@ -300,34 +462,37 @@ const MyAgent = ({
               </div>
               <span className="text-sm font-medium text-gray-700">Instagram</span>
             </button>
-
-            {/* TikTok Tab */}
-            <button
-              type="button"
-              onClick={() => setSelectedAccountTab('tiktok')}
-              className={`flex items-center gap-3 p-4 rounded-lg transition-all active:bg-slate-200 ${
-                selectedAccountTab === 'tiktok'
-                  ? 'bg-slate-100 shadow-sm'
-                  : 'bg-white hover:bg-slate-100'
-              }`}
-            >
-              <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" fill="#FFFFFF"/>
-              </svg>
-            </div>
-              <span className="text-sm font-medium text-gray-700">TikTok</span>
-          </button>
           </div>
 
           {/* Right Column - Content (80%) */}
-          <div className="flex-1 bg-slate-50 rounded-2xl p-6 h-full relative">
+          <div className="flex-1 bg-slate-50 rounded-2xl p-6 relative" style={{ minHeight: '420px', maxHeight: '420px', overflowY: 'auto' }}>
             {selectedAccountTab === 'facebook' ? (
               <div>
-                <h4 className="text-lg font-semibold text-gray-700 mb-4">Connect Facebook Account</h4>
-                <p className="text-sm text-gray-600 mb-6">
-                  Connect your Facebook business page to allow your AI agent to interact with customers on Facebook.
-                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <h4 className="text-lg font-semibold text-gray-700">Connect Facebook Account</h4>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'facebook-account' ? null : 'facebook-account')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'facebook-account' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Connect your Facebook business page to allow your AI agent to interact with customers on Facebook.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
           <button
                   onClick={() => setShowFacebookOAuthModal(true)}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
@@ -390,10 +555,31 @@ const MyAgent = ({
             </div>
             ) : selectedAccountTab === 'instagram' ? (
               <div>
-                <h4 className="text-lg font-semibold text-gray-700 mb-4">Connect Instagram Account</h4>
-                <p className="text-sm text-gray-600 mb-6">
-                  Connect your Instagram business account to allow your AI agent to interact with customers on Instagram.
-                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <h4 className="text-lg font-semibold text-gray-700">Connect Instagram Account</h4>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'instagram-account' ? null : 'instagram-account')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'instagram-account' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Connect your Instagram business account to allow your AI agent to interact with customers on Instagram.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowInstagramOAuthModal(true)}
                   className="px-6 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-lg hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 transition-colors font-medium flex items-center gap-2"
@@ -454,78 +640,33 @@ const MyAgent = ({
               </div>
             )}
             </div>
-            ) : selectedAccountTab === 'tiktok' ? (
-              <div>
-                <h4 className="text-lg font-semibold text-gray-700 mb-4">Connect TikTok Account</h4>
-                <p className="text-sm text-gray-600 mb-6">
-                  Connect your TikTok business account to allow your AI agent to interact with customers on TikTok.
-                </p>
-                <button
-                  onClick={() => setShowTikTokOAuthModal(true)}
-                  className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                  </svg>
-                  Connect TikTok
-          </button>
-
-                {/* TikTok OAuth Modal */}
-                {showTikTokOAuthModal && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-2xl z-10">
-                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold text-gray-700">Connect to TikTok</h3>
-          <button
-                          onClick={() => setShowTikTokOAuthModal(false)}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          <X className="w-6 h-6" />
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <p className="text-sm text-gray-600">
-                          You will be redirected to TikTok to authorize access to your business account. 
-                          This allows your AI agent to:
-                        </p>
-                        
-                        <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
-                          <li>Read and respond to comments</li>
-                          <li>Post videos and content</li>
-                          <li>Access video analytics</li>
-                          <li>Manage direct messages</li>
-                        </ul>
-                        
-                        <div className="flex gap-3 pt-4">
-                          <button
-                            onClick={() => {
-                              // TikTok OAuth redirect
-                              const tiktokOAuthUrl = `https://www.tiktok.com/v2/auth/authorize?client_key=YOUR_CLIENT_KEY&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/tiktok/callback')}&scope=user.info.basic,video.list,video.upload&response_type=code`;
-                              window.location.href = tiktokOAuthUrl;
-                            }}
-                            className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-                          >
-                            Continue to TikTok
-                          </button>
-                          <button
-                            onClick={() => setShowTikTokOAuthModal(false)}
-                            className="px-4 py-2 text-gray-700 bg-white border border-slate-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-              </div>
-            )}
-            </div>
             ) : selectedAccountTab === 'email' ? (
               <div>
-                <h4 className="text-lg font-semibold text-gray-700 mb-4">Connect Email Accounts</h4>
-                <p className="text-sm text-gray-600 mb-6">
-                  Connect your email accounts to allow your AI agent to interact with customers via email.
-                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <h4 className="text-lg font-semibold text-gray-700">Connect Email Accounts</h4>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'email-account' ? null : 'email-account')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'email-account' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Connect your email accounts to allow your AI agent to interact with customers via email.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
                 
                 <div className="space-y-4">
                   {/* Gmail Button */}
@@ -624,20 +765,20 @@ const MyAgent = ({
                           <X className="w-6 h-6" />
                         </button>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <p className="text-sm text-gray-600">
-                          You will be redirected to Microsoft to authorize access to your Outlook account. 
+                          You will be redirected to Microsoft to authorize access to your Outlook account.
                           This allows your AI agent to:
                         </p>
-                        
+
                         <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
                           <li>Read and send emails</li>
                           <li>Manage folders and categories</li>
                           <li>Access calendar and contacts</li>
                           <li>Respond to customer inquiries</li>
                         </ul>
-                        
+
                         <div className="flex gap-3 pt-4">
                           <button
                             onClick={() => {
@@ -660,33 +801,139 @@ const MyAgent = ({
                     </div>
                   </div>
                 )}
-              </div>
-            ) : selectedAccountTab === 'sms' ? (
-              <div className="space-y-6">
-                {/* Agent Phone Number */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-700 mb-4">Your Agent Phone #</h4>
-                  <div className="bg-white border border-slate-200 rounded-lg p-4">
-                    <p className="text-2xl font-mono font-semibold text-gray-700">+1 843-212-6173</p>
-                  </div>
-                </div>
 
-                {/* Forward to Personal Phone Toggle */}
-                <div className="border-t border-slate-200 pt-6">
+                {/* Pause All Agent Emailing Toggle */}
+                <div className="border-t border-slate-200 pt-6 mt-6" style={{ minHeight: '5rem' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-700">Forward Calls & Texts to Personal Phone</h4>
+                      <h4 className="text-sm font-semibold text-gray-700">Pause All Agent Emailing</h4>
                     </div>
                     <button
                       type="button"
-                      onClick={() => companyInfo.phone && setForwardToPersonalPhone(!forwardToPersonalPhone)}
-                      disabled={!companyInfo.phone}
+                      onClick={() => setPauseAgentEmailing(!pauseAgentEmailing)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        !companyInfo.phone
-                          ? 'bg-gray-300 cursor-not-allowed opacity-50'
-                          : forwardToPersonalPhone
-                            ? 'bg-blue-600'
-                            : 'bg-gray-400 shadow-inner'
+                        pauseAgentEmailing
+                          ? 'bg-amber-500'
+                          : 'bg-gray-400 shadow-inner'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          pauseAgentEmailing ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Warning message when emailing is paused */}
+                  {pauseAgentEmailing && (
+                    <div className="flex items-center gap-2 mt-3">
+                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-sm text-amber-700">
+                        AI agent emailing is currently paused. Your agent will not send any automated emails to customers.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : selectedAccountTab === 'sms' ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-lg font-semibold text-gray-700">Connect SMS Account</h4>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'sms-account' ? null : 'sms-account')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'sms-account' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Configure your phone number for AI-powered SMS communications with customers.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Phone Number Selection Dropdown */}
+                <div className="relative">
+                  <p className="text-xs text-gray-500 mb-2">Select Phone Number</p>
+                  {/* Selected Phone Number Display */}
+                  <button
+                    type="button"
+                    onClick={() => setPhoneNumberDropdownOpen(!phoneNumberDropdownOpen)}
+                    className="w-full bg-white border border-slate-200 rounded-lg p-4 text-left hover:border-slate-300 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-blue-500">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700">
+                          {useAssignedNumber ? 'Use Assigned Phone Number:' : 'Use Business Phone Number:'}
+                        </span>
+                        <span className="text-xl font-mono font-semibold text-gray-700">
+                          {useAssignedNumber ? '+1 843-212-6173' : '+1 843-555-0147'}
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${phoneNumberDropdownOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+
+                  {/* Dropdown Options */}
+                  {phoneNumberDropdownOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setPhoneNumberDropdownOpen(false)}
+                      />
+                      <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUseAssignedNumber(!useAssignedNumber);
+                            setPhoneNumberDropdownOpen(false);
+                          }}
+                          className="w-full p-4 text-left hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center bg-slate-200">
+                            </div>
+                            <span className="text-sm font-semibold text-gray-700">
+                              {useAssignedNumber ? 'Use Business Phone Number:' : 'Use Assigned Phone Number:'}
+                            </span>
+                            <span className="text-xl font-mono font-semibold text-gray-700">
+                              {useAssignedNumber ? '+1 843-555-0147' : '+1 843-212-6173'}
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Pause Agent Texting Toggle */}
+                <div className="border-t border-slate-200 pt-6" style={{ minHeight: '5rem' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700">Pause All Agent Texting</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForwardToPersonalPhone(!forwardToPersonalPhone)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        forwardToPersonalPhone
+                          ? 'bg-amber-500'
+                          : 'bg-gray-400 shadow-inner'
                       }`}
                     >
                       <span
@@ -697,33 +944,14 @@ const MyAgent = ({
                     </button>
                   </div>
 
-                  {/* Error message when no phone number is set */}
-                  {!companyInfo.phone && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                      <span className="text-sm text-red-600">
-                        No personal phone number found. Please add your phone number in the <span className="font-semibold">My Business</span> → <span className="font-semibold">Contact Details</span> section to enable this feature.
+                  {/* Warning message when texting is paused */}
+                  {forwardToPersonalPhone && (
+                    <div className="flex items-center gap-2 mt-3">
+                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-sm text-amber-700">
+                        AI agent messaging is currently paused. Your agent will not send any automated texts to customers.
                       </span>
                     </div>
-                  )}
-
-                  {/* Personal Phone Number Display - Only show when toggle is on and phone exists */}
-                  {forwardToPersonalPhone && companyInfo.phone && (
-                    <div className="mb-3">
-                      <div className="bg-white border border-slate-200 rounded-lg p-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">Personal Phone:</span>
-                          <span className="text-lg font-mono font-semibold text-gray-700">{companyInfo.phone}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Note about Contact Details - Only show when toggle is on */}
-                  {forwardToPersonalPhone && companyInfo.phone && (
-                    <p className="text-sm text-gray-500 italic">
-                      Business phone number is listed in Contact Details section of My Business tab
-                    </p>
                   )}
                 </div>
               </div>
@@ -746,16 +974,15 @@ const MyAgent = ({
         <div className="flex gap-4" style={{ height: '500px' }}>
           {/* Left Column - Tabs (20%) */}
           <div className="min-w-[180px] flex flex-col flex-shrink-0 overflow-y-auto">
-            {['Contact Lead', 'Lead Discovery', 'Schedule Call', 'Send Estimate', 'Send Contract', /* 'Complete Job', */ 'Send Invoice' /* , 'Job Followup' */].map((stage, index) => {
+            {['Contact Lead', 'Lead Discovery', 'Schedule Estimate', 'Send Estimate', 'Send Contract', 'Send Invoice', 'After Job'].map((stage, index) => {
               const colors = [
                 'bg-blue-600',      // 1 - Contact Lead
                 'bg-indigo-600',    // 2 - Lead Discovery
-                'bg-teal-600',      // 3 - Schedule Call
+                'bg-teal-600',      // 3 - Schedule Estimate
                 'bg-purple-600',    // 4 - Send Estimate
                 'bg-cyan-600',      // 5 - Send Contract
-                // 'bg-green-600',  // Complete Job (commented out)
-                'bg-amber-600'      // 6 - Send Invoice
-                // 'bg-pink-600'    // Job Followup (commented out)
+                'bg-amber-600',     // 6 - Send Invoice
+                'bg-green-600'      // 7 - After Job
               ];
               const color = colors[index];
 
@@ -784,11 +1011,75 @@ const MyAgent = ({
             {selectedSalesFlowStage === 'Contact Lead' ? (
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto space-y-6 mb-4">
-                {/* Lead Outreach */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-700 mb-4">Lead Outreach</h4>
+                {/* Contact Lead Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">Contact Lead</h3>
+                  <div className="relative" ref={contactLeadTooltipRef}>
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'contact-lead' ? null : 'contact-lead')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'contact-lead' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Configure how your AI Agent initiates contact with new leads. Set up to three contact methods with customizable timing, and enable automated follow-ups to re-engage unresponsive leads throughout the sales process.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-                  <div className="space-y-4">
+                {/* Enable AI Lead Contact Toggle */}
+                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-700">Enable AI Lead Contact</span>
+                    <button
+                      type="button"
+                      onClick={() => setContactLeadMode(contactLeadMode === 'ai' ? 'customize' : 'ai')}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        contactLeadMode === 'ai' ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          contactLeadMode === 'ai' ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Customize Lead Contact Toggle */}
+                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-700">Customize Lead Contact</span>
+                    <button
+                      type="button"
+                      onClick={() => setContactLeadMode(contactLeadMode === 'customize' ? 'ai' : 'customize')}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        contactLeadMode === 'customize' ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          contactLeadMode === 'customize' ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                {/* Contact Method Inputs - Only show when Customize is selected */}
+                {contactLeadMode === 'customize' && (
+                <div className="pt-4 space-y-4">
                     {/* Initial Contact Method */}
                     {(() => {
                       const icons = { text: MessageSquare, call: Phone, email: Mail };
@@ -802,8 +1093,8 @@ const MyAgent = ({
                       );
 
                       return (
-                        <div className="bg-white border border-slate-200 rounded-lg p-4">
-                          <p className="text-xs font-medium text-gray-500 mb-2">Add contact method</p>
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                          <p className="text-sm font-semibold text-gray-700 mb-2">Add primary contact method</p>
                           <div className="flex items-center gap-4 flex-wrap">
                             <div className="flex items-center gap-2">
                               {InitialIcon && <InitialIcon className="w-4 h-4 text-gray-500" />}
@@ -821,7 +1112,7 @@ const MyAgent = ({
 
                             {initialOutreach.method && (
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-600">Contact Lead in</span>
+                                <span className="text-sm text-gray-600">Time until contact</span>
                                 <input
                                   type="number"
                                   min="1"
@@ -848,7 +1139,7 @@ const MyAgent = ({
                                 type="button"
                                 className="text-sm text-blue-600 hover:text-blue-700 underline ml-2"
                               >
-                                Show AI Example
+                                Generate AI Example
                               </button>
                             )}
                           </div>
@@ -856,7 +1147,7 @@ const MyAgent = ({
                           {/* Hooks dropdown for text/email */}
                           {(initialOutreach.method === 'text' || initialOutreach.method === 'email') && (
                             <div className="mt-3">
-                              <p className="text-xs font-medium text-gray-500 mb-2">Lead Engagement Hooks:</p>
+                              <p className="text-xs font-medium text-gray-500 mb-2">Add Engagement Hooks:</p>
                               <div className="relative" ref={initialHooksDropdownRef}>
                                 <button
                                   type="button"
@@ -936,139 +1227,183 @@ const MyAgent = ({
                           {initialOutreach.method && (
                             <div className="mt-3 pt-3 border-t border-slate-200">
                               <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-600">Enable Followup</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setInitialOutreach({ ...initialOutreach, followupEnabled: !initialOutreach.followupEnabled })}
-                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                      initialOutreach.followupEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                                    }`}
-                                  >
-                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                      initialOutreach.followupEnabled ? 'translate-x-5' : 'translate-x-1'
-                                    }`} />
-                                  </button>
-                                  <span className="text-xs text-gray-500 italic">if customer doesn't respond</span>
+                                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                                  <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-semibold text-gray-700">Enable AI Followup</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setInitialOutreach({ ...initialOutreach, aiFollowupEnabled: !initialOutreach.aiFollowupEnabled, followupEnabled: false })}
+                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                          initialOutreach.aiFollowupEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                                        }`}
+                                      >
+                                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                          initialOutreach.aiFollowupEnabled ? 'translate-x-5' : 'translate-x-1'
+                                        }`} />
+                                      </button>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-semibold text-gray-700">Enable Custom Followup</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setInitialOutreach({ ...initialOutreach, followupEnabled: !initialOutreach.followupEnabled, aiFollowupEnabled: false })}
+                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                          initialOutreach.followupEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                                        }`}
+                                      >
+                                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                          initialOutreach.followupEnabled ? 'translate-x-5' : 'translate-x-1'
+                                        }`} />
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
 
+                                {initialOutreach.aiFollowupEnabled && (
+                                  <p className="text-xs text-gray-500 italic">
+                                    Your AI agent will periodically re-engage unresponsive leads to guide them back into the sales process. Leads can opt out of further contact at any time.
+                                  </p>
+                                )}
+
                                 {initialOutreach.followupEnabled && (
-                                  <div className="flex items-center gap-3 flex-wrap">
-                                    {['Days', 'Weeks', 'Months'].includes(initialOutreach.followupSchedule) && (
-                                      <>
-                                        <span className="text-sm text-gray-600">Every</span>
-                                        <input
-                                          type="number"
-                                          min="2"
-                                          value={initialOutreach.followupScheduleValue}
-                                          onChange={(e) => setInitialOutreach({ ...initialOutreach, followupScheduleValue: e.target.value })}
-                                          className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                          placeholder="#"
-                                        />
-                                      </>
-                                    )}
-                                    <select
-                                      value={initialOutreach.followupSchedule}
-                                      onChange={(e) => setInitialOutreach({ ...initialOutreach, followupSchedule: e.target.value, followupScheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? initialOutreach.followupScheduleValue : '' })}
-                                      className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    >
-                                      {followupScheduleOptions.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                      ))}
-                                    </select>
-                                    {(initialOutreach.followupSchedule === 'Weekly' || initialOutreach.followupSchedule === 'Weeks') && (
-                                      <>
-                                        <span className="text-sm text-gray-600">on</span>
-                                        <select
-                                          value={initialOutreach.followupDay}
-                                          onChange={(e) => setInitialOutreach({ ...initialOutreach, followupDay: e.target.value })}
-                                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                        >
-                                          {followupDayOptions.map(day => (
-                                            <option key={day} value={day}>{day}</option>
-                                          ))}
-                                        </select>
-                                      </>
-                                    )}
-                                    {(initialOutreach.followupSchedule === 'Monthly' || initialOutreach.followupSchedule === 'Months') && (
-                                      <>
-                                        <span className="text-sm text-gray-600">on the</span>
-                                        <select
-                                          value={initialOutreach.followupDayOfMonth}
-                                          onChange={(e) => setInitialOutreach({ ...initialOutreach, followupDayOfMonth: e.target.value })}
-                                          className="w-16 px-1 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                        >
-                                          {followupDayOfMonthOptions.map(day => (
-                                            <option key={day} value={day}>{day}</option>
-                                          ))}
-                                        </select>
-                                      </>
-                                    )}
-                                    <span className="text-sm text-gray-600">at</span>
-                                    <div className="flex items-center gap-1 flex-wrap">
-                                      {(initialOutreach.followupTimes || ['9:00 AM']).map((time, index) => (
-                                        <div key={index} className="flex items-center gap-1">
-                                          <select
-                                            value={time}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm text-gray-600">If no response, reach back out following day at:</span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      {followupTimeOptions.map(timeOption => (
+                                        <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={(initialOutreach.followupFirstDayTimes || ['Morning']).includes(timeOption)}
                                             onChange={(e) => {
-                                              const newTimes = [...(initialOutreach.followupTimes || ['9:00 AM'])];
-                                              newTimes[index] = e.target.value;
-                                              setInitialOutreach({ ...initialOutreach, followupTimes: newTimes });
+                                              const currentTimes = initialOutreach.followupFirstDayTimes || ['Morning'];
+                                              const newTimes = e.target.checked
+                                                ? [...currentTimes, timeOption]
+                                                : currentTimes.filter(t => t !== timeOption);
+                                              setInitialOutreach({ ...initialOutreach, followupFirstDayTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
                                             }}
-                                            className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                          >
-                                            {followupTimeOptions.map(t => (
-                                              <option key={t} value={t}>{t}</option>
-                                            ))}
-                                          </select>
-                                          {(initialOutreach.followupTimes || ['9:00 AM']).length > 1 && (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const newTimes = (initialOutreach.followupTimes || ['9:00 AM']).filter((_, i) => i !== index);
-                                                setInitialOutreach({ ...initialOutreach, followupTimes: newTimes });
-                                              }}
-                                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          )}
-                                          {index < (initialOutreach.followupTimes || ['9:00 AM']).length - 1 && (
-                                            <span className="text-sm text-gray-400">,</span>
-                                          )}
-                                        </div>
+                                            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                          />
+                                          <span className="text-sm text-gray-700">{timeOption}</span>
+                                        </label>
                                       ))}
-                                      {(initialOutreach.followupTimes || ['9:00 AM']).length < 5 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newTimes = [...(initialOutreach.followupTimes || ['9:00 AM']), '12:00 PM'];
-                                            setInitialOutreach({ ...initialOutreach, followupTimes: newTimes });
-                                          }}
-                                          className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                                        >
-                                          <Plus className="w-4 h-4" />
-                                        </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {initialOutreach.followupEnabled && (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <span className="text-sm text-gray-600">If still no response, reach out every:</span>
+                                      <input
+                                        type="number"
+                                        min="2"
+                                        value={initialOutreach.followupScheduleValue}
+                                        onChange={(e) => setInitialOutreach({ ...initialOutreach, followupScheduleValue: e.target.value })}
+                                        disabled={['Day', 'Week', 'Month'].includes(initialOutreach.followupSchedule)}
+                                        className={`w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none ${
+                                          ['Day', 'Week', 'Month'].includes(initialOutreach.followupSchedule) ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'
+                                        }`}
+                                        placeholder="#"
+                                      />
+                                      <select
+                                        value={initialOutreach.followupSchedule}
+                                        onChange={(e) => setInitialOutreach({ ...initialOutreach, followupSchedule: e.target.value, followupScheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? initialOutreach.followupScheduleValue : '' })}
+                                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                                      >
+                                        {followupScheduleOptions.map(opt => (
+                                          <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                      </select>
+                                      {(initialOutreach.followupSchedule === 'Week' || initialOutreach.followupSchedule === 'Weeks') && (
+                                        <>
+                                          <span className="text-sm text-gray-600">on</span>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            {followupDayOptions.map(day => (
+                                              <label key={day} className="flex items-center gap-1 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={(initialOutreach.followupDays || ['Monday']).includes(day)}
+                                                  onChange={(e) => {
+                                                    const currentDays = initialOutreach.followupDays || ['Monday'];
+                                                    const newDays = e.target.checked
+                                                      ? [...currentDays, day]
+                                                      : currentDays.filter(d => d !== day);
+                                                    setInitialOutreach({ ...initialOutreach, followupDays: newDays.length > 0 ? newDays : ['Monday'] });
+                                                  }}
+                                                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
+                                              </label>
+                                            ))}
+                                          </div>
+                                        </>
+                                      )}
+                                      {(initialOutreach.followupSchedule === 'Month' || initialOutreach.followupSchedule === 'Months') && (
+                                        <>
+                                          <span className="text-sm text-gray-600 flex-shrink-0">on the</span>
+                                          <div className="flex items-center gap-2 overflow-x-auto flex-nowrap max-w-xs py-1" style={{ scrollbarWidth: 'thin' }}>
+                                            {followupDayOfMonthOptions.map(day => (
+                                              <label key={day} className="flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={(initialOutreach.followupDaysOfMonth || ['1st']).includes(day)}
+                                                  onChange={(e) => {
+                                                    const currentDays = initialOutreach.followupDaysOfMonth || ['1st'];
+                                                    const newDays = e.target.checked
+                                                      ? [...currentDays, day]
+                                                      : currentDays.filter(d => d !== day);
+                                                    setInitialOutreach({ ...initialOutreach, followupDaysOfMonth: newDays.length > 0 ? newDays : ['1st'] });
+                                                  }}
+                                                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-sm text-gray-700">{day}</span>
+                                              </label>
+                                            ))}
+                                          </div>
+                                        </>
                                       )}
                                     </div>
-                                    <span className="text-sm text-gray-600">for</span>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={initialOutreach.followupDuration}
-                                      onChange={(e) => setInitialOutreach({ ...initialOutreach, followupDuration: e.target.value })}
-                                      className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                      placeholder="#"
-                                    />
-                                    <select
-                                      value={initialOutreach.followupDurationUnit}
-                                      onChange={(e) => setInitialOutreach({ ...initialOutreach, followupDurationUnit: e.target.value })}
-                                      className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    >
-                                      {followupDurationUnitOptions.map(unit => (
-                                        <option key={unit} value={unit}>{unit}</option>
-                                      ))}
-                                    </select>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <span className="text-sm text-gray-600">at</span>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        {followupTimeOptions.map(timeOption => (
+                                          <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={(initialOutreach.followupTimes || ['Morning']).includes(timeOption)}
+                                              onChange={(e) => {
+                                                const currentTimes = initialOutreach.followupTimes || ['Morning'];
+                                                const newTimes = e.target.checked
+                                                  ? [...currentTimes, timeOption]
+                                                  : currentTimes.filter(t => t !== timeOption);
+                                                setInitialOutreach({ ...initialOutreach, followupTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
+                                              }}
+                                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm text-gray-700">{timeOption}</span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                      <span className="text-sm text-gray-600">for</span>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={initialOutreach.followupDuration}
+                                        onChange={(e) => setInitialOutreach({ ...initialOutreach, followupDuration: e.target.value })}
+                                        className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                                        placeholder="#"
+                                      />
+                                      <select
+                                        value={initialOutreach.followupDurationUnit}
+                                        onChange={(e) => setInitialOutreach({ ...initialOutreach, followupDurationUnit: e.target.value })}
+                                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                                      >
+                                        {followupDurationUnitOptions.map(unit => (
+                                          <option key={unit} value={unit}>{unit}</option>
+                                        ))}
+                                      </select>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1086,7 +1421,7 @@ const MyAgent = ({
                         className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
                       >
                         <Plus className="w-4 h-4" />
-                        Add Contact Method
+                        Add Secondary Contact Method
                       </button>
                     )}
 
@@ -1103,16 +1438,16 @@ const MyAgent = ({
                       );
 
                       return (
-                        <div className="bg-white border border-slate-200 rounded-lg p-4">
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-medium text-gray-500">Add contact method</p>
+                            <p className="text-sm font-semibold text-gray-700">Add secondary contact method</p>
                             <button
                               type="button"
                               onClick={() => {
                                 if (showThirdFallback) {
                                   // Shift third up to second
                                   setSecondFallback({ ...thirdFallback });
-                                  setThirdFallback({ method: 'email', contactWithin: 'Minutes', contactWithinValue: '10', followupEnabled: false, followupSchedule: 'Daily', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDayOfMonth: '1st', followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
+                                  setThirdFallback({ method: 'email', contactWithin: 'Minutes', contactWithinValue: '10', aiFollowupEnabled: false, followupEnabled: false, followupSchedule: 'Day', followupScheduleValue: '', followupTime: '9:00 AM', followupDay: 'Monday', followupDaysOfMonth: ['1st'], followupDuration: '', followupDurationUnit: 'Days', hooks: [] });
                                   setShowThirdFallback(false);
                                 } else {
                                   setShowSecondFallback(false);
@@ -1140,7 +1475,7 @@ const MyAgent = ({
 
                             {secondFallback.method && (
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-600">Contact Lead in</span>
+                                <span className="text-sm text-gray-600">Time until contact</span>
                                 <input
                                   type="number"
                                   min="1"
@@ -1167,7 +1502,7 @@ const MyAgent = ({
                                 type="button"
                                 className="text-sm text-blue-600 hover:text-blue-700 underline ml-2"
                               >
-                                Show AI Example
+                                Generate AI Example
                               </button>
                             )}
                           </div>
@@ -1175,7 +1510,7 @@ const MyAgent = ({
                           {/* Hooks dropdown for text/email */}
                           {(secondFallback.method === 'text' || secondFallback.method === 'email') && (
                             <div className="mt-3">
-                              <p className="text-xs font-medium text-gray-500 mb-2">Lead Engagement Hooks:</p>
+                              <p className="text-xs font-medium text-gray-500 mb-2">Add Engagement Hooks:</p>
                               <div className="relative" ref={secondHooksDropdownRef}>
                                 <button
                                   type="button"
@@ -1255,446 +1590,183 @@ const MyAgent = ({
                           {secondFallback.method && (
                             <div className="mt-3 pt-3 border-t border-slate-200">
                               <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-600">Enable Followup</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setSecondFallback({ ...secondFallback, followupEnabled: !secondFallback.followupEnabled })}
-                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                      secondFallback.followupEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                                    }`}
-                                  >
-                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                      secondFallback.followupEnabled ? 'translate-x-5' : 'translate-x-1'
-                                    }`} />
-                                  </button>
-                                  <span className="text-xs text-gray-500 italic">if customer doesn't respond</span>
+                                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                                  <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-semibold text-gray-700">Enable AI Followup</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSecondFallback({ ...secondFallback, aiFollowupEnabled: !secondFallback.aiFollowupEnabled, followupEnabled: false })}
+                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                          secondFallback.aiFollowupEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                                        }`}
+                                      >
+                                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                          secondFallback.aiFollowupEnabled ? 'translate-x-5' : 'translate-x-1'
+                                        }`} />
+                                      </button>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-semibold text-gray-700">Enable Custom Followup</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSecondFallback({ ...secondFallback, followupEnabled: !secondFallback.followupEnabled, aiFollowupEnabled: false })}
+                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                          secondFallback.followupEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                                        }`}
+                                      >
+                                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                          secondFallback.followupEnabled ? 'translate-x-5' : 'translate-x-1'
+                                        }`} />
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
+
+                                {secondFallback.aiFollowupEnabled && (
+                                  <p className="text-xs text-gray-500 italic">
+                                    Your AI agent will periodically re-engage unresponsive leads to guide them back into the sales process. Leads can opt out of further contact at any time.
+                                  </p>
+                                )}
 
                                 {secondFallback.followupEnabled && (
-                                  <div className="flex items-center gap-3 flex-wrap">
-                                    {['Days', 'Weeks', 'Months'].includes(secondFallback.followupSchedule) && (
-                                      <>
-                                        <span className="text-sm text-gray-600">Every</span>
-                                        <input
-                                          type="number"
-                                          min="2"
-                                          value={secondFallback.followupScheduleValue}
-                                          onChange={(e) => setSecondFallback({ ...secondFallback, followupScheduleValue: e.target.value })}
-                                          className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                          placeholder="#"
-                                        />
-                                      </>
-                                    )}
-                                    <select
-                                      value={secondFallback.followupSchedule}
-                                      onChange={(e) => setSecondFallback({ ...secondFallback, followupSchedule: e.target.value, followupScheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? secondFallback.followupScheduleValue : '' })}
-                                      className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    >
-                                      {followupScheduleOptions.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                      ))}
-                                    </select>
-                                    {(secondFallback.followupSchedule === 'Weekly' || secondFallback.followupSchedule === 'Weeks') && (
-                                      <>
-                                        <span className="text-sm text-gray-600">on</span>
-                                        <select
-                                          value={secondFallback.followupDay}
-                                          onChange={(e) => setSecondFallback({ ...secondFallback, followupDay: e.target.value })}
-                                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                        >
-                                          {followupDayOptions.map(day => (
-                                            <option key={day} value={day}>{day}</option>
-                                          ))}
-                                        </select>
-                                      </>
-                                    )}
-                                    {(secondFallback.followupSchedule === 'Monthly' || secondFallback.followupSchedule === 'Months') && (
-                                      <>
-                                        <span className="text-sm text-gray-600">on the</span>
-                                        <select
-                                          value={secondFallback.followupDayOfMonth}
-                                          onChange={(e) => setSecondFallback({ ...secondFallback, followupDayOfMonth: e.target.value })}
-                                          className="w-16 px-1 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                        >
-                                          {followupDayOfMonthOptions.map(day => (
-                                            <option key={day} value={day}>{day}</option>
-                                          ))}
-                                        </select>
-                                      </>
-                                    )}
-                                    <span className="text-sm text-gray-600">at</span>
-                                    <div className="flex items-center gap-1 flex-wrap">
-                                      {(secondFallback.followupTimes || ['9:00 AM']).map((time, index) => (
-                                        <div key={index} className="flex items-center gap-1">
-                                          <select
-                                            value={time}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm text-gray-600">If no response, reach back out following day at:</span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      {followupTimeOptions.map(timeOption => (
+                                        <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={(secondFallback.followupFirstDayTimes || ['Morning']).includes(timeOption)}
                                             onChange={(e) => {
-                                              const newTimes = [...(secondFallback.followupTimes || ['9:00 AM'])];
-                                              newTimes[index] = e.target.value;
-                                              setSecondFallback({ ...secondFallback, followupTimes: newTimes });
+                                              const currentTimes = secondFallback.followupFirstDayTimes || ['Morning'];
+                                              const newTimes = e.target.checked
+                                                ? [...currentTimes, timeOption]
+                                                : currentTimes.filter(t => t !== timeOption);
+                                              setSecondFallback({ ...secondFallback, followupFirstDayTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
                                             }}
-                                            className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                          >
-                                            {followupTimeOptions.map(t => (
-                                              <option key={t} value={t}>{t}</option>
-                                            ))}
-                                          </select>
-                                          {(secondFallback.followupTimes || ['9:00 AM']).length > 1 && (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const newTimes = (secondFallback.followupTimes || ['9:00 AM']).filter((_, i) => i !== index);
-                                                setSecondFallback({ ...secondFallback, followupTimes: newTimes });
-                                              }}
-                                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          )}
-                                          {index < (secondFallback.followupTimes || ['9:00 AM']).length - 1 && (
-                                            <span className="text-sm text-gray-400">,</span>
-                                          )}
-                                        </div>
+                                            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                          />
+                                          <span className="text-sm text-gray-700">{timeOption}</span>
+                                        </label>
                                       ))}
-                                      {(secondFallback.followupTimes || ['9:00 AM']).length < 5 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newTimes = [...(secondFallback.followupTimes || ['9:00 AM']), '12:00 PM'];
-                                            setSecondFallback({ ...secondFallback, followupTimes: newTimes });
-                                          }}
-                                          className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                                        >
-                                          <Plus className="w-4 h-4" />
-                                        </button>
-                                      )}
                                     </div>
-                                    <span className="text-sm text-gray-600">for</span>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={secondFallback.followupDuration}
-                                      onChange={(e) => setSecondFallback({ ...secondFallback, followupDuration: e.target.value })}
-                                      className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                      placeholder="#"
-                                    />
-                                    <select
-                                      value={secondFallback.followupDurationUnit}
-                                      onChange={(e) => setSecondFallback({ ...secondFallback, followupDurationUnit: e.target.value })}
-                                      className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    >
-                                      {followupDurationUnitOptions.map(unit => (
-                                        <option key={unit} value={unit}>{unit}</option>
-                                      ))}
-                                    </select>
                                   </div>
                                 )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
 
-                    {/* Add Third Fallback Button - show only when second is added but third is not */}
-                    {showSecondFallback && !showThirdFallback && (
-                      <button
-                        type="button"
-                        onClick={() => setShowThirdFallback(true)}
-                        className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Contact Method
-                      </button>
-                    )}
-
-                    {/* Third Fallback Contact Method */}
-                    {showThirdFallback && (() => {
-                      const icons = { text: MessageSquare, call: Phone, email: Mail };
-                      const ThirdIcon = thirdFallback.method ? icons[thirdFallback.method] : null;
-                      const usedMethods = [initialOutreach.method, secondFallback.method].filter(Boolean);
-                      const availableForThird = contactMethodOptions.filter(
-                        opt => !usedMethods.includes(opt.id) || opt.id === thirdFallback.method
-                      );
-
-                      return (
-                        <div className="bg-white border border-slate-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-medium text-gray-500">Add contact method</p>
-                            <button
-                              type="button"
-                              onClick={() => setShowThirdFallback(false)}
-                              className="text-gray-400 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <div className="flex items-center gap-2">
-                              {ThirdIcon && <ThirdIcon className="w-4 h-4 text-gray-500" />}
-                              <select
-                                value={thirdFallback.method || ''}
-                                onChange={(e) => setThirdFallback({ ...thirdFallback, method: e.target.value || null })}
-                                className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none min-w-[120px]"
-                              >
-                                <option value="">None</option>
-                                {availableForThird.map(opt => (
-                                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            {thirdFallback.method && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-600">Contact Lead in</span>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={thirdFallback.contactWithinValue}
-                                  onChange={(e) => setThirdFallback({ ...thirdFallback, contactWithinValue: e.target.value })}
-                                  disabled={thirdFallback.contactWithin === 'Immediately'}
-                                  className={`w-16 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none ${thirdFallback.contactWithin === 'Immediately' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}`}
-                                  placeholder="#"
-                                />
-                                <select
-                                  value={thirdFallback.contactWithin}
-                                  onChange={(e) => setThirdFallback({ ...thirdFallback, contactWithin: e.target.value, contactWithinValue: e.target.value === 'Immediately' ? '' : thirdFallback.contactWithinValue })}
-                                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                >
-                                  {contactWithinOptions.map(opt => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-
-                            {(thirdFallback.method === 'text' || thirdFallback.method === 'email') && (
-                              <button
-                                type="button"
-                                className="text-sm text-blue-600 hover:text-blue-700 underline ml-2"
-                              >
-                                Show AI Example
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Hooks dropdown for text/email */}
-                          {(thirdFallback.method === 'text' || thirdFallback.method === 'email') && (
-                            <div className="mt-3">
-                              <p className="text-xs font-medium text-gray-500 mb-2">Lead Engagement Hooks:</p>
-                              <div className="relative" ref={thirdHooksDropdownRef}>
-                                <button
-                                  type="button"
-                                  onClick={() => setThirdHooksDropdownOpen(!thirdHooksDropdownOpen)}
-                                  className="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-slate-200 rounded-lg hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                >
-                                  <div className="flex flex-wrap gap-1.5 flex-1">
-                                    {(thirdFallback.hooks || []).length === 0 ? (
-                                      <span className="text-sm text-gray-400">Select...</span>
-                                    ) : (
-                                      (thirdFallback.hooks || []).map((hookName) => {
-                                        const hook = salesFlowHookOptions.find(h => h.name === hookName);
-                                        const HookIcon = hook?.icon || MessageSquare;
-                                        return (
-                                          <span
-                                            key={hookName}
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md"
-                                          >
-                                            <HookIcon className="w-3 h-3" />
-                                            {hookName}
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                const newHooks = thirdFallback.hooks.filter(h => h !== hookName);
-                                                setThirdFallback({ ...thirdFallback, hooks: newHooks });
-                                              }}
-                                              className="ml-0.5 text-blue-400 hover:text-blue-600"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          </span>
-                                        );
-                                      })
-                                    )}
-                                  </div>
-                                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${thirdHooksDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-                                {thirdHooksDropdownOpen && (
-                                  <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                    {salesFlowHookOptions.map((hook) => {
-                                      const isSelected = thirdFallback.hooks?.includes(hook.name);
-                                      const HookIcon = hook.icon;
-                                      return (
-                                        <button
-                                          key={hook.name}
-                                          type="button"
-                                          onClick={() => {
-                                            const newHooks = isSelected
-                                              ? thirdFallback.hooks.filter(h => h !== hook.name)
-                                              : [...(thirdFallback.hooks || []), hook.name];
-                                            setThirdFallback({ ...thirdFallback, hooks: newHooks });
-                                          }}
-                                          className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
-                                            isSelected
-                                              ? 'bg-blue-50 text-blue-700'
-                                              : 'text-gray-700 hover:bg-slate-50'
-                                          }`}
-                                        >
-                                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                                            isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
-                                          }`}>
-                                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                                {secondFallback.followupEnabled && (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <span className="text-sm text-gray-600">If still no response, reach out every:</span>
+                                      <input
+                                        type="number"
+                                        min="2"
+                                        value={secondFallback.followupScheduleValue}
+                                        onChange={(e) => setSecondFallback({ ...secondFallback, followupScheduleValue: e.target.value })}
+                                        disabled={['Day', 'Week', 'Month'].includes(secondFallback.followupSchedule)}
+                                        className={`w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none ${
+                                          ['Day', 'Week', 'Month'].includes(secondFallback.followupSchedule) ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'
+                                        }`}
+                                        placeholder="#"
+                                      />
+                                      <select
+                                        value={secondFallback.followupSchedule}
+                                        onChange={(e) => setSecondFallback({ ...secondFallback, followupSchedule: e.target.value, followupScheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? secondFallback.followupScheduleValue : '' })}
+                                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                                      >
+                                        {followupScheduleOptions.map(opt => (
+                                          <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                      </select>
+                                      {(secondFallback.followupSchedule === 'Week' || secondFallback.followupSchedule === 'Weeks') && (
+                                        <>
+                                          <span className="text-sm text-gray-600">on</span>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            {followupDayOptions.map(day => (
+                                              <label key={day} className="flex items-center gap-1 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={(secondFallback.followupDays || ['Monday']).includes(day)}
+                                                  onChange={(e) => {
+                                                    const currentDays = secondFallback.followupDays || ['Monday'];
+                                                    const newDays = e.target.checked
+                                                      ? [...currentDays, day]
+                                                      : currentDays.filter(d => d !== day);
+                                                    setSecondFallback({ ...secondFallback, followupDays: newDays.length > 0 ? newDays : ['Monday'] });
+                                                  }}
+                                                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
+                                              </label>
+                                            ))}
                                           </div>
-                                          <HookIcon className={`w-4 h-4 ${hook.color}`} />
-                                          <span>{hook.name}</span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Followup section */}
-                          {thirdFallback.method && (
-                            <div className="mt-3 pt-3 border-t border-slate-200">
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-600">Enable Followup</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setThirdFallback({ ...thirdFallback, followupEnabled: !thirdFallback.followupEnabled })}
-                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                      thirdFallback.followupEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                                    }`}
-                                  >
-                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                      thirdFallback.followupEnabled ? 'translate-x-5' : 'translate-x-1'
-                                    }`} />
-                                  </button>
-                                  <span className="text-xs text-gray-500 italic">if customer doesn't respond</span>
-                                </div>
-
-                                {thirdFallback.followupEnabled && (
-                                  <div className="flex items-center gap-3 flex-wrap">
-                                    {['Days', 'Weeks', 'Months'].includes(thirdFallback.followupSchedule) && (
-                                      <>
-                                        <span className="text-sm text-gray-600">Every</span>
-                                        <input
-                                          type="number"
-                                          min="2"
-                                          value={thirdFallback.followupScheduleValue}
-                                          onChange={(e) => setThirdFallback({ ...thirdFallback, followupScheduleValue: e.target.value })}
-                                          className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                          placeholder="#"
-                                        />
-                                      </>
-                                    )}
-                                    <select
-                                      value={thirdFallback.followupSchedule}
-                                      onChange={(e) => setThirdFallback({ ...thirdFallback, followupSchedule: e.target.value, followupScheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? thirdFallback.followupScheduleValue : '' })}
-                                      className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    >
-                                      {followupScheduleOptions.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                      ))}
-                                    </select>
-                                    {(thirdFallback.followupSchedule === 'Weekly' || thirdFallback.followupSchedule === 'Weeks') && (
-                                      <>
-                                        <span className="text-sm text-gray-600">on</span>
-                                        <select
-                                          value={thirdFallback.followupDay}
-                                          onChange={(e) => setThirdFallback({ ...thirdFallback, followupDay: e.target.value })}
-                                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                        >
-                                          {followupDayOptions.map(day => (
-                                            <option key={day} value={day}>{day}</option>
-                                          ))}
-                                        </select>
-                                      </>
-                                    )}
-                                    {(thirdFallback.followupSchedule === 'Monthly' || thirdFallback.followupSchedule === 'Months') && (
-                                      <>
-                                        <span className="text-sm text-gray-600">on the</span>
-                                        <select
-                                          value={thirdFallback.followupDayOfMonth}
-                                          onChange={(e) => setThirdFallback({ ...thirdFallback, followupDayOfMonth: e.target.value })}
-                                          className="w-16 px-1 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                        >
-                                          {followupDayOfMonthOptions.map(day => (
-                                            <option key={day} value={day}>{day}</option>
-                                          ))}
-                                        </select>
-                                      </>
-                                    )}
-                                    <span className="text-sm text-gray-600">at</span>
-                                    <div className="flex items-center gap-1 flex-wrap">
-                                      {(thirdFallback.followupTimes || ['9:00 AM']).map((time, index) => (
-                                        <div key={index} className="flex items-center gap-1">
-                                          <select
-                                            value={time}
-                                            onChange={(e) => {
-                                              const newTimes = [...(thirdFallback.followupTimes || ['9:00 AM'])];
-                                              newTimes[index] = e.target.value;
-                                              setThirdFallback({ ...thirdFallback, followupTimes: newTimes });
-                                            }}
-                                            className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                          >
-                                            {followupTimeOptions.map(t => (
-                                              <option key={t} value={t}>{t}</option>
+                                        </>
+                                      )}
+                                      {(secondFallback.followupSchedule === 'Month' || secondFallback.followupSchedule === 'Months') && (
+                                        <>
+                                          <span className="text-sm text-gray-600 flex-shrink-0">on the</span>
+                                          <div className="flex items-center gap-2 overflow-x-auto flex-nowrap max-w-xs py-1" style={{ scrollbarWidth: 'thin' }}>
+                                            {followupDayOfMonthOptions.map(day => (
+                                              <label key={day} className="flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={(secondFallback.followupDaysOfMonth || ['1st']).includes(day)}
+                                                  onChange={(e) => {
+                                                    const currentDays = secondFallback.followupDaysOfMonth || ['1st'];
+                                                    const newDays = e.target.checked
+                                                      ? [...currentDays, day]
+                                                      : currentDays.filter(d => d !== day);
+                                                    setSecondFallback({ ...secondFallback, followupDaysOfMonth: newDays.length > 0 ? newDays : ['1st'] });
+                                                  }}
+                                                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-sm text-gray-700">{day}</span>
+                                              </label>
                                             ))}
-                                          </select>
-                                          {(thirdFallback.followupTimes || ['9:00 AM']).length > 1 && (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const newTimes = (thirdFallback.followupTimes || ['9:00 AM']).filter((_, i) => i !== index);
-                                                setThirdFallback({ ...thirdFallback, followupTimes: newTimes });
-                                              }}
-                                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          )}
-                                          {index < (thirdFallback.followupTimes || ['9:00 AM']).length - 1 && (
-                                            <span className="text-sm text-gray-400">,</span>
-                                          )}
-                                        </div>
-                                      ))}
-                                      {(thirdFallback.followupTimes || ['9:00 AM']).length < 5 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newTimes = [...(thirdFallback.followupTimes || ['9:00 AM']), '12:00 PM'];
-                                            setThirdFallback({ ...thirdFallback, followupTimes: newTimes });
-                                          }}
-                                          className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                                        >
-                                          <Plus className="w-4 h-4" />
-                                        </button>
+                                          </div>
+                                        </>
                                       )}
                                     </div>
-                                    <span className="text-sm text-gray-600">for</span>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={thirdFallback.followupDuration}
-                                      onChange={(e) => setThirdFallback({ ...thirdFallback, followupDuration: e.target.value })}
-                                      className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                      placeholder="#"
-                                    />
-                                    <select
-                                      value={thirdFallback.followupDurationUnit}
-                                      onChange={(e) => setThirdFallback({ ...thirdFallback, followupDurationUnit: e.target.value })}
-                                      className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    >
-                                      {followupDurationUnitOptions.map(unit => (
-                                        <option key={unit} value={unit}>{unit}</option>
-                                      ))}
-                                    </select>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <span className="text-sm text-gray-600">at</span>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        {followupTimeOptions.map(timeOption => (
+                                          <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={(secondFallback.followupTimes || ['Morning']).includes(timeOption)}
+                                              onChange={(e) => {
+                                                const currentTimes = secondFallback.followupTimes || ['Morning'];
+                                                const newTimes = e.target.checked
+                                                  ? [...currentTimes, timeOption]
+                                                  : currentTimes.filter(t => t !== timeOption);
+                                                setSecondFallback({ ...secondFallback, followupTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
+                                              }}
+                                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm text-gray-700">{timeOption}</span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                      <span className="text-sm text-gray-600">for</span>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={secondFallback.followupDuration}
+                                        onChange={(e) => setSecondFallback({ ...secondFallback, followupDuration: e.target.value })}
+                                        className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                                        placeholder="#"
+                                      />
+                                      <select
+                                        value={secondFallback.followupDurationUnit}
+                                        onChange={(e) => setSecondFallback({ ...secondFallback, followupDurationUnit: e.target.value })}
+                                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                                      >
+                                        {followupDurationUnitOptions.map(unit => (
+                                          <option key={unit} value={unit}>{unit}</option>
+                                        ))}
+                                      </select>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1704,6 +1776,7 @@ const MyAgent = ({
                       );
                     })()}
                   </div>
+                )}
                 </div>
                 </div>
 
@@ -1720,194 +1793,329 @@ const MyAgent = ({
             ) : selectedSalesFlowStage === 'Lead Discovery' ? (
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto space-y-6 mb-4">
-                {/* Lead Discovery Explanation */}
-                <div className="bg-slate-100 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
-                    Your AI Agent conducts Lead Discovery by engaging with potential customers through natural conversation. It asks qualifying questions to understand their needs, budget, timeline, and project scope. The agent gathers essential information like property details, service requirements, and contact preferences to help you prepare accurate estimates and prioritize leads effectively.
-                  </p>
+                {/* Lead Discovery Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">Lead Discovery</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'lead-discovery' ? null : 'lead-discovery')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'lead-discovery' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Your AI Agent qualifies leads through natural conversation, gathering details on needs, budget, timeline, and project scope.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Escalate Toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700">Escalate unanswered questions to you</span>
-                  <button
-                    type="button"
-                    onClick={() => setScheduleCallIfCantAnswer(!scheduleCallIfCantAnswer)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      scheduleCallIfCantAnswer ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        scheduleCallIfCantAnswer ? 'translate-x-5' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
+                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-gray-700">Escalate unanswered questions to you</span>
+                      <p className="text-xs text-gray-500 italic">
+                        If Agent cannot answer a lead question, you will be notified of the question so you can reach out to them directly.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setScheduleCallIfCantAnswer(!scheduleCallIfCantAnswer)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          scheduleCallIfCantAnswer ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            scheduleCallIfCantAnswer ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <div className="relative" data-tooltip="escalate">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowEscalateTooltip(!showEscalateTooltip);
+                            setShowCallbackTooltip(false);
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                        </button>
+                        {showEscalateTooltip && (
+                          <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-72 p-3 bg-white text-gray-700 text-xs rounded-lg shadow-lg border border-slate-200">
+                            <p>If AI chat bot is unable to answer a question related to your services, policies, or company information; you will be notified of that question, and will be able to instruct the chatbot how to answer in the "Leads" tab.</p>
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-white border-l border-b border-slate-200 rotate-45"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Allow Customer Callback Toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700">Allow customer to request callback</span>
-                  <button
-                    type="button"
-                    onClick={() => setAllowCustomerCallback(!allowCustomerCallback)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      allowCustomerCallback ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        allowCustomerCallback ? 'translate-x-5' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
+                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-gray-700">Allow customer to request callback</span>
+                      <p className="text-xs text-gray-500 italic">
+                        Enable lead to request a call at any time in the sales flow process. Agent will coordinate call according to your availability in the Calendar tab.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setAllowCustomerCallback(!allowCustomerCallback)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          allowCustomerCallback ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            allowCustomerCallback ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <div className="relative" data-tooltip="callback">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCallbackTooltip(!showCallbackTooltip);
+                            setShowEscalateTooltip(false);
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                        </button>
+                        {showCallbackTooltip && (
+                          <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-72 p-3 bg-white text-gray-700 text-xs rounded-lg shadow-lg border border-slate-200">
+                            <p>If switched on, the customer will be allowed to request a personal call from you or one of your staff at any time during the chat.</p>
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-white border-l border-b border-slate-200 rotate-45"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {allowCustomerCallback && (
+                    <div className="mt-3 space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Preferred time for callback:</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Morning', 'Noon', 'Afternoon', 'Evening'].map((time) => (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() => {
+                              if (preferredCallbackTime.includes(time)) {
+                                setPreferredCallbackTime(preferredCallbackTime.filter(t => t !== time));
+                              } else {
+                                setPreferredCallbackTime([...preferredCallbackTime, time]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                              preferredCallbackTime.includes(time)
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Followup Section */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-700">Enable Followup</span>
-                    <button
-                      type="button"
-                      onClick={() => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, enabled: !leadDiscoveryFollowup.enabled })}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        leadDiscoveryFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                      }`}
-                    >
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        leadDiscoveryFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
-                      }`} />
-                    </button>
-                    <span className="text-xs text-gray-500 italic">if customer doesn't respond</span>
+                  <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable AI Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, aiEnabled: !leadDiscoveryFollowup.aiEnabled, enabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            leadDiscoveryFollowup.aiEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            leadDiscoveryFollowup.aiEnabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable Custom Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, enabled: !leadDiscoveryFollowup.enabled, aiEnabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            leadDiscoveryFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            leadDiscoveryFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
+                  {leadDiscoveryFollowup.aiEnabled && (
+                    <p className="text-xs text-gray-500 italic">
+                      Your AI agent will periodically re-engage unresponsive leads to guide them back into the sales process. Leads can opt out of further contact at any time.
+                    </p>
+                  )}
+
                   {leadDiscoveryFollowup.enabled && (
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-sm text-gray-600">via</span>
-                      <select
-                        value={leadDiscoveryFollowup.method}
-                        onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, method: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="text">Text</option>
-                        <option value="email">Email</option>
-                        <option value="phone">Phone</option>
-                      </select>
-                      {['Days', 'Weeks', 'Months'].includes(leadDiscoveryFollowup.schedule) && (
-                        <>
-                          <span className="text-sm text-gray-600">Every</span>
-                          <input
-                            type="number"
-                            min="2"
-                            value={leadDiscoveryFollowup.scheduleValue}
-                            onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, scheduleValue: e.target.value })}
-                            className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            placeholder="#"
-                          />
-                        </>
-                      )}
-                      <select
-                        value={leadDiscoveryFollowup.schedule}
-                        onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? leadDiscoveryFollowup.scheduleValue : '' })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupScheduleOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                      {(leadDiscoveryFollowup.schedule === 'Weekly' || leadDiscoveryFollowup.schedule === 'Weeks') && (
-                        <>
-                          <span className="text-sm text-gray-600">on</span>
-                          <select
-                            value={leadDiscoveryFollowup.day}
-                            onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, day: e.target.value })}
-                            className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      {(leadDiscoveryFollowup.schedule === 'Monthly' || leadDiscoveryFollowup.schedule === 'Months') && (
-                        <>
-                          <span className="text-sm text-gray-600">on the</span>
-                          <select
-                            value={leadDiscoveryFollowup.dayOfMonth}
-                            onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, dayOfMonth: e.target.value })}
-                            className="w-16 px-1 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOfMonthOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      <span className="text-sm text-gray-600">at</span>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {(leadDiscoveryFollowup.times || ['9:00 AM']).map((time, index) => (
-                          <div key={index} className="flex items-center gap-1">
-                            <select
-                              value={time}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-gray-600">If no lead response, reach back out the next day at:</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {followupTimeOptions.map(timeOption => (
+                          <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(leadDiscoveryFollowup.nextDayTimes || ['Morning']).includes(timeOption)}
                               onChange={(e) => {
-                                const newTimes = [...(leadDiscoveryFollowup.times || ['9:00 AM'])];
-                                newTimes[index] = e.target.value;
-                                setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, times: newTimes });
+                                const currentTimes = leadDiscoveryFollowup.nextDayTimes || ['Morning'];
+                                const newTimes = e.target.checked
+                                  ? [...currentTimes, timeOption]
+                                  : currentTimes.filter(t => t !== timeOption);
+                                setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, nextDayTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
                               }}
-                              className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            >
-                              {followupTimeOptions.map(t => (
-                                <option key={t} value={t}>{t}</option>
-                              ))}
-                            </select>
-                            {(leadDiscoveryFollowup.times || ['9:00 AM']).length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newTimes = (leadDiscoveryFollowup.times || ['9:00 AM']).filter((_, i) => i !== index);
-                                  setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, times: newTimes });
-                                }}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                            {index < (leadDiscoveryFollowup.times || ['9:00 AM']).length - 1 && (
-                              <span className="text-sm text-gray-400">,</span>
-                            )}
-                          </div>
+                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{timeOption}</span>
+                          </label>
                         ))}
-                        {(leadDiscoveryFollowup.times || ['9:00 AM']).length < 5 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newTimes = [...(leadDiscoveryFollowup.times || ['9:00 AM']), '12:00 PM'];
-                              setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, times: newTimes });
-                            }}
-                            className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {leadDiscoveryFollowup.enabled && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">If still no response, reach out every:</span>
+                        <input
+                          type="number"
+                          min="2"
+                          value={leadDiscoveryFollowup.scheduleValue}
+                          onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, scheduleValue: e.target.value })}
+                          disabled={['Day', 'Week', 'Month'].includes(leadDiscoveryFollowup.schedule)}
+                          className={`w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none ${
+                            ['Day', 'Week', 'Month'].includes(leadDiscoveryFollowup.schedule) ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'
+                          }`}
+                          placeholder="#"
+                        />
+                        <select
+                          value={leadDiscoveryFollowup.schedule}
+                          onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? leadDiscoveryFollowup.scheduleValue : '' })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupScheduleOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        {(leadDiscoveryFollowup.schedule === 'Week' || leadDiscoveryFollowup.schedule === 'Weeks') && (
+                          <>
+                            <span className="text-sm text-gray-600">on</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {followupDayOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={(leadDiscoveryFollowup.days || ['Monday']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = leadDiscoveryFollowup.days || ['Monday'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, days: newDays.length > 0 ? newDays : ['Monday'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {(leadDiscoveryFollowup.schedule === 'Month' || leadDiscoveryFollowup.schedule === 'Months') && (
+                          <>
+                            <span className="text-sm text-gray-600 flex-shrink-0">on the</span>
+                            <div className="flex items-center gap-2 overflow-x-auto flex-nowrap max-w-xs py-1" style={{ scrollbarWidth: 'thin' }}>
+                              {followupDayOfMonthOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={(leadDiscoveryFollowup.daysOfMonth || ['1st']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = leadDiscoveryFollowup.daysOfMonth || ['1st'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, daysOfMonth: newDays.length > 0 ? newDays : ['1st'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
                         )}
                       </div>
-                      <span className="text-sm text-gray-600">for</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={leadDiscoveryFollowup.duration}
-                        onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, duration: e.target.value })}
-                        className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                        placeholder="#"
-                      />
-                      <select
-                        value={leadDiscoveryFollowup.durationUnit}
-                        onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, durationUnit: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupDurationUnitOptions.map(unit => (
-                          <option key={unit} value={unit}>{unit}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">at</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {followupTimeOptions.map(timeOption => (
+                            <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={(leadDiscoveryFollowup.times || ['Morning']).includes(timeOption)}
+                                onChange={(e) => {
+                                  const currentTimes = leadDiscoveryFollowup.times || ['Morning'];
+                                  const newTimes = e.target.checked
+                                    ? [...currentTimes, timeOption]
+                                    : currentTimes.filter(t => t !== timeOption);
+                                  setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, times: newTimes.length > 0 ? newTimes : ['Morning'] });
+                                }}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{timeOption}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-600">for</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={leadDiscoveryFollowup.duration}
+                          onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, duration: e.target.value })}
+                          className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                          placeholder="#"
+                        />
+                        <select
+                          value={leadDiscoveryFollowup.durationUnit}
+                          onChange={(e) => setLeadDiscoveryFollowup({ ...leadDiscoveryFollowup, durationUnit: e.target.value })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupDurationUnitOptions.map(unit => (
+                            <option key={unit} value={unit}>{unit}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1923,32 +2131,141 @@ const MyAgent = ({
                   </button>
                 </div>
               </div>
-            ) : selectedSalesFlowStage === 'Schedule Call' ? (
+            ) : selectedSalesFlowStage === 'Schedule Estimate' ? (
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto space-y-6 mb-4">
-                {/* Schedule Call Explanation */}
-                <div className="bg-slate-100 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
-                    Your AI Agent can schedule calls with leads who request to speak with you directly or need more personalized assistance before receiving an estimate.
-                  </p>
+                {/* Schedule Estimate Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">Schedule Estimate</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'schedule-estimate' ? null : 'schedule-estimate')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'schedule-estimate' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            It is required you contact leads directly regarding estimate once they have been qualified. The agent will coordinate lead contact based on your selected communication methods in this section, and then notify you about the lead's preferences.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                {/* Schedule Phone Call Toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700">Request scheduled phone call with customer</span>
-                  <button
-                    type="button"
-                    onClick={() => setOfferCallback({ ...offerCallback, enabled: !offerCallback.enabled })}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      offerCallback.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        offerCallback.enabled ? 'translate-x-5' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
+                {/* Schedule Options */}
+                <div className="space-y-4">
+                  {/* Schedule Customer Call Toggle */}
+                  <div className="bg-white border border-slate-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-700">Schedule Customer Call</span>
+                      <button
+                        type="button"
+                        onClick={() => setScheduleEstimateCall(!scheduleEstimateCall)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          scheduleEstimateCall ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            scheduleEstimateCall ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {scheduleEstimateCall && (
+                      <div className="mt-3 space-y-3">
+                        <p className="text-xs text-gray-500 italic">
+                          Agent will coordinate call with Lead according to your availability in the Calendar tab.
+                        </p>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-600">Preferred time for customer calls:</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Morning', 'Noon', 'Afternoon', 'Evening'].map((time) => (
+                              <button
+                                key={time}
+                                type="button"
+                                onClick={() => {
+                                  if (preferredCallTime.includes(time)) {
+                                    setPreferredCallTime(preferredCallTime.filter(t => t !== time));
+                                  } else {
+                                    setPreferredCallTime([...preferredCallTime, time]);
+                                  }
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                  preferredCallTime.includes(time)
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                {time}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Schedule In Person Estimate Toggle */}
+                  <div className="bg-white border border-slate-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-700">Schedule In Person Estimate</span>
+                      <button
+                        type="button"
+                        onClick={() => setRequestInPersonEstimate(!requestInPersonEstimate)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          requestInPersonEstimate ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            requestInPersonEstimate ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {requestInPersonEstimate && (
+                      <div className="mt-3 space-y-3">
+                        <p className="text-xs text-gray-500 italic">
+                          Agent will coordinate in-person visit with Lead according to your availability in the Calendar tab.
+                        </p>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-600">Preferred time for in-person estimates:</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Morning', 'Noon', 'Afternoon', 'Evening'].map((time) => (
+                              <button
+                                key={time}
+                                type="button"
+                                onClick={() => {
+                                  if (preferredInPersonTime.includes(time)) {
+                                    setPreferredInPersonTime(preferredInPersonTime.filter(t => t !== time));
+                                  } else {
+                                    setPreferredInPersonTime([...preferredInPersonTime, time]);
+                                  }
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                  preferredInPersonTime.includes(time)
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                {time}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 </div>
 
@@ -1965,158 +2282,212 @@ const MyAgent = ({
             ) : selectedSalesFlowStage === 'Send Estimate' ? (
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto space-y-6 mb-4">
-                {/* Send Estimate Explanation */}
-                <div className="bg-slate-100 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
-                    When enabled, your AI agent will ask leads if they would like to schedule an in-person estimate before sending a quote. This is recommended for jobs that require on-site assessment, such as large projects, custom work, or services where accurate pricing depends on seeing the property or space in person.
-                  </p>
+                {/* Send Estimate Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">Send Estimate</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'send-estimate' ? null : 'send-estimate')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'send-estimate' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            You will have the option to send an estimate via text and/or email once you select "Lead Contacted" button, in the leads tab. You will be notified once the lead has filled out the estimate form. Enable the followup feature to periodically remind the lead that the estimate form has been sent.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Followup Section */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-700">Enable Followup</span>
-                    <button
-                      type="button"
-                      onClick={() => setSendEstimateFollowup({ ...sendEstimateFollowup, enabled: !sendEstimateFollowup.enabled })}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        sendEstimateFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                      }`}
-                    >
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        sendEstimateFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
-                      }`} />
-                    </button>
-                    <span className="text-xs text-gray-500 italic">if no response to estimate</span>
+                  <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable AI Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setSendEstimateFollowup({ ...sendEstimateFollowup, aiEnabled: !sendEstimateFollowup.aiEnabled, enabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            sendEstimateFollowup.aiEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            sendEstimateFollowup.aiEnabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable Custom Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setSendEstimateFollowup({ ...sendEstimateFollowup, enabled: !sendEstimateFollowup.enabled, aiEnabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            sendEstimateFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            sendEstimateFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
+                  {sendEstimateFollowup.aiEnabled && (
+                    <p className="text-xs text-gray-500 italic">
+                      Your AI agent will periodically re-engage unresponsive leads to guide them back into the sales process. Leads can opt out of further contact at any time.
+                    </p>
+                  )}
+
                   {sendEstimateFollowup.enabled && (
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-sm text-gray-600">via</span>
-                      <select
-                        value={sendEstimateFollowup.method}
-                        onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, method: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="text">Text</option>
-                        <option value="email">Email</option>
-                        <option value="phone">Phone</option>
-                      </select>
-                      {['Days', 'Weeks', 'Months'].includes(sendEstimateFollowup.schedule) && (
-                        <>
-                          <span className="text-sm text-gray-600">Every</span>
-                          <input
-                            type="number"
-                            min="2"
-                            value={sendEstimateFollowup.scheduleValue}
-                            onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, scheduleValue: e.target.value })}
-                            className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            placeholder="#"
-                          />
-                        </>
-                      )}
-                      <select
-                        value={sendEstimateFollowup.schedule}
-                        onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? sendEstimateFollowup.scheduleValue : '' })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupScheduleOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                      {(sendEstimateFollowup.schedule === 'Weekly' || sendEstimateFollowup.schedule === 'Weeks') && (
-                        <>
-                          <span className="text-sm text-gray-600">on</span>
-                          <select
-                            value={sendEstimateFollowup.day}
-                            onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, day: e.target.value })}
-                            className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      {(sendEstimateFollowup.schedule === 'Monthly' || sendEstimateFollowup.schedule === 'Months') && (
-                        <>
-                          <span className="text-sm text-gray-600">on the</span>
-                          <select
-                            value={sendEstimateFollowup.dayOfMonth}
-                            onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, dayOfMonth: e.target.value })}
-                            className="w-16 px-1 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOfMonthOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      <span className="text-sm text-gray-600">at</span>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {(sendEstimateFollowup.times || ['9:00 AM']).map((time, index) => (
-                          <div key={index} className="flex items-center gap-1">
-                            <select
-                              value={time}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-gray-600">If no lead response, reach back out the next day at:</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {followupTimeOptions.map(timeOption => (
+                          <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(sendEstimateFollowup.nextDayTimes || ['Morning']).includes(timeOption)}
                               onChange={(e) => {
-                                const newTimes = [...(sendEstimateFollowup.times || ['9:00 AM'])];
-                                newTimes[index] = e.target.value;
-                                setSendEstimateFollowup({ ...sendEstimateFollowup, times: newTimes });
+                                const currentTimes = sendEstimateFollowup.nextDayTimes || ['Morning'];
+                                const newTimes = e.target.checked
+                                  ? [...currentTimes, timeOption]
+                                  : currentTimes.filter(t => t !== timeOption);
+                                setSendEstimateFollowup({ ...sendEstimateFollowup, nextDayTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
                               }}
-                              className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            >
-                              {followupTimeOptions.map(t => (
-                                <option key={t} value={t}>{t}</option>
-                              ))}
-                            </select>
-                            {(sendEstimateFollowup.times || ['9:00 AM']).length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newTimes = (sendEstimateFollowup.times || ['9:00 AM']).filter((_, i) => i !== index);
-                                  setSendEstimateFollowup({ ...sendEstimateFollowup, times: newTimes });
-                                }}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                            {index < (sendEstimateFollowup.times || ['9:00 AM']).length - 1 && (
-                              <span className="text-sm text-gray-400">,</span>
-                            )}
-                          </div>
+                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{timeOption}</span>
+                          </label>
                         ))}
-                        {(sendEstimateFollowup.times || ['9:00 AM']).length < 5 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newTimes = [...(sendEstimateFollowup.times || ['9:00 AM']), '12:00 PM'];
-                              setSendEstimateFollowup({ ...sendEstimateFollowup, times: newTimes });
-                            }}
-                            className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {sendEstimateFollowup.enabled && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">If still no response, reach out every:</span>
+                        <input
+                          type="number"
+                          min="2"
+                          value={sendEstimateFollowup.scheduleValue}
+                          onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, scheduleValue: e.target.value })}
+                          disabled={['Day', 'Week', 'Month'].includes(sendEstimateFollowup.schedule)}
+                          className={`w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none ${
+                            ['Day', 'Week', 'Month'].includes(sendEstimateFollowup.schedule) ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'
+                          }`}
+                          placeholder="#"
+                        />
+                        <select
+                          value={sendEstimateFollowup.schedule}
+                          onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? sendEstimateFollowup.scheduleValue : '' })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupScheduleOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        {(sendEstimateFollowup.schedule === 'Week' || sendEstimateFollowup.schedule === 'Weeks') && (
+                          <>
+                            <span className="text-sm text-gray-600">on</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {followupDayOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={(sendEstimateFollowup.days || ['Monday']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = sendEstimateFollowup.days || ['Monday'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setSendEstimateFollowup({ ...sendEstimateFollowup, days: newDays.length > 0 ? newDays : ['Monday'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {(sendEstimateFollowup.schedule === 'Month' || sendEstimateFollowup.schedule === 'Months') && (
+                          <>
+                            <span className="text-sm text-gray-600 flex-shrink-0">on the</span>
+                            <div className="flex items-center gap-2 overflow-x-auto flex-nowrap max-w-xs py-1" style={{ scrollbarWidth: 'thin' }}>
+                              {followupDayOfMonthOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={(sendEstimateFollowup.daysOfMonth || ['1st']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = sendEstimateFollowup.daysOfMonth || ['1st'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setSendEstimateFollowup({ ...sendEstimateFollowup, daysOfMonth: newDays.length > 0 ? newDays : ['1st'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
                         )}
                       </div>
-                      <span className="text-sm text-gray-600">for</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={sendEstimateFollowup.duration}
-                        onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, duration: e.target.value })}
-                        className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                        placeholder="#"
-                      />
-                      <select
-                        value={sendEstimateFollowup.durationUnit}
-                        onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, durationUnit: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupDurationUnitOptions.map(unit => (
-                          <option key={unit} value={unit}>{unit}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">at</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {followupTimeOptions.map(timeOption => (
+                            <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={(sendEstimateFollowup.times || ['Morning']).includes(timeOption)}
+                                onChange={(e) => {
+                                  const currentTimes = sendEstimateFollowup.times || ['Morning'];
+                                  const newTimes = e.target.checked
+                                    ? [...currentTimes, timeOption]
+                                    : currentTimes.filter(t => t !== timeOption);
+                                  setSendEstimateFollowup({ ...sendEstimateFollowup, times: newTimes.length > 0 ? newTimes : ['Morning'] });
+                                }}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{timeOption}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-600">for</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={sendEstimateFollowup.duration}
+                          onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, duration: e.target.value })}
+                          className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                          placeholder="#"
+                        />
+                        <select
+                          value={sendEstimateFollowup.durationUnit}
+                          onChange={(e) => setSendEstimateFollowup({ ...sendEstimateFollowup, durationUnit: e.target.value })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupDurationUnitOptions.map(unit => (
+                            <option key={unit} value={unit}>{unit}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2135,158 +2506,212 @@ const MyAgent = ({
             ) : selectedSalesFlowStage === 'Send Contract' ? (
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto space-y-6 mb-4">
-                {/* Send Contract Explanation */}
-                <div className="bg-slate-100 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
-                    Your AI Agent handles contract delivery by sending contracts to customers and tracking their status. It can send reminders for unsigned contracts and notify you when contracts are signed, ensuring a smooth transition from estimate approval to job scheduling.
-                  </p>
+                {/* Send Contract Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">Send Contract</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'send-contract' ? null : 'send-contract')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'send-contract' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Once the estimate has been accepted you will be notified, and a contract will automatically be created using the estimate information. In the leads tab you may edit and send the contract. You will be notified once the lead has filled out the contract form. Enable the followup feature to periodically remind the lead that the contract form has been sent.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Followup Section */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-700">Enable Followup</span>
-                    <button
-                      type="button"
-                      onClick={() => setSendContractFollowup({ ...sendContractFollowup, enabled: !sendContractFollowup.enabled })}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        sendContractFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                      }`}
-                    >
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        sendContractFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
-                      }`} />
-                    </button>
-                    <span className="text-xs text-gray-500 italic">if no response to contract</span>
+                  <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable AI Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setSendContractFollowup({ ...sendContractFollowup, aiEnabled: !sendContractFollowup.aiEnabled, enabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            sendContractFollowup.aiEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            sendContractFollowup.aiEnabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable Custom Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setSendContractFollowup({ ...sendContractFollowup, enabled: !sendContractFollowup.enabled, aiEnabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            sendContractFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            sendContractFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
+                  {sendContractFollowup.aiEnabled && (
+                    <p className="text-xs text-gray-500 italic">
+                      Your AI agent will periodically re-engage unresponsive leads to guide them back into the sales process. Leads can opt out of further contact at any time.
+                    </p>
+                  )}
+
                   {sendContractFollowup.enabled && (
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-sm text-gray-600">via</span>
-                      <select
-                        value={sendContractFollowup.method}
-                        onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, method: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="text">Text</option>
-                        <option value="email">Email</option>
-                        <option value="phone">Phone</option>
-                      </select>
-                      {['Days', 'Weeks', 'Months'].includes(sendContractFollowup.schedule) && (
-                        <>
-                          <span className="text-sm text-gray-600">Every</span>
-                          <input
-                            type="number"
-                            min="2"
-                            value={sendContractFollowup.scheduleValue}
-                            onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, scheduleValue: e.target.value })}
-                            className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            placeholder="#"
-                          />
-                        </>
-                      )}
-                      <select
-                        value={sendContractFollowup.schedule}
-                        onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? sendContractFollowup.scheduleValue : '' })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupScheduleOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                      {(sendContractFollowup.schedule === 'Weekly' || sendContractFollowup.schedule === 'Weeks') && (
-                        <>
-                          <span className="text-sm text-gray-600">on</span>
-                          <select
-                            value={sendContractFollowup.day}
-                            onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, day: e.target.value })}
-                            className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      {(sendContractFollowup.schedule === 'Monthly' || sendContractFollowup.schedule === 'Months') && (
-                        <>
-                          <span className="text-sm text-gray-600">on the</span>
-                          <select
-                            value={sendContractFollowup.dayOfMonth}
-                            onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, dayOfMonth: e.target.value })}
-                            className="w-16 px-1 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOfMonthOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      <span className="text-sm text-gray-600">at</span>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {(sendContractFollowup.times || ['9:00 AM']).map((time, index) => (
-                          <div key={index} className="flex items-center gap-1">
-                            <select
-                              value={time}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-gray-600">If no lead response, reach back out the next day at:</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {followupTimeOptions.map(timeOption => (
+                          <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(sendContractFollowup.nextDayTimes || ['Morning']).includes(timeOption)}
                               onChange={(e) => {
-                                const newTimes = [...(sendContractFollowup.times || ['9:00 AM'])];
-                                newTimes[index] = e.target.value;
-                                setSendContractFollowup({ ...sendContractFollowup, times: newTimes });
+                                const currentTimes = sendContractFollowup.nextDayTimes || ['Morning'];
+                                const newTimes = e.target.checked
+                                  ? [...currentTimes, timeOption]
+                                  : currentTimes.filter(t => t !== timeOption);
+                                setSendContractFollowup({ ...sendContractFollowup, nextDayTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
                               }}
-                              className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            >
-                              {followupTimeOptions.map(t => (
-                                <option key={t} value={t}>{t}</option>
-                              ))}
-                            </select>
-                            {(sendContractFollowup.times || ['9:00 AM']).length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newTimes = (sendContractFollowup.times || ['9:00 AM']).filter((_, i) => i !== index);
-                                  setSendContractFollowup({ ...sendContractFollowup, times: newTimes });
-                                }}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                            {index < (sendContractFollowup.times || ['9:00 AM']).length - 1 && (
-                              <span className="text-sm text-gray-400">,</span>
-                            )}
-                          </div>
+                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{timeOption}</span>
+                          </label>
                         ))}
-                        {(sendContractFollowup.times || ['9:00 AM']).length < 5 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newTimes = [...(sendContractFollowup.times || ['9:00 AM']), '12:00 PM'];
-                              setSendContractFollowup({ ...sendContractFollowup, times: newTimes });
-                            }}
-                            className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {sendContractFollowup.enabled && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">If still no response, reach out every:</span>
+                        <input
+                          type="number"
+                          min="2"
+                          value={sendContractFollowup.scheduleValue}
+                          onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, scheduleValue: e.target.value })}
+                          disabled={['Day', 'Week', 'Month'].includes(sendContractFollowup.schedule)}
+                          className={`w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none ${
+                            ['Day', 'Week', 'Month'].includes(sendContractFollowup.schedule) ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'
+                          }`}
+                          placeholder="#"
+                        />
+                        <select
+                          value={sendContractFollowup.schedule}
+                          onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? sendContractFollowup.scheduleValue : '' })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupScheduleOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        {(sendContractFollowup.schedule === 'Week' || sendContractFollowup.schedule === 'Weeks') && (
+                          <>
+                            <span className="text-sm text-gray-600">on</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {followupDayOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={(sendContractFollowup.days || ['Monday']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = sendContractFollowup.days || ['Monday'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setSendContractFollowup({ ...sendContractFollowup, days: newDays.length > 0 ? newDays : ['Monday'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {(sendContractFollowup.schedule === 'Month' || sendContractFollowup.schedule === 'Months') && (
+                          <>
+                            <span className="text-sm text-gray-600 flex-shrink-0">on the</span>
+                            <div className="flex items-center gap-2 overflow-x-auto flex-nowrap max-w-xs py-1" style={{ scrollbarWidth: 'thin' }}>
+                              {followupDayOfMonthOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={(sendContractFollowup.daysOfMonth || ['1st']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = sendContractFollowup.daysOfMonth || ['1st'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setSendContractFollowup({ ...sendContractFollowup, daysOfMonth: newDays.length > 0 ? newDays : ['1st'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
                         )}
                       </div>
-                      <span className="text-sm text-gray-600">for</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={sendContractFollowup.duration}
-                        onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, duration: e.target.value })}
-                        className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                        placeholder="#"
-                      />
-                      <select
-                        value={sendContractFollowup.durationUnit}
-                        onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, durationUnit: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupDurationUnitOptions.map(unit => (
-                          <option key={unit} value={unit}>{unit}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">at</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {followupTimeOptions.map(timeOption => (
+                            <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={(sendContractFollowup.times || ['Morning']).includes(timeOption)}
+                                onChange={(e) => {
+                                  const currentTimes = sendContractFollowup.times || ['Morning'];
+                                  const newTimes = e.target.checked
+                                    ? [...currentTimes, timeOption]
+                                    : currentTimes.filter(t => t !== timeOption);
+                                  setSendContractFollowup({ ...sendContractFollowup, times: newTimes.length > 0 ? newTimes : ['Morning'] });
+                                }}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{timeOption}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-600">for</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={sendContractFollowup.duration}
+                          onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, duration: e.target.value })}
+                          className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                          placeholder="#"
+                        />
+                        <select
+                          value={sendContractFollowup.durationUnit}
+                          onChange={(e) => setSendContractFollowup({ ...sendContractFollowup, durationUnit: e.target.value })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupDurationUnitOptions.map(unit => (
+                            <option key={unit} value={unit}>{unit}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2375,158 +2800,212 @@ const MyAgent = ({
               END COMPLETE JOB SECTION */
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto space-y-6 mb-4">
-                {/* Send Invoice Explanation */}
-                <div className="bg-slate-100 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
-                    Your AI Agent handles invoice delivery and payment reminders. It can automatically follow up with customers who haven't paid, ensuring timely payments while maintaining professional communication.
-                  </p>
+                {/* Send Invoice Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">Send Invoice</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'send-invoice' ? null : 'send-invoice')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'send-invoice' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Once you indicate that the job has been completed, you can edit and send an invoice to the customer via email and/or text. Enable the followup feature to periodically remind the lead that the payment is due.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Followup Section */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-700">Enable Followup</span>
-                    <button
-                      type="button"
-                      onClick={() => setSendInvoiceFollowup({ ...sendInvoiceFollowup, enabled: !sendInvoiceFollowup.enabled })}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        sendInvoiceFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                      }`}
-                    >
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        sendInvoiceFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
-                      }`} />
-                    </button>
-                    <span className="text-xs text-gray-500 italic">if payment not received</span>
+                  <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable AI Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setSendInvoiceFollowup({ ...sendInvoiceFollowup, aiEnabled: !sendInvoiceFollowup.aiEnabled, enabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            sendInvoiceFollowup.aiEnabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            sendInvoiceFollowup.aiEnabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Enable Custom Followup</span>
+                        <button
+                          type="button"
+                          onClick={() => setSendInvoiceFollowup({ ...sendInvoiceFollowup, enabled: !sendInvoiceFollowup.enabled, aiEnabled: false })}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                            sendInvoiceFollowup.enabled ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            sendInvoiceFollowup.enabled ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
+                  {sendInvoiceFollowup.aiEnabled && (
+                    <p className="text-xs text-gray-500 italic">
+                      Your AI agent will periodically re-engage unresponsive leads to guide them back into the sales process. Leads can opt out of further contact at any time.
+                    </p>
+                  )}
+
                   {sendInvoiceFollowup.enabled && (
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-sm text-gray-600">via</span>
-                      <select
-                        value={sendInvoiceFollowup.method}
-                        onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, method: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="text">Text</option>
-                        <option value="email">Email</option>
-                        <option value="phone">Phone</option>
-                      </select>
-                      {['Days', 'Weeks', 'Months'].includes(sendInvoiceFollowup.schedule) && (
-                        <>
-                          <span className="text-sm text-gray-600">Every</span>
-                          <input
-                            type="number"
-                            min="2"
-                            value={sendInvoiceFollowup.scheduleValue}
-                            onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, scheduleValue: e.target.value })}
-                            className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            placeholder="#"
-                          />
-                        </>
-                      )}
-                      <select
-                        value={sendInvoiceFollowup.schedule}
-                        onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? sendInvoiceFollowup.scheduleValue : '' })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupScheduleOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                      {(sendInvoiceFollowup.schedule === 'Weekly' || sendInvoiceFollowup.schedule === 'Weeks') && (
-                        <>
-                          <span className="text-sm text-gray-600">on</span>
-                          <select
-                            value={sendInvoiceFollowup.day}
-                            onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, day: e.target.value })}
-                            className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      {(sendInvoiceFollowup.schedule === 'Monthly' || sendInvoiceFollowup.schedule === 'Months') && (
-                        <>
-                          <span className="text-sm text-gray-600">on the</span>
-                          <select
-                            value={sendInvoiceFollowup.dayOfMonth}
-                            onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, dayOfMonth: e.target.value })}
-                            className="w-16 px-1 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                          >
-                            {followupDayOfMonthOptions.map(day => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-                      <span className="text-sm text-gray-600">at</span>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {(sendInvoiceFollowup.times || ['9:00 AM']).map((time, index) => (
-                          <div key={index} className="flex items-center gap-1">
-                            <select
-                              value={time}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-gray-600">If no lead response, reach back out the next day at:</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {followupTimeOptions.map(timeOption => (
+                          <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(sendInvoiceFollowup.nextDayTimes || ['Morning']).includes(timeOption)}
                               onChange={(e) => {
-                                const newTimes = [...(sendInvoiceFollowup.times || ['9:00 AM'])];
-                                newTimes[index] = e.target.value;
-                                setSendInvoiceFollowup({ ...sendInvoiceFollowup, times: newTimes });
+                                const currentTimes = sendInvoiceFollowup.nextDayTimes || ['Morning'];
+                                const newTimes = e.target.checked
+                                  ? [...currentTimes, timeOption]
+                                  : currentTimes.filter(t => t !== timeOption);
+                                setSendInvoiceFollowup({ ...sendInvoiceFollowup, nextDayTimes: newTimes.length > 0 ? newTimes : ['Morning'] });
                               }}
-                              className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            >
-                              {followupTimeOptions.map(t => (
-                                <option key={t} value={t}>{t}</option>
-                              ))}
-                            </select>
-                            {(sendInvoiceFollowup.times || ['9:00 AM']).length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newTimes = (sendInvoiceFollowup.times || ['9:00 AM']).filter((_, i) => i !== index);
-                                  setSendInvoiceFollowup({ ...sendInvoiceFollowup, times: newTimes });
-                                }}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                            {index < (sendInvoiceFollowup.times || ['9:00 AM']).length - 1 && (
-                              <span className="text-sm text-gray-400">,</span>
-                            )}
-                          </div>
+                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{timeOption}</span>
+                          </label>
                         ))}
-                        {(sendInvoiceFollowup.times || ['9:00 AM']).length < 5 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newTimes = [...(sendInvoiceFollowup.times || ['9:00 AM']), '12:00 PM'];
-                              setSendInvoiceFollowup({ ...sendInvoiceFollowup, times: newTimes });
-                            }}
-                            className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {sendInvoiceFollowup.enabled && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">If still no response, reach out every:</span>
+                        <input
+                          type="number"
+                          min="2"
+                          value={sendInvoiceFollowup.scheduleValue}
+                          onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, scheduleValue: e.target.value })}
+                          disabled={['Day', 'Week', 'Month'].includes(sendInvoiceFollowup.schedule)}
+                          className={`w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none ${
+                            ['Day', 'Week', 'Month'].includes(sendInvoiceFollowup.schedule) ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'
+                          }`}
+                          placeholder="#"
+                        />
+                        <select
+                          value={sendInvoiceFollowup.schedule}
+                          onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, schedule: e.target.value, scheduleValue: ['Days', 'Weeks', 'Months'].includes(e.target.value) ? sendInvoiceFollowup.scheduleValue : '' })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupScheduleOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        {(sendInvoiceFollowup.schedule === 'Week' || sendInvoiceFollowup.schedule === 'Weeks') && (
+                          <>
+                            <span className="text-sm text-gray-600">on</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {followupDayOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={(sendInvoiceFollowup.days || ['Monday']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = sendInvoiceFollowup.days || ['Monday'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setSendInvoiceFollowup({ ...sendInvoiceFollowup, days: newDays.length > 0 ? newDays : ['Monday'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {(sendInvoiceFollowup.schedule === 'Month' || sendInvoiceFollowup.schedule === 'Months') && (
+                          <>
+                            <span className="text-sm text-gray-600 flex-shrink-0">on the</span>
+                            <div className="flex items-center gap-2 overflow-x-auto flex-nowrap max-w-xs py-1" style={{ scrollbarWidth: 'thin' }}>
+                              {followupDayOfMonthOptions.map(day => (
+                                <label key={day} className="flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={(sendInvoiceFollowup.daysOfMonth || ['1st']).includes(day)}
+                                    onChange={(e) => {
+                                      const currentDays = sendInvoiceFollowup.daysOfMonth || ['1st'];
+                                      const newDays = e.target.checked
+                                        ? [...currentDays, day]
+                                        : currentDays.filter(d => d !== day);
+                                      setSendInvoiceFollowup({ ...sendInvoiceFollowup, daysOfMonth: newDays.length > 0 ? newDays : ['1st'] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{day}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
                         )}
                       </div>
-                      <span className="text-sm text-gray-600">for</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={sendInvoiceFollowup.duration}
-                        onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, duration: e.target.value })}
-                        className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                        placeholder="#"
-                      />
-                      <select
-                        value={sendInvoiceFollowup.durationUnit}
-                        onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, durationUnit: e.target.value })}
-                        className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                      >
-                        {followupDurationUnitOptions.map(unit => (
-                          <option key={unit} value={unit}>{unit}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm text-gray-600">at</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {followupTimeOptions.map(timeOption => (
+                            <label key={timeOption} className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={(sendInvoiceFollowup.times || ['Morning']).includes(timeOption)}
+                                onChange={(e) => {
+                                  const currentTimes = sendInvoiceFollowup.times || ['Morning'];
+                                  const newTimes = e.target.checked
+                                    ? [...currentTimes, timeOption]
+                                    : currentTimes.filter(t => t !== timeOption);
+                                  setSendInvoiceFollowup({ ...sendInvoiceFollowup, times: newTimes.length > 0 ? newTimes : ['Morning'] });
+                                }}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{timeOption}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-600">for</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={sendInvoiceFollowup.duration}
+                          onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, duration: e.target.value })}
+                          className="w-16 px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                          placeholder="#"
+                        />
+                        <select
+                          value={sendInvoiceFollowup.durationUnit}
+                          onChange={(e) => setSendInvoiceFollowup({ ...sendInvoiceFollowup, durationUnit: e.target.value })}
+                          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                        >
+                          {followupDurationUnitOptions.map(unit => (
+                            <option key={unit} value={unit}>{unit}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2542,54 +3021,297 @@ const MyAgent = ({
                   </button>
                 </div>
               </div>
-            ) : (
-              /* JOB FOLLOWUP SECTION - COMMENTED OUT
-            ) : selectedSalesFlowStage === 'Job Followup' ? (
-              <div className="space-y-6">
-                {/* Job Followup Explanation *//*}
-                <div className="bg-slate-100 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
-                    Your AI Agent can automatically follow up with customers after job completion and payment, helping build relationships and gather valuable reviews for your business.
-                  </p>
+            ) : selectedSalesFlowStage === 'After Job' ? (
+              <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto space-y-6 mb-4">
+                {/* After Job Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">After Job</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'after-job' ? null : 'after-job')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'after-job' && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenHookTooltip(null)}
+                        />
+                        <div className="absolute left-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            After the job is completed and payment is received, your AI Agent can automatically request a review from the customer. This helps build your online reputation and gather valuable feedback for your business.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                {/* Auto Send Thank You Toggle *//*}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700">Automatically send thank you note after payment received</span>
-                  <button
-                    type="button"
-                    onClick={() => setAutoSendThankYou(!autoSendThankYou)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      autoSendThankYou ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        autoSendThankYou ? 'translate-x-5' : 'translate-x-1'
+                {/* Enable Review Request Toggle */}
+                <div className="bg-white border border-slate-200 rounded-lg px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-700">Enable Review Request</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newValue = !enableReviewRequest;
+                        setEnableReviewRequest(newValue);
+                        // If toggling off, clear all saved and editing data
+                        if (!newValue) {
+                          setSelectedReviewPlatforms([]);
+                          setReviewPlatformLinks({});
+                          setSavedReviewPlatforms([]);
+                          setSavedReviewLinks({});
+                          setIsEditingReviewPlatforms(true);
+                        }
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        enableReviewRequest ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
                       }`}
-                    />
-                  </button>
+                    >
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        enableReviewRequest ? 'translate-x-5' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+
+                {/* Review Platforms - Only show when enabled */}
+                {enableReviewRequest && (
+                  <>
+                    {/* Display Version - Show when saved and not editing */}
+                    {savedReviewPlatforms.length > 0 && !isEditingReviewPlatforms ? (
+                      <div className="pt-4 relative">
+                        {/* Edit Pencil */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Copy saved data to editing state
+                            setSelectedReviewPlatforms([...savedReviewPlatforms]);
+                            setReviewPlatformLinks({...savedReviewLinks});
+                            setIsEditingReviewPlatforms(true);
+                          }}
+                          className="absolute top-4 right-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+
+                        <div className="space-y-3 pr-10">
+                          {/* Display selected platforms as pills */}
+                          <div className="flex flex-wrap gap-2">
+                            {savedReviewPlatforms.map((platformId) => {
+                              const platform = reviewPlatformOptions.find(p => p.id === platformId);
+                              return (
+                                <span key={platformId} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full">
+                                  {platform?.name}
+                                </span>
+                              );
+                            })}
+                          </div>
+
+                          {/* Display saved links */}
+                          {Object.keys(savedReviewLinks).length > 0 && (
+                            <div className="space-y-2 pt-2 border-t border-slate-100">
+                              <label className="text-sm font-semibold text-gray-700">Review Page Links</label>
+                              {savedReviewPlatforms.map((platformId) => {
+                                const platform = reviewPlatformOptions.find(p => p.id === platformId);
+                                const link = savedReviewLinks[platformId];
+                                if (!link) return null;
+                                return (
+                                  <div key={platformId} className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-600 w-24 flex-shrink-0">{platform?.name}:</span>
+                                    <span className="text-sm text-blue-600 truncate">{link}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Edit Form - Show when no saved data or editing */
+                      <div className="pt-4 space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-500">Select the platforms where you'd like customers to leave reviews</p>
+
+                          {/* Multi-select Dropdown - styled like Job Demos */}
+                          <div className="service-dropdown-multi">
+                            <button
+                              type="button"
+                              onClick={() => setReviewPlatformDropdownOpen(!reviewPlatformDropdownOpen)}
+                              className={`service-dropdown-button-inline ${reviewPlatformDropdownOpen ? 'service-dropdown-button-open' : ''}`}
+                            >
+                              <div className="service-dropdown-content">
+                                {selectedReviewPlatforms.length === 0 ? (
+                                  <span className="service-dropdown-placeholder">Select platforms</span>
+                                ) : (
+                                  <div className="service-pills-inline">
+                                    {selectedReviewPlatforms.map((platformId) => {
+                                      const platform = reviewPlatformOptions.find(p => p.id === platformId);
+                                      return (
+                                        <span key={platformId} className="service-pill-inline">
+                                          {platform?.name}
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedReviewPlatforms(selectedReviewPlatforms.filter(p => p !== platformId));
+                                              const newLinks = { ...reviewPlatformLinks };
+                                              delete newLinks[platformId];
+                                              setReviewPlatformLinks(newLinks);
+                                            }}
+                                            className="service-pill-remove-inline"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                              <ChevronDown className={`service-dropdown-chevron ${reviewPlatformDropdownOpen ? 'service-dropdown-chevron-open' : ''}`} />
+                            </button>
+
+                            {reviewPlatformDropdownOpen && (
+                              <>
+                                <div
+                                  className="service-dropdown-overlay"
+                                  onClick={() => setReviewPlatformDropdownOpen(false)}
+                                />
+                                <div className="service-dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                                  <div className="service-dropdown-list">
+                                    {reviewPlatformOptions.map((platform) => {
+                                      const isSelected = selectedReviewPlatforms.includes(platform.id);
+                                      return (
+                                        <button
+                                          key={platform.id}
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isSelected) {
+                                              setSelectedReviewPlatforms(selectedReviewPlatforms.filter(p => p !== platform.id));
+                                              const newLinks = { ...reviewPlatformLinks };
+                                              delete newLinks[platform.id];
+                                              setReviewPlatformLinks(newLinks);
+                                            } else {
+                                              setSelectedReviewPlatforms([...selectedReviewPlatforms, platform.id]);
+                                            }
+                                          }}
+                                          className={`service-dropdown-item-multi ${isSelected ? 'service-dropdown-item-selected' : ''}`}
+                                        >
+                                          <div className={`w-4 h-4 rounded border flex items-center justify-center mr-2 ${
+                                            isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                          }`}>
+                                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                                          </div>
+                                          {platform.name}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Link inputs for selected platforms */}
+                        {selectedReviewPlatforms.length > 0 && (
+                          <div className="space-y-3 pt-3">
+                            <label className="text-sm font-semibold text-gray-700">Review Page Links</label>
+                            {selectedReviewPlatforms.map((platformId) => {
+                              const platform = reviewPlatformOptions.find(p => p.id === platformId);
+                              return (
+                                <div key={platformId} className="flex items-center gap-3">
+                                  <div className="w-24 flex-shrink-0">
+                                    <span className="text-sm font-medium text-gray-600">{platform?.name}</span>
+                                  </div>
+                                  <input
+                                    type="url"
+                                    value={reviewPlatformLinks[platformId] || ''}
+                                    onChange={(e) => setReviewPlatformLinks({
+                                      ...reviewPlatformLinks,
+                                      [platformId]: e.target.value
+                                    })}
+                                    placeholder={`Enter your ${platform?.name} review page URL`}
+                                    className="service-dropdown-description-input"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+                </div>
                 </div>
 
-                {/* Auto Send Job Review Toggle *//*}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700">Automatically send job review request after payment received</span>
+                {/* Save Button */}
+                <div className="flex justify-end items-center gap-3 pt-4 border-t border-slate-200 flex-shrink-0">
+                  {afterJobSaveError && (
+                    <span className="text-red-500 text-sm">* {afterJobSaveError}</span>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setAutoSendJobReview(!autoSendJobReview)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      autoSendJobReview ? 'bg-blue-600' : 'bg-gray-400 shadow-inner'
-                    }`}
+                    onClick={() => {
+                      // Validation for After Job section
+                      if (enableReviewRequest) {
+                        // Check if platforms are selected
+                        const platformsToCheck = isEditingReviewPlatforms ? selectedReviewPlatforms : savedReviewPlatforms;
+                        const linksToCheck = isEditingReviewPlatforms ? reviewPlatformLinks : savedReviewLinks;
+
+                        if (platformsToCheck.length === 0) {
+                          setAfterJobSaveError('Please select at least one review platform');
+                          return;
+                        }
+
+                        // Check if all selected platforms have URLs
+                        const missingUrls = platformsToCheck.filter(platformId => !linksToCheck[platformId] || linksToCheck[platformId].trim() === '');
+                        if (missingUrls.length > 0) {
+                          const platformNames = missingUrls.map(id => reviewPlatformOptions.find(p => p.id === id)?.name).join(', ');
+                          setAfterJobSaveError(`Please enter URLs for: ${platformNames}`);
+                          return;
+                        }
+
+                        // Validate URL format
+                        const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
+                        const invalidUrls = platformsToCheck.filter(platformId => {
+                          const url = linksToCheck[platformId];
+                          return url && !urlPattern.test(url.trim());
+                        });
+                        if (invalidUrls.length > 0) {
+                          const platformNames = invalidUrls.map(id => reviewPlatformOptions.find(p => p.id === id)?.name).join(', ');
+                          setAfterJobSaveError(`Invalid URL format for: ${platformNames}`);
+                          return;
+                        }
+
+                        // If editing, save the platforms
+                        if (isEditingReviewPlatforms && selectedReviewPlatforms.length > 0) {
+                          setSavedReviewPlatforms([...selectedReviewPlatforms]);
+                          setSavedReviewLinks({...reviewPlatformLinks});
+                          setIsEditingReviewPlatforms(false);
+                          setSelectedReviewPlatforms([]);
+                          setReviewPlatformLinks({});
+                        }
+                      }
+
+                      // Clear error on successful save
+                      setAfterJobSaveError('');
+                    }}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
                   >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        autoSendJobReview ? 'translate-x-5' : 'translate-x-1'
-                      }`}
-                    />
+                    Save
                   </button>
                 </div>
               </div>
-              END JOB FOLLOWUP SECTION */
+            ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">
                 <p className="text-sm">Content for {selectedSalesFlowStage} will appear here</p>
               </div>
@@ -2858,375 +3580,47 @@ const MyAgent = ({
                 
                 const handleSavePersonalGreeting = () => {
                   const currentItems = step.mediaItems || [];
-                  // Save the media items data
-                  console.log('Saving Personal Greeting:', currentItems);
-                  // Here you can add API call to save the data
-                  // For now, we'll just show an alert
-                  alert('Personal Greeting saved successfully!');
-                };
+                  const itemWithMedia = currentItems.find(item => item.media);
 
-                // VideoUploadBox component
-                const VideoUploadBox = ({ onFileSelect, itemId = null, onDelete = null }) => (
-                  <div className="relative">
-                    <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors bg-white">
-                      <div className="flex flex-col items-center justify-center">
-                        <Upload className="w-6 h-6 text-slate-400 mb-1" />
-                        <p className="text-xs text-slate-600 font-medium text-center px-2">Add video</p>
-                      </div>
-                      <input
-                        type="file"
-                        accept="video/mp4"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            onFileSelect(file, itemId);
-                          }
-                        }}
-                      />
-                    </label>
-                    {onDelete && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          onDelete();
-                        }}
-                        className="absolute top-2 right-2 p-1 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-colors z-10"
-                        type="button"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                );
-                
-                return (
-                  <div
-                    key={step.id}
-                    className="bg-slate-50 rounded-2xl p-5 min-h-[400px] flex flex-col"
-                  >
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <MessageSquare className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-700 flex-1">{step.name}</h3>
-                    </div>
-
-                    {/* Personal Greeting Note */}
-                    <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-gray-600">
-                        Upload a short video introducing yourself and your business. (Must be MP4 video format, up to 60 seconds long, max 50 MB.)
-                      </p>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-                        <div className="flex items-start gap-3 flex-wrap">
-                          {displayItems.map((item, itemIndex) => (
-                            <div key={item.id} className="media-item">
-                              {item.media ? (
-                                <div className="media-preview">
-                                  {item.media instanceof File && item.media.type.startsWith('image/') ? (
-                                    <div className="media-preview-container">
-                                      <img
-                                        src={URL.createObjectURL(item.media)}
-                                        alt="Uploaded"
-                                        className="media-preview-image"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
-                                      >
-                                        <X className="media-remove-icon" />
-                                      </button>
-                                    </div>
-                                  ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
-                                    <div className="media-preview-container">
-                                      <video
-                                        src={URL.createObjectURL(item.media)}
-                                        controls
-                                        className="media-preview-video"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
-                                      >
-                                        <X className="media-remove-icon" />
-                                      </button>
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <VideoUploadBox
-                                  onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
-                                  itemId={item.id}
-                                  onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
-                                />
-                              )}
-
-                              {item.media && (
-                                <textarea
-                                  value={item.description || ''}
-                                  onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
-                                  rows={2}
-                                  className="description-textarea description-textarea-sm"
-                                  placeholder="Add description..."
-                                />
-                              )}
-                            </div>
-                          ))}
-
-                          {displayItems.length < 1 && (
-                            <button
-                              onClick={addMediaItem}
-                              className="add-media-button"
-                              type="button"
-                            >
-                              <Plus className="add-media-icon" />
-                            </button>
-                          )}
-                        </div>
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="flex justify-end pt-4 border-t border-slate-200 flex-shrink-0">
-                      <button
-                        onClick={handleSavePersonalGreeting}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        type="button"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
-              
-              // If Personal Greeting step but not selected, don't render
-              if (isPersonalGreeting) return null;
-              
-              // Special handling for Job Demos (Job Demos)
-              if (isSalesPitchHooks && selectedSalesFlowHook === 'Job Demos') {
-                const step = agentFlowSteps.find(s => s.id === 2);
-                if (!step) return null;
-                let mediaItems = step.mediaItems || [];
-                // Ensure at least one media item exists for display
-                const displayItems = mediaItems.length === 0
-                  ? [{ id: 'temp-' + Date.now(), media: null, description: '', service: '', beforeAfter: '' }]
-                  : mediaItems;
-
-                const addMediaItem = () => {
-                  const currentItems = step.mediaItems || [];
-                  // Limit to 10 items
-                  if (currentItems.length >= 10) return;
-                  const newItem = { id: Date.now(), media: null, description: '', service: '', beforeAfter: '' };
-                  setAgentFlowSteps(agentFlowSteps.map(s =>
-                    s.id === step.id
-                      ? { ...s, mediaItems: currentItems.length === 0 ? [newItem] : [...currentItems, newItem] }
-                      : s
-                  ));
-                };
-                
-                const updateMediaItem = (itemId, field, value) => {
-                  const currentItems = step.mediaItems || [];
-                  // If updating a temp item and mediaItems is empty, initialize it
-                  if (currentItems.length === 0 && itemId.toString().startsWith('temp-')) {
-                    const newItem = { id: Date.now(), media: null, description: '', service: '', beforeAfter: '' };
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
-                        ? { ...s, mediaItems: [{ ...newItem, [field]: value }] }
-                        : s
-                    ));
-                  } else {
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
-                        ? { 
-                            ...s, 
-                            mediaItems: currentItems.map(item => 
-                              item.id === itemId ? { ...item, [field]: value } : item
-                            )
-                          }
-                        : s
-                    ));
-                  }
-                };
-                
-                const removeMediaItem = (itemId) => {
-                  const currentItems = step.mediaItems || [];
-                  // If it's the last item, clear the media instead of removing the item
-                  if (currentItems.length <= 1) {
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
-                        ? { 
-                            ...s, 
-                            mediaItems: currentItems.length === 0 
-                              ? [{ id: Date.now(), media: null, description: '', service: '', beforeAfter: '' }]
-                              : currentItems.map(item => 
-                                  item.id === itemId ? { ...item, media: null, description: '' } : item
-                                )
-                          }
-                        : s
-                    ));
-                  } else {
-                    // If there are multiple items, remove the item
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
-                        ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
-                        : s
-                    ));
-                  }
-                };
-                
-                const clearMediaFromItem = (itemId) => {
-                  const currentItems = step.mediaItems || [];
-                  // Clear media and description but keep the item
-                  setAgentFlowSteps(agentFlowSteps.map(s => 
-                    s.id === step.id 
-                      ? { 
-                          ...s, 
-                          mediaItems: currentItems.map(item => 
-                            item.id === itemId ? { ...item, media: null, description: '' } : item
-                          )
-                        }
-                      : s
-                  ));
-                };
-                
-                const handleSaveSalesPitchHooks = () => {
-                  const currentItems = step.mediaItems || [];
-                  // Validate that all items with media have services and description
-                  const itemsWithMedia = currentItems.filter(item => item.media);
-                  const invalidItems = itemsWithMedia.filter(item => !item.services || item.services.length === 0 || !item.description || item.description.trim() === '');
-                  if (invalidItems.length > 0) {
-                    alert('Please fill in at least one service and description for all uploaded media.');
+                  if (!itemWithMedia || !itemWithMedia.media) {
+                    setPersonalGreetingError(true);
                     return;
                   }
-                  // Save the media items data
-                  console.log('Saving Job Demos:', currentItems);
-                  // Here you can add API call to save the data
-                  alert('Job Demos saved successfully!');
+
+                  // Save the video
+                  setPersonalGreetingError(false);
+                  setSavedPersonalGreeting({
+                    id: itemWithMedia.id,
+                    media: itemWithMedia.media,
+                    mediaUrl: itemWithMedia.mediaUrl || URL.createObjectURL(itemWithMedia.media)
+                  });
+                  // Clear the editing item
+                  setAgentFlowSteps(agentFlowSteps.map(s =>
+                    s.id === step.id ? { ...s, mediaItems: [] } : s
+                  ));
                 };
 
-                // Get all services alphabetized
-                const allServices = [
-                  ...softWashingServices,
-                  ...customSoftWashingServices,
-                  ...pressureWashingServices,
-                  ...customPressureWashingServices,
-                  ...specialtyCleaningServices,
-                  ...customSpecialtyCleaningServices
-                ].sort((a, b) => a.localeCompare(b));
+                const editSavedPersonalGreeting = () => {
+                  if (savedPersonalGreeting) {
+                    const currentItems = step.mediaItems || [];
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id ? { ...s, mediaItems: [savedPersonalGreeting] } : s
+                    ));
+                    setSavedPersonalGreeting(null);
+                  }
+                };
 
-                // ServiceDropdown component (multi-select)
-                const ServiceDropdown = ({ itemId, selectedServices = [], onServicesChange }) => {
-                  const [isOpen, setIsOpen] = useState(false);
-                  const [searchTerm, setSearchTerm] = useState('');
-
-                  const filteredServices = allServices.filter(service =>
-                    service.toLowerCase().includes(searchTerm.toLowerCase())
-                  );
-
-                  const toggleService = (service) => {
-                    const services = selectedServices || [];
-                    if (services.includes(service)) {
-                      onServicesChange(services.filter(s => s !== service));
-                    } else {
-                      onServicesChange([...services, service]);
-                    }
-                  };
-
-                  const removeService = (e, service) => {
-                    e.stopPropagation();
-                    const services = selectedServices || [];
-                    onServicesChange(services.filter(s => s !== service));
-                  };
-
-                  return (
-                    <div className="service-dropdown-multi">
-                      <button
-                        type="button"
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={`service-dropdown-button ${isOpen ? 'service-dropdown-button-open' : ''}`}
-                      >
-                        <span className="service-dropdown-text">
-                          {(selectedServices || []).length === 0 ? 'Select services' : `${selectedServices.length} selected`}
-                        </span>
-                        <ChevronDown className={`service-dropdown-chevron ${isOpen ? 'service-dropdown-chevron-open' : ''}`} />
-                      </button>
-
-                      {(selectedServices || []).length > 0 && (
-                        <div className="service-pills">
-                          {selectedServices.map((service) => (
-                            <span key={service} className="service-pill">
-                              {service}
-                              <button
-                                type="button"
-                                onClick={(e) => removeService(e, service)}
-                                className="service-pill-remove"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {isOpen && (
-                        <>
-                          <div
-                            className="service-dropdown-overlay"
-                            onClick={() => setIsOpen(false)}
-                          />
-                          <div className="service-dropdown-menu">
-                            <div className="service-dropdown-search">
-                              <input
-                                type="text"
-                                placeholder="Search services..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="service-dropdown-search-input"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                            <div className="service-dropdown-list">
-                              {filteredServices.length > 0 ? (
-                                filteredServices.map((service) => {
-                                  const isSelected = (selectedServices || []).includes(service);
-                                  return (
-                                    <button
-                                      key={service}
-                                      type="button"
-                                      onClick={() => toggleService(service)}
-                                      className={`service-dropdown-item-multi ${isSelected ? 'service-dropdown-item-selected' : ''}`}
-                                    >
-                                      <div className={`w-4 h-4 rounded border flex items-center justify-center mr-2 ${
-                                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
-                                      }`}>
-                                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                                      </div>
-                                      {service}
-                                    </button>
-                                  );
-                                })
-                              ) : (
-                                <div className="service-dropdown-empty">
-                                  No services found
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
+                const deleteSavedPersonalGreeting = () => {
+                  if (savedPersonalGreeting?.mediaUrl) {
+                    URL.revokeObjectURL(savedPersonalGreeting.mediaUrl);
+                  }
+                  setSavedPersonalGreeting(null);
                 };
 
                 // VideoUploadBox component
                 const VideoUploadBox = ({ onFileSelect, itemId = null, onDelete = null }) => (
-                  <div className="photo-upload-box">
-                    <label className="photo-upload-label">
+                  <div className="photo-upload-box-large">
+                    <label className="photo-upload-label-large">
                       <div className="photo-upload-content">
                         <Upload className="photo-upload-icon" />
                         <p className="photo-upload-text">Add video</p>
@@ -3262,134 +3656,248 @@ const MyAgent = ({
                 return (
                   <div
                     key={step.id}
-                    className="bg-slate-50 rounded-2xl p-5 min-h-[400px] flex flex-col"
+                    className="bg-slate-50 rounded-2xl p-5 h-full flex flex-col"
                   >
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                        <Star className="w-5 h-5 text-purple-600" />
+                    <div className="flex items-center gap-3 mb-6 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <MessageSquare className="w-5 h-5 text-blue-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-700 flex-1">{step.name}</h3>
-                    </div>
-
-                    {/* Job Demos Note */}
-                    <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-gray-600">
-                        Upload videos showcasing your work. Select the service type for each video to help match demos with customer inquiries. (Must be MP4 video format, up to 60 seconds long, max 50 MB.)
-                      </p>
-                    </div>
-
-                    <div className="flex-1 section-spacing overflow-y-auto mb-4">
-                        <div className="media-items-container">
-                          {displayItems.map((item, itemIndex) => (
-                            <div key={item.id} className="media-item">
-                              {item.media ? (
-                                <div className="media-preview">
-                                  {item.media instanceof File && item.media.type.startsWith('image/') ? (
-                                    <div className="media-preview-container">
-                                      <img
-                                        src={URL.createObjectURL(item.media)}
-                                        alt="Uploaded"
-                                        className="media-preview-image"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
-                                      >
-                                        <X className="media-remove-icon" />
-                                      </button>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setOpenHookTooltip(openHookTooltip === 'personal-greeting' ? null : 'personal-greeting')}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                        >
+                          <HelpCircle className="w-5 h-5" />
+                        </button>
+                        {openHookTooltip === 'personal-greeting' && (
+                          <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                            <p className="text-sm text-gray-600">
+                              Upload a short video introducing yourself and your business. (Must be MP4 video format, up to 60 seconds long, max 50 MB.)
+                            </p>
+                          </div>
+                        )}
                       </div>
-                                  ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
-                                    <div className="media-preview-container">
-                                      <video
-                                        src={URL.createObjectURL(item.media)}
-                                        controls
-                                        className="media-preview-video"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
-                                      >
-                                        <X className="media-remove-icon" />
-                                      </button>
                     </div>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <VideoUploadBox
-                                  onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
-                                  itemId={item.id}
-                                  onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
-                                />
-                              )}
 
-                              <div className="media-item-fields">
-                                <ServiceDropdown
-                                  itemId={item.id}
-                                  selectedServices={item.services || []}
-                                  onServicesChange={(services) => updateMediaItem(item.id, 'services', services)}
+                    <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                        {/* Saved Personal Greeting Video */}
+                        {savedPersonalGreeting && (
+                          <div className="p-4 bg-white rounded-xl border border-slate-200 relative">
+                            <div className="absolute top-3 right-3 flex gap-2 z-10">
+                              <button
+                                type="button"
+                                onClick={editSavedPersonalGreeting}
+                                className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={deleteSavedPersonalGreeting}
+                                className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="flex gap-4 pr-16">
+                              <div className="w-60 h-36 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 relative group">
+                                <video
+                                  id="saved-video-personal-greeting"
+                                  src={savedPersonalGreeting.mediaUrl}
+                                  className={`w-full h-full object-contain bg-black ${fullscreenVideoId === 'personal-greeting' ? '' : 'video-no-controls'}`}
+                                  muted={mutedVideoIds.includes('personal-greeting')}
+                                  controls={fullscreenVideoId === 'personal-greeting'}
+                                  disablePictureInPicture={fullscreenVideoId !== 'personal-greeting'}
+                                  controlsList={fullscreenVideoId === 'personal-greeting' ? 'nodownload noplaybackrate' : 'nodownload nofullscreen noremoteplayback noplaybackrate'}
+                                  onEnded={() => setPlayingVideoId(null)}
                                 />
-                                <div className="media-description-wrapper">
-                                  <textarea
-                                    value={item.description || ''}
-                                    onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
-                                    className="media-description-input"
-                                    placeholder="Add short description"
-                                    maxLength={150}
+                                {/* Transparent overlay to block browser controls (only when not fullscreen) */}
+                                {fullscreenVideoId !== 'personal-greeting' && (
+                                  <div
+                                    className="absolute inset-0 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const video = document.getElementById('saved-video-personal-greeting');
+                                      if (video) {
+                                        if (video.paused) {
+                                          video.play();
+                                          setPlayingVideoId('personal-greeting');
+                                        } else {
+                                          video.pause();
+                                          setPlayingVideoId(null);
+                                        }
+                                      }
+                                    }}
                                   />
-                                  <span className="media-description-counter">{(item.description || '').length}/150</span>
-                                </div>
+                                )}
+                                {/* Play/Pause overlay */}
+                                {playingVideoId !== 'personal-greeting' && (
+                                  <div
+                                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                                  >
+                                    <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                                      <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Fullscreen button */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const video = document.getElementById('saved-video-personal-greeting');
+                                    if (video) {
+                                      setFullscreenVideoId('personal-greeting');
+                                      if (video.requestFullscreen) {
+                                        video.requestFullscreen();
+                                      } else if (video.webkitRequestFullscreen) {
+                                        video.webkitRequestFullscreen();
+                                      } else if (video.msRequestFullscreen) {
+                                        video.msRequestFullscreen();
+                                      }
+                                    }
+                                  }}
+                                  className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Maximize className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
 
-                        {(step.mediaItems || []).length < 10 && (
-                          <div className="mt-3">
-                            <button
-                              onClick={addMediaItem}
-                              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                              type="button"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span className="text-sm font-medium">Add Another Video</span>
-                            </button>
+                        {/* Editable Video Upload - show when no saved video or editing */}
+                        {!savedPersonalGreeting && (
+                          <div className="p-4 bg-white rounded-xl border border-slate-200">
+                            {displayItems.map((item, itemIndex) => (
+                              <div key={item.id}>
+                                {item.media ? (
+                                  <div>
+                                    {item.media instanceof File && item.media.type.startsWith('video/') ? (
+                                      <div className="w-60 h-36 rounded-lg overflow-hidden bg-slate-100 relative group" key={`video-container-pg-${item.id}-${item.mediaUrl}`}>
+                                        <video
+                                          key={`video-pg-${item.id}-${item.mediaUrl}`}
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          className="w-full h-full object-contain bg-black video-no-controls"
+                                          disablePictureInPicture
+                                          controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
+                                          onEnded={(e) => {
+                                            const overlay = document.getElementById(`play-overlay-pg-${item.id}`);
+                                            if (overlay) overlay.style.opacity = '1';
+                                          }}
+                                        />
+                                        {/* Transparent overlay to block browser controls */}
+                                        <div
+                                          className="absolute inset-0 cursor-pointer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const video = e.target.previousElementSibling;
+                                            const overlay = document.getElementById(`play-overlay-pg-${item.id}`);
+                                            if (video && video.tagName === 'VIDEO') {
+                                              if (video.paused) {
+                                                video.play();
+                                                if (overlay) overlay.style.opacity = '0';
+                                              } else {
+                                                video.pause();
+                                                if (overlay) overlay.style.opacity = '1';
+                                              }
+                                            }
+                                          }}
+                                        />
+                                        <div id={`play-overlay-pg-${item.id}`} className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-200">
+                                          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                                            <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            clearMediaFromItem(item.id);
+                                            setPersonalGreetingError(false);
+                                          }}
+                                          className="media-remove-button"
+                                          type="button"
+                                        >
+                                          <X className="media-remove-icon" />
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <VideoUploadBox
+                                    onFileSelect={(file) => {
+                                      const blobUrl = URL.createObjectURL(file);
+                                      const currentItems = step.mediaItems || [];
+                                      if (currentItems.length === 0 && item.id.toString().startsWith('temp-')) {
+                                        setAgentFlowSteps(agentFlowSteps.map(s =>
+                                          s.id === step.id
+                                            ? { ...s, mediaItems: [{ id: Date.now(), media: file, mediaUrl: blobUrl }] }
+                                            : s
+                                        ));
+                                      } else {
+                                        setAgentFlowSteps(agentFlowSteps.map(s =>
+                                          s.id === step.id
+                                            ? {
+                                                ...s,
+                                                mediaItems: currentItems.map(i =>
+                                                  i.id === item.id ? { ...i, media: file, mediaUrl: blobUrl } : i
+                                                )
+                                              }
+                                            : s
+                                        ));
+                                      }
+                                      setPersonalGreetingError(false);
+                                    }}
+                                    itemId={item.id}
+                                  />
+                                )}
+                              </div>
+                            ))}
                           </div>
                         )}
                     </div>
 
-                    {/* Save Button */}
-                    <div className="flex justify-end pt-4 border-t border-slate-200 flex-shrink-0">
-                      <button
-                        onClick={handleSaveSalesPitchHooks}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        type="button"
-                      >
-                        Save
-                      </button>
-                    </div>
+                    {/* Save Button - only show when not saved */}
+                    {!savedPersonalGreeting && (
+                      <div className="flex justify-end items-center gap-3 pt-4 border-t border-slate-200 flex-shrink-0">
+                        {personalGreetingError && (
+                          <span className="text-xs text-red-500 flex items-center gap-0.5">
+                            <span className="text-red-500">*</span> Please upload a video
+                          </span>
+                        )}
+                        <button
+                          onClick={handleSavePersonalGreeting}
+                          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                          type="button"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               }
               
-              // If Job Demos step but not selected, don't render
-              if (isSalesPitchHooks) return null;
+              // If Personal Greeting step but not selected, don't render
+              if (isPersonalGreeting) return null;
               
-              // Special handling for Before & After
-              if (isBeforeAfter && selectedSalesFlowHook === 'Before & After') {
-                const step = agentFlowSteps.find(s => s.id === 4);
+              // Special handling for Job Demos (Job Demos)
+              if (isSalesPitchHooks && selectedSalesFlowHook === 'Job Demos') {
+                const step = agentFlowSteps.find(s => s.id === 2);
                 if (!step) return null;
                 let mediaItems = step.mediaItems || [];
-                // Ensure at least one media item exists for display
-                const displayItems = mediaItems.length === 0
+                // Ensure at least one media item exists for display only when no saved items
+                const displayItems = mediaItems.length === 0 && savedJobDemos.length === 0
                   ? [{ id: 'temp-' + Date.now(), media: null, description: '', service: '', beforeAfter: '' }]
                   : mediaItems;
 
                 const addMediaItem = () => {
                   const currentItems = step.mediaItems || [];
-                  // Limit to 10 items
-                  if (currentItems.length >= 10) return;
+                  // Limit to 10 items total (saved + editing)
+                  if (savedJobDemos.length + currentItems.length >= 10) return;
                   const newItem = { id: Date.now(), media: null, description: '', service: '', beforeAfter: '' };
                   setAgentFlowSteps(agentFlowSteps.map(s =>
                     s.id === step.id
@@ -3397,51 +3905,90 @@ const MyAgent = ({
                       : s
                   ));
                 };
-                
+
                 const updateMediaItem = (itemId, field, value) => {
                   const currentItems = step.mediaItems || [];
                   // If updating a temp item and mediaItems is empty, initialize it
                   if (currentItems.length === 0 && itemId.toString().startsWith('temp-')) {
-                    const newItem = { id: Date.now(), media: null, description: '', service: '', beforeAfter: '' };
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
-                        ? { ...s, mediaItems: [{ ...newItem, [field]: value }] }
+                    const newItem = { id: Date.now(), media: null, mediaUrl: null, description: '', service: '', beforeAfter: '' };
+                    // If setting media, also create the blob URL
+                    if (field === 'media' && value instanceof File) {
+                      const blobUrl = URL.createObjectURL(value);
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? { ...s, mediaItems: [{ ...newItem, media: value, mediaUrl: blobUrl }] }
+                          : s
+                      ));
+                    } else {
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? { ...s, mediaItems: [{ ...newItem, [field]: value }] }
+                          : s
+                      ));
+                    }
+                  } else {
+                    // If setting media, also create the blob URL
+                    if (field === 'media' && value instanceof File) {
+                      const blobUrl = URL.createObjectURL(value);
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? {
+                              ...s,
+                              mediaItems: currentItems.map(item =>
+                                item.id === itemId ? { ...item, media: value, mediaUrl: blobUrl } : item
+                              )
+                            }
+                          : s
+                      ));
+                    } else {
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? {
+                              ...s,
+                              mediaItems: currentItems.map(item =>
+                                item.id === itemId ? { ...item, [field]: value } : item
+                              )
+                            }
+                          : s
+                      ));
+                    }
+                  }
+                };
+
+                const removeMediaItem = (itemId) => {
+                  const currentItems = step.mediaItems || [];
+                  // If there are saved demos, allow removing all items completely
+                  if (savedJobDemos.length > 0) {
+                    // Revoke blob URLs before removing
+                    const itemToRemove = currentItems.find(item => item.id === itemId);
+                    if (itemToRemove?.mediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.mediaUrl);
+                    }
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
                         : s
                     ));
-                  } else {
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
-                        ? { 
-                            ...s, 
-                            mediaItems: currentItems.map(item => 
-                              item.id === itemId ? { ...item, [field]: value } : item
+                  } else if (currentItems.length <= 1) {
+                    // If no saved demos and it's the last item, clear the media instead of removing
+                    const itemToReset = currentItems.find(item => item.id === itemId);
+                    if (itemToReset?.mediaUrl) {
+                      URL.revokeObjectURL(itemToReset.mediaUrl);
+                    }
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? {
+                            ...s,
+                            mediaItems: currentItems.map(item =>
+                              item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '', services: [] } : item
                             )
                           }
                         : s
                     ));
-                  }
-                };
-                
-                const removeMediaItem = (itemId) => {
-                  const currentItems = step.mediaItems || [];
-                  // If it's the last item, clear the media instead of removing the item
-                  if (currentItems.length <= 1) {
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
-                        ? { 
-                            ...s, 
-                            mediaItems: currentItems.length === 0 
-                              ? [{ id: Date.now(), media: null, description: '', service: '', beforeAfter: '' }]
-                              : currentItems.map(item => 
-                                  item.id === itemId ? { ...item, media: null, description: '' } : item
-                                )
-                          }
-                        : s
-                    ));
                   } else {
-                    // If there are multiple items, remove the item
-                    setAgentFlowSteps(agentFlowSteps.map(s => 
-                      s.id === step.id 
+                    // Multiple items, remove the item
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
                         ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
                         : s
                     ));
@@ -3450,43 +3997,78 @@ const MyAgent = ({
                 
                 const clearMediaFromItem = (itemId) => {
                   const currentItems = step.mediaItems || [];
-                  // Clear media and description but keep the item
-                  setAgentFlowSteps(agentFlowSteps.map(s => 
-                    s.id === step.id 
-                      ? { 
-                          ...s, 
-                          mediaItems: currentItems.map(item => 
-                            item.id === itemId ? { ...item, media: null, description: '' } : item
+                  // Revoke blob URL before clearing
+                  const itemToClear = currentItems.find(item => item.id === itemId);
+                  if (itemToClear?.mediaUrl) {
+                    URL.revokeObjectURL(itemToClear.mediaUrl);
+                  }
+                  // Clear media, mediaUrl, and description but keep the item
+                  setAgentFlowSteps(agentFlowSteps.map(s =>
+                    s.id === step.id
+                      ? {
+                          ...s,
+                          mediaItems: currentItems.map(item =>
+                            item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '' } : item
                           )
                         }
                       : s
                   ));
                 };
-                
-                const handleSaveBeforeAfter = () => {
+
+                const handleSaveSalesPitchHooks = () => {
                   const currentItems = step.mediaItems || [];
-                  // Validate that all items with media have service and description
+                  // Validate that all items with media have services and description
                   const itemsWithMedia = currentItems.filter(item => item.media);
-                  const invalidItems = itemsWithMedia.filter(item => !item.service || !item.description || item.description.trim() === '');
+                  const invalidItems = itemsWithMedia.filter(item => !item.services || item.services.length === 0 || !item.description || item.description.trim() === '');
                   if (invalidItems.length > 0) {
-                    alert('Please fill in service and description for all uploaded media.');
+                    alert('Please fill in at least one service and description for all uploaded media.');
                     return;
                   }
-                  // Save the media items data
-                  console.log('Saving Before & After:', currentItems);
-                  // Here you can add API call to save the data
-                  alert('Before & After saved successfully!');
+                  if (itemsWithMedia.length === 0) {
+                    return;
+                  }
+                  // Move valid items to saved demos
+                  const newSavedDemos = [...savedJobDemos, ...itemsWithMedia];
+                  setSavedJobDemos(newSavedDemos);
+                  // Restore any pending items, or clear the edit section
+                  if (pendingJobDemoItems.length > 0) {
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: pendingJobDemoItems }
+                        : s
+                    ));
+                    setPendingJobDemoItems([]);
+                  } else {
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: [] }
+                        : s
+                    ));
+                  }
                 };
 
-                // Title header for Before & After
-                const BeforeAfterTitle = () => (
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                      <ArrowRight className="w-5 h-5 text-green-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-700 flex-1">{step.name}</h3>
-                  </div>
-                );
+                const editSavedDemo = (demoId) => {
+                  const demoToEdit = savedJobDemos.find(d => d.id === demoId);
+                  if (demoToEdit) {
+                    // Save any existing editable items to pending
+                    const currentItems = step.mediaItems || [];
+                    if (currentItems.length > 0) {
+                      setPendingJobDemoItems([...pendingJobDemoItems, ...currentItems]);
+                    }
+                    // Remove from saved
+                    setSavedJobDemos(savedJobDemos.filter(d => d.id !== demoId));
+                    // Set mediaItems to just the item being edited
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: [demoToEdit] }
+                        : s
+                    ));
+                  }
+                };
+
+                const deleteSavedDemo = (demoId) => {
+                  setSavedJobDemos(savedJobDemos.filter(d => d.id !== demoId));
+                };
 
                 // Get all services alphabetized
                 const allServices = [
@@ -3498,35 +4080,84 @@ const MyAgent = ({
                   ...customSpecialtyCleaningServices
                 ].sort((a, b) => a.localeCompare(b));
 
-                // ServiceDropdown component
-                const ServiceDropdown = ({ itemId, selectedService, onServiceChange }) => {
-                  const [isOpen, setIsOpen] = useState(false);
+                // ServiceDropdown component (multi-select)
+                const ServiceDropdown = ({ itemId, selectedServices = [], onServicesChange }) => {
+                  const isOpen = openServicesDropdownId === itemId;
                   const [searchTerm, setSearchTerm] = useState('');
-                  
+
                   const filteredServices = allServices.filter(service =>
                     service.toLowerCase().includes(searchTerm.toLowerCase())
                   );
-                  
+
+                  const handleListRef = (el) => {
+                    if (el && jobDemosDropdownScrollRef.current > 0) {
+                      // Use requestAnimationFrame to ensure scroll happens after layout
+                      requestAnimationFrame(() => {
+                        el.scrollTop = jobDemosDropdownScrollRef.current;
+                      });
+                    }
+                  };
+
+                  const toggleService = (service, e) => {
+                    // Save scroll position from the list element
+                    const listEl = e.target.closest('.service-dropdown-list');
+                    if (listEl) {
+                      jobDemosDropdownScrollRef.current = listEl.scrollTop;
+                    }
+                    const services = selectedServices || [];
+                    if (services.includes(service)) {
+                      onServicesChange(services.filter(s => s !== service));
+                    } else {
+                      onServicesChange([...services, service]);
+                    }
+                  };
+
+                  const removeService = (e, service) => {
+                    e.stopPropagation();
+                    const services = selectedServices || [];
+                    onServicesChange(services.filter(s => s !== service));
+                  };
+
                   return (
-                    <div className="service-dropdown">
+                    <div className="service-dropdown-multi">
                       <button
                         type="button"
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={`service-dropdown-button ${isOpen ? 'service-dropdown-button-open' : ''}`}
+                        onClick={() => setOpenServicesDropdownId(isOpen ? null : itemId)}
+                        className={`service-dropdown-button-inline ${isOpen ? 'service-dropdown-button-open' : ''}`}
                       >
-                        <span className="service-dropdown-text">
-                          {selectedService || 'Select service'}
-                        </span>
+                        <div className="service-dropdown-content">
+                          {(selectedServices || []).length === 0 ? (
+                            <span className="service-dropdown-placeholder">Select services</span>
+                          ) : (
+                            <div className="service-pills-inline">
+                              {selectedServices.map((service) => (
+                                <span key={service} className="service-pill-inline">
+                                  {service}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeService(e, service);
+                                    }}
+                                    className="service-pill-remove-inline"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <ChevronDown className={`service-dropdown-chevron ${isOpen ? 'service-dropdown-chevron-open' : ''}`} />
                       </button>
-                      
+
                       {isOpen && (
                         <>
-                          <div 
-                            className="service-dropdown-overlay" 
-                            onClick={() => setIsOpen(false)}
+                          <div
+                            className="service-dropdown-overlay"
+                            onClick={() => setOpenServicesDropdownId(null)}
                           />
-                          <div className="service-dropdown-menu">
+                          <div className="service-dropdown-menu" onClick={(e) => e.stopPropagation()}>
                             <div className="service-dropdown-search">
                               <input
                                 type="text"
@@ -3537,22 +4168,29 @@ const MyAgent = ({
                                 onClick={(e) => e.stopPropagation()}
                               />
                             </div>
-                            <div className="service-dropdown-list">
+                            <div className="service-dropdown-list" ref={handleListRef}>
                               {filteredServices.length > 0 ? (
-                                filteredServices.map((service) => (
-                                  <button
-                                    key={service}
-                                    type="button"
-                                    onClick={() => {
-                                      onServiceChange(service);
-                                      setIsOpen(false);
-                                      setSearchTerm('');
-                                    }}
-                                    className={`service-dropdown-item ${selectedService === service ? 'service-dropdown-item-selected' : ''}`}
-                                  >
-                                    {service}
-                                  </button>
-                                ))
+                                filteredServices.map((service) => {
+                                  const isSelected = (selectedServices || []).includes(service);
+                                  return (
+                                    <button
+                                      key={service}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleService(service, e);
+                                      }}
+                                      className={`service-dropdown-item-multi ${isSelected ? 'service-dropdown-item-selected' : ''}`}
+                                    >
+                                      <div className={`w-4 h-4 rounded border flex items-center justify-center mr-2 ${
+                                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                      }`}>
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                                      </div>
+                                      {service}
+                                    </button>
+                                  );
+                                })
                               ) : (
                                 <div className="service-dropdown-empty">
                                   No services found
@@ -3566,17 +4204,17 @@ const MyAgent = ({
                   );
                 };
 
-                // PhotoUploadBox component
-                const PhotoUploadBox = ({ onFileSelect, itemId = null, onDelete = null }) => (
+                // VideoUploadBox component
+                const VideoUploadBox = ({ onFileSelect, itemId = null, onDelete = null, hasError = false }) => (
                   <div className="photo-upload-box">
-                    <label className="photo-upload-label">
+                    <label className={`photo-upload-label ${hasError ? 'border-red-500 bg-red-50' : ''}`}>
                       <div className="photo-upload-content">
-                        <Upload className="photo-upload-icon" />
-                        <p className="photo-upload-text">Add photo or video</p>
+                        <Upload className={`photo-upload-icon ${hasError ? 'text-red-400' : ''}`} />
+                        <p className={`photo-upload-text ${hasError ? 'text-red-500' : ''}`}>Add video</p>
                       </div>
                       <input
                         type="file"
-                        accept="image/*,video/*"
+                        accept="video/mp4"
                         className="photo-upload-input"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -3605,130 +4243,379 @@ const MyAgent = ({
                 return (
                   <div
                     key={step.id}
-                    className="bg-slate-50 rounded-2xl p-5 min-h-[400px] flex flex-col"
+                    className="bg-slate-50 rounded-2xl p-5 h-full flex flex-col"
                   >
-                    <BeforeAfterTitle />
-
-                    {/* Before & After Note */}
-                    <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-gray-600">
-                        Upload before and after photos to showcase the transformation and quality of your work. (Upload JPG/PNG (≤5MB). Images auto-resized for fast delivery.)
-                      </p>
+                    <div className="flex items-center gap-3 mb-6 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <Star className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-700 flex-1">{step.name}</h3>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setOpenHookTooltip(openHookTooltip === 'job-demos' ? null : 'job-demos')}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                        >
+                          <HelpCircle className="w-5 h-5" />
+                        </button>
+                        {openHookTooltip === 'job-demos' && (
+                          <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                            <p className="text-sm text-gray-600">
+                              Upload videos showcasing your work. Select the service type for each video to help match demos with customer inquiries. (Must be MP4 video format, up to 60 seconds long, max 50 MB.)
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex-1 section-spacing overflow-y-auto mb-4">
-                        <div className="media-items-container">
-                          {displayItems.map((item, itemIndex) => (
-                            <div key={item.id} className="media-item">
-                              {item.media ? (
-                                <div className="media-preview">
-                                  {item.media instanceof File && item.media.type.startsWith('image/') ? (
-                                    <div className="media-preview-container">
-                                      <img
-                                        src={URL.createObjectURL(item.media)}
-                                        alt="Uploaded"
-                                        className="media-preview-image"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
-                                      >
-                                        <X className="media-remove-icon" />
-                                      </button>
+                        {/* Saved Demos Section */}
+                        {savedJobDemos.length > 0 && (
+                          <div className="mb-2">
+                            <div className="space-y-3">
+                              {savedJobDemos.map((demo) => (
+                                <div key={demo.id} className="p-4 bg-white rounded-xl border border-slate-200 relative">
+                                  <div className="absolute top-3 right-3 flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => editSavedDemo(demo.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                      title="Edit"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteSavedDemo(demo.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <div className="flex gap-4 pr-16">
+                                    {demo.media && demo.media instanceof File && demo.media.type.startsWith('video/') && (
+                                      <div className="w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 relative group">
+                                        <video
+                                          id={`saved-video-${demo.id}`}
+                                          src={demo.mediaUrl || URL.createObjectURL(demo.media)}
+                                          className={`w-full h-full object-contain bg-black ${fullscreenVideoId === demo.id ? '' : 'video-no-controls'}`}
+                                          muted={mutedVideoIds.includes(demo.id)}
+                                          controls={fullscreenVideoId === demo.id}
+                                          disablePictureInPicture={fullscreenVideoId !== demo.id}
+                                          controlsList={fullscreenVideoId === demo.id ? 'nodownload noplaybackrate' : 'nodownload nofullscreen noremoteplayback noplaybackrate'}
+                                          onEnded={() => setPlayingVideoId(null)}
+                                        />
+                                        {/* Transparent overlay to block browser controls (only when not fullscreen) */}
+                                        {fullscreenVideoId !== demo.id && (
+                                          <div
+                                            className="absolute inset-0 cursor-pointer"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              const video = document.getElementById(`saved-video-${demo.id}`);
+                                              if (video) {
+                                                if (video.paused) {
+                                                  video.play();
+                                                  setPlayingVideoId(demo.id);
+                                                } else {
+                                                  video.pause();
+                                                  setPlayingVideoId(null);
+                                                }
+                                              }
+                                            }}
+                                          />
+                                        )}
+                                        {/* Play/Pause overlay */}
+                                        {playingVideoId !== demo.id && (
+                                          <div
+                                            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                                          >
+                                            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                                              <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+                                            </div>
+                                          </div>
+                                        )}
+                                        {/* Fullscreen button */}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const video = document.getElementById(`saved-video-${demo.id}`);
+                                            if (video) {
+                                              setFullscreenVideoId(demo.id);
+                                              if (video.requestFullscreen) {
+                                                video.requestFullscreen();
+                                              } else if (video.webkitRequestFullscreen) {
+                                                video.webkitRequestFullscreen();
+                                              } else if (video.msRequestFullscreen) {
+                                                video.msRequestFullscreen();
+                                              }
+                                            }
+                                          }}
+                                          className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                          <Maximize className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      {demo.description && (
+                                        <div className="mb-2">
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Description:</span>
+                                          <span className="text-sm italic text-gray-600">{demo.description}</span>
+                                        </div>
+                                      )}
+                                      {demo.services && demo.services.length > 0 && (
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Tags:</span>
+                                          <div className="inline-flex flex-wrap gap-1">
+                                            {demo.services.map((service, idx) => (
+                                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">{service}</span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
-                                    <div className="media-preview-container">
-                                      <video
-                                        src={URL.createObjectURL(item.media)}
-                                        controls
-                                        className="media-preview-video"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
-                                      >
-                                        <X className="media-remove-icon" />
-                                      </button>
-                                    </div>
-                                  ) : null}
+                                  </div>
                                 </div>
-                              ) : (
-                                <PhotoUploadBox
-                                  onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
-                                  itemId={item.id}
-                                  onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
-                                />
-                              )}
-
-                              <div className="media-item-fields">
-                                <ServiceDropdown
-                                  itemId={item.id}
-                                  selectedService={item.service || ''}
-                                  onServiceChange={(service) => updateMediaItem(item.id, 'service', service)}
-                                />
-                                <div className="media-description-wrapper">
-                                  <textarea
-                                    value={item.description || ''}
-                                    onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
-                                    className="media-description-input"
-                                    placeholder="Add short description"
-                                    maxLength={150}
-                                  />
-                                  <span className="media-description-counter">{(item.description || '').length}/150</span>
-                                </div>
-                              </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-
-                        {(step.mediaItems || []).length < 10 && (
-                          <div className="mt-3">
-                            <button
-                              onClick={addMediaItem}
-                              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                              type="button"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span className="text-sm font-medium">Add Another Photo</span>
-                            </button>
                           </div>
                         )}
+
+                        {/* Divider between saved and editable */}
+                        {savedJobDemos.length > 0 && (displayItems.length > 0 || savedJobDemos.length < 10) && (
+                          <div className="border-t border-slate-300 mt-1 mb-2"></div>
+                        )}
+
+                        {/* Edit Demos Section */}
+                        {(displayItems.length > 0 && ((step.mediaItems || []).length > 0 || savedJobDemos.length === 0)) && (
+                          <div className="media-items-container">
+                            {displayItems.map((item, itemIndex) => (
+                              <div key={item.id} className="media-item">
+                                {item.media ? (
+                                  <div className="media-preview">
+                                    {item.media instanceof File && item.media.type.startsWith('image/') ? (
+                                      <div className="media-preview-container">
+                                        <img
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          alt="Uploaded"
+                                          className="media-preview-image"
+                                        />
+                                        <button
+                                          onClick={() => clearMediaFromItem(item.id)}
+                                          className="media-remove-button"
+                                          type="button"
+                                        >
+                                          <X className="media-remove-icon" />
+                                        </button>
+                                      </div>
+                                    ) : item.media instanceof File && item.media.type.startsWith('video/') ? (
+                                      <div className="w-40 h-24 rounded-lg overflow-hidden bg-slate-100 relative group" key={`video-container-${item.id}-${item.mediaUrl}`}>
+                                        <video
+                                          key={`video-${item.id}-${item.mediaUrl}`}
+                                          src={item.mediaUrl}
+                                          className="w-full h-full object-contain bg-black video-no-controls"
+                                          disablePictureInPicture
+                                          controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
+                                          onEnded={(e) => {
+                                            const overlay = document.getElementById(`play-overlay-${item.id}`);
+                                            if (overlay) overlay.style.opacity = '1';
+                                          }}
+                                        />
+                                        {/* Transparent overlay to block browser controls */}
+                                        <div
+                                          className="absolute inset-0 cursor-pointer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const video = e.target.previousElementSibling;
+                                            const overlay = document.getElementById(`play-overlay-${item.id}`);
+                                            if (video && video.tagName === 'VIDEO') {
+                                              if (video.paused) {
+                                                video.play();
+                                                if (overlay) overlay.style.opacity = '0';
+                                              } else {
+                                                video.pause();
+                                                if (overlay) overlay.style.opacity = '1';
+                                              }
+                                            }
+                                          }}
+                                        />
+                                        <div id={`play-overlay-${item.id}`} className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-200">
+                                          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                                            <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={() => clearMediaFromItem(item.id)}
+                                          className="media-remove-button"
+                                          type="button"
+                                        >
+                                          <X className="media-remove-icon" />
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <VideoUploadBox
+                                    onFileSelect={(file) => {
+                                      updateMediaItem(item.id, 'media', file);
+                                      // Clear errors when file is uploaded
+                                      if (jobDemoErrors[item.id]) {
+                                        setJobDemoErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    itemId={item.id}
+                                    onDelete={displayItems.length > 1 || savedJobDemos.length > 0 ? () => removeMediaItem(item.id) : null}
+                                  />
+                                )}
+
+                                <div className="media-item-fields">
+                                  <ServiceDropdown
+                                    itemId={item.id}
+                                    selectedServices={item.services || []}
+                                    onServicesChange={(services) => {
+                                      updateMediaItem(item.id, 'services', services);
+                                      // Clear errors when selection changes
+                                      if (jobDemoErrors[item.id]) {
+                                        setJobDemoErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                  />
+                                  <DescriptionInput
+                                    value={item.description || ''}
+                                    onChange={(newDescription) => {
+                                      updateMediaItem(item.id, 'description', newDescription);
+                                      // Clear errors when user finishes typing
+                                      if (jobDemoErrors[item.id]) {
+                                        setJobDemoErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    maxLength={150}
+                                  />
+                                  <div className="flex items-center justify-end gap-3 mt-2">
+                                    {jobDemoErrors[item.id] && (
+                                      <span className="text-xs text-red-500 flex items-center gap-0.5">
+                                        <span className="text-red-500">*</span> Please fill out all sections
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        // Validate this item
+                                        const errors = {
+                                          media: !item.media,
+                                          services: !item.services || item.services.length === 0,
+                                          description: !item.description || item.description.trim() === ''
+                                        };
+
+                                        if (errors.media || errors.services || errors.description) {
+                                          setJobDemoErrors(prev => ({
+                                            ...prev,
+                                            [item.id]: errors
+                                          }));
+                                          return;
+                                        }
+
+                                        // Clear errors and save this item
+                                        setJobDemoErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                        setSavedJobDemos([...savedJobDemos, item]);
+                                        // Remove from edit section
+                                        const remainingItems = (step.mediaItems || []).filter(i => i.id !== item.id);
+                                        // Restore pending items if any
+                                        if (pendingJobDemoItems.length > 0) {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: [...remainingItems, ...pendingJobDemoItems] }
+                                              : s
+                                          ));
+                                          setPendingJobDemoItems([]);
+                                        } else {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: remainingItems }
+                                              : s
+                                          ));
+                                        }
+                                      }}
+                                      className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                                      type="button"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add Demo button */}
+                        {(savedJobDemos.length + (step.mediaItems || []).length) < 10 && (() => {
+                          const currentMediaItems = step.mediaItems || [];
+                          const hasEditForm = currentMediaItems.length > 0;
+                          return (
+                            <div className="mt-1">
+                              <button
+                                onClick={addMediaItem}
+                                disabled={hasEditForm}
+                                className={`flex items-center gap-2 transition-colors ${
+                                  hasEditForm
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-blue-600 hover:text-blue-700'
+                                }`}
+                                type="button"
+                                title={hasEditForm ? 'Save or delete the current form before adding another' : 'Add Demo'}
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-sm font-medium">Add Demo</span>
+                              </button>
+                            </div>
+                          );
+                        })()}
                     </div>
 
-                    {/* Save Button */}
-                    <div className="flex justify-end pt-4 border-t border-slate-200 flex-shrink-0">
-                      <button
-                        onClick={handleSaveBeforeAfter}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        type="button"
-                      >
-                        Save
-                      </button>
-                    </div>
                   </div>
                 );
               }
-              
-              // If Before & After step but not selected, don't render
-              if (isBeforeAfter) return null;
 
-              // Special handling for Infographics
-              if (isInfographics && selectedSalesFlowHook === 'Infographics') {
-                const step = agentFlowSteps.find(s => s.id === 5);
+              // If Job Demos step but not selected, don't render
+              if (isSalesPitchHooks) return null;
+              
+              // Special handling for Before & After
+              if (isBeforeAfter && selectedSalesFlowHook === 'Before & After') {
+                const step = agentFlowSteps.find(s => s.id === 4);
                 if (!step) return null;
                 let mediaItems = step.mediaItems || [];
-                // Ensure at least one media item exists for display
-                const displayItems = mediaItems.length === 0
-                  ? [{ id: 'temp-' + Date.now(), media: null, description: '', service: '' }]
-                  : mediaItems;
+                // Filter out items that are in pending state (hidden while editing a saved item)
+                const filteredMediaItems = mediaItems.filter(item =>
+                  !pendingBeforeAfterItems.some(pending => pending.id === item.id)
+                );
+                // Ensure at least one media item exists for display only when no saved items
+                const displayItems = filteredMediaItems.length === 0 && savedBeforeAfter.length === 0
+                  ? [{ id: 'temp-before-after', media: null, mediaUrl: null, description: '', services: [] }]
+                  : filteredMediaItems;
 
                 const addMediaItem = () => {
                   const currentItems = step.mediaItems || [];
-                  // Limit to 10 items
-                  if (currentItems.length >= 10) return;
-                  const newItem = { id: Date.now(), media: null, description: '', service: '' };
+                  // Limit to 10 items total (saved + editing)
+                  if (savedBeforeAfter.length + currentItems.length >= 10) return;
+                  const newItem = { id: Date.now(), media: null, mediaUrl: null, description: '', services: [] };
                   setAgentFlowSteps(agentFlowSteps.map(s =>
                     s.id === step.id
                       ? { ...s, mediaItems: currentItems.length === 0 ? [newItem] : [...currentItems, newItem] }
@@ -3736,14 +4623,24 @@ const MyAgent = ({
                   ));
                 };
 
-                const updateMediaItem = (itemId, field, value) => {
+                const updateMediaItem = (itemId, field, value, extraFields = {}) => {
                   const currentItems = step.mediaItems || [];
                   // If updating a temp item and mediaItems is empty, initialize it
                   if (currentItems.length === 0 && itemId.toString().startsWith('temp-')) {
-                    const newItem = { id: Date.now(), media: null, description: '', service: '' };
+                    const newItem = {
+                      id: Date.now(),
+                      beforeMedia: null,
+                      beforeMediaUrl: null,
+                      afterMedia: null,
+                      afterMediaUrl: null,
+                      description: '',
+                      services: [],
+                      [field]: value,
+                      ...extraFields
+                    };
                     setAgentFlowSteps(agentFlowSteps.map(s =>
                       s.id === step.id
-                        ? { ...s, mediaItems: [{ ...newItem, [field]: value }] }
+                        ? { ...s, mediaItems: [newItem] }
                         : s
                     ));
                   } else {
@@ -3752,7 +4649,7 @@ const MyAgent = ({
                         ? {
                             ...s,
                             mediaItems: currentItems.map(item =>
-                              item.id === itemId ? { ...item, [field]: value } : item
+                              item.id === itemId ? { ...item, [field]: value, ...extraFields } : item
                             )
                           }
                         : s
@@ -3762,22 +4659,43 @@ const MyAgent = ({
 
                 const removeMediaItem = (itemId) => {
                   const currentItems = step.mediaItems || [];
-                  // If it's the last item, clear the media instead of removing the item
-                  if (currentItems.length <= 1) {
+                  // If there are saved items, allow removing all items completely
+                  if (savedBeforeAfter.length > 0) {
+                    // Revoke blob URLs before removing
+                    const itemToRemove = currentItems.find(item => item.id === itemId);
+                    if (itemToRemove?.beforeMediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.beforeMediaUrl);
+                    }
+                    if (itemToRemove?.afterMediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.afterMediaUrl);
+                    }
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
+                        : s
+                    ));
+                  } else if (currentItems.length <= 1) {
+                    // If no saved items and it's the last item, clear the media instead of removing
+                    const itemToReset = currentItems.find(item => item.id === itemId);
+                    if (itemToReset?.mediaUrl) {
+                      URL.revokeObjectURL(itemToReset.mediaUrl);
+                    }
                     setAgentFlowSteps(agentFlowSteps.map(s =>
                       s.id === step.id
                         ? {
                             ...s,
-                            mediaItems: currentItems.length === 0
-                              ? [{ id: Date.now(), media: null, description: '', service: '' }]
-                              : currentItems.map(item =>
-                                  item.id === itemId ? { ...item, media: null, description: '' } : item
-                                )
+                            mediaItems: currentItems.map(item =>
+                              item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '', services: [] } : item
+                            )
                           }
                         : s
                     ));
                   } else {
-                    // If there are multiple items, remove the item
+                    // Multiple items, remove the item
+                    const itemToRemove = currentItems.find(item => item.id === itemId);
+                    if (itemToRemove?.mediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.mediaUrl);
+                    }
                     setAgentFlowSteps(agentFlowSteps.map(s =>
                       s.id === step.id
                         ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
@@ -3788,41 +4706,74 @@ const MyAgent = ({
 
                 const clearMediaFromItem = (itemId) => {
                   const currentItems = step.mediaItems || [];
-                  // Clear media and description but keep the item
+                  // Revoke blob URL before clearing
+                  const itemToClear = currentItems.find(item => item.id === itemId);
+                  if (itemToClear?.mediaUrl) {
+                    URL.revokeObjectURL(itemToClear.mediaUrl);
+                  }
+                  // Clear media, mediaUrl, and description but keep the item
                   setAgentFlowSteps(agentFlowSteps.map(s =>
                     s.id === step.id
                       ? {
                           ...s,
                           mediaItems: currentItems.map(item =>
-                            item.id === itemId ? { ...item, media: null, description: '' } : item
+                            item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '' } : item
                           )
                         }
                       : s
                   ));
                 };
 
-                const handleSaveInfographics = () => {
-                  const currentItems = step.mediaItems || [];
-                  // Validate that all items with media have service and description
-                  const itemsWithMedia = currentItems.filter(item => item.media);
-                  const invalidItems = itemsWithMedia.filter(item => !item.service || !item.description || item.description.trim() === '');
-                  if (invalidItems.length > 0) {
-                    alert('Please fill in service and description for all uploaded media.');
-                    return;
+                const editSavedBeforeAfter = (itemId) => {
+                  const itemToEdit = savedBeforeAfter.find(d => d.id === itemId);
+                  if (itemToEdit) {
+                    // Save any existing editable items to pending
+                    const currentItems = step.mediaItems || [];
+                    if (currentItems.length > 0) {
+                      setPendingBeforeAfterItems([...pendingBeforeAfterItems, ...currentItems]);
+                    }
+                    // Remove from saved and add to edit
+                    setSavedBeforeAfter(savedBeforeAfter.filter(d => d.id !== itemId));
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id ? { ...s, mediaItems: [itemToEdit] } : s
+                    ));
                   }
-                  // Save the media items data
-                  console.log('Saving Infographics:', currentItems);
-                  // Here you can add API call to save the data
-                  alert('Infographics saved successfully!');
                 };
 
-                // Title header for Infographics
-                const InfographicsTitle = () => (
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-                      <Images className="w-5 h-5 text-teal-600" />
+                const deleteSavedBeforeAfter = (itemId) => {
+                  const itemToDelete = savedBeforeAfter.find(d => d.id === itemId);
+                  if (itemToDelete?.beforeMediaUrl) {
+                    URL.revokeObjectURL(itemToDelete.beforeMediaUrl);
+                  }
+                  if (itemToDelete?.afterMediaUrl) {
+                    URL.revokeObjectURL(itemToDelete.afterMediaUrl);
+                  }
+                  setSavedBeforeAfter(savedBeforeAfter.filter(d => d.id !== itemId));
+                };
+
+                // Title header for Before & After
+                const BeforeAfterTitle = () => (
+                  <div className="flex items-center gap-3 mb-6 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <ArrowRight className="w-5 h-5 text-green-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-700 flex-1">{step.name}</h3>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHookTooltip(openHookTooltip === 'before-after' ? null : 'before-after')}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                      {openHookTooltip === 'before-after' && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Upload before and after photos to showcase the transformation and quality of your work. (Upload JPG/PNG (≤5MB). Images auto-resized for fast delivery.)
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
 
@@ -3836,25 +4787,74 @@ const MyAgent = ({
                   ...customSpecialtyCleaningServices
                 ].sort((a, b) => a.localeCompare(b));
 
-                // ServiceDropdown component for Infographics
-                const InfographicsServiceDropdown = ({ itemId, selectedService, onServiceChange }) => {
-                  const [isOpen, setIsOpen] = useState(false);
+                // ServiceDropdown component for Before & After (multi-select)
+                const BeforeAfterServiceDropdown = ({ itemId, selectedServices = [], onServicesChange }) => {
+                  const isOpen = openBeforeAfterServicesDropdownId === itemId;
                   const [searchTerm, setSearchTerm] = useState('');
 
                   const filteredServices = allServices.filter(service =>
                     service.toLowerCase().includes(searchTerm.toLowerCase())
                   );
 
+                  const handleListRef = (el) => {
+                    if (el && beforeAfterDropdownScrollRef.current > 0) {
+                      // Use requestAnimationFrame to ensure scroll happens after layout
+                      requestAnimationFrame(() => {
+                        el.scrollTop = beforeAfterDropdownScrollRef.current;
+                      });
+                    }
+                  };
+
+                  const toggleService = (service, e) => {
+                    // Save scroll position from the list element
+                    const listEl = e.target.closest('.service-dropdown-list');
+                    if (listEl) {
+                      beforeAfterDropdownScrollRef.current = listEl.scrollTop;
+                    }
+                    const services = selectedServices || [];
+                    if (services.includes(service)) {
+                      onServicesChange(services.filter(s => s !== service));
+                    } else {
+                      onServicesChange([...services, service]);
+                    }
+                  };
+
+                  const removeService = (e, service) => {
+                    e.stopPropagation();
+                    const services = selectedServices || [];
+                    onServicesChange(services.filter(s => s !== service));
+                  };
+
                   return (
-                    <div className="service-dropdown">
+                    <div className="service-dropdown-multi">
                       <button
                         type="button"
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={`service-dropdown-button ${isOpen ? 'service-dropdown-button-open' : ''}`}
+                        onClick={() => setOpenBeforeAfterServicesDropdownId(isOpen ? null : itemId)}
+                        className={`service-dropdown-button-inline ${isOpen ? 'service-dropdown-button-open' : ''}`}
                       >
-                        <span className="service-dropdown-text">
-                          {selectedService || 'Select service'}
-                        </span>
+                        <div className="service-dropdown-content">
+                          {(selectedServices || []).length === 0 ? (
+                            <span className="service-dropdown-placeholder">Select services</span>
+                          ) : (
+                            <div className="service-pills-inline">
+                              {selectedServices.map((service) => (
+                                <span key={service} className="service-pill-inline">
+                                  {service}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeService(e, service);
+                                    }}
+                                    className="service-pill-remove-inline"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <ChevronDown className={`service-dropdown-chevron ${isOpen ? 'service-dropdown-chevron-open' : ''}`} />
                       </button>
 
@@ -3862,9 +4862,9 @@ const MyAgent = ({
                         <>
                           <div
                             className="service-dropdown-overlay"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => setOpenBeforeAfterServicesDropdownId(null)}
                           />
-                          <div className="service-dropdown-menu">
+                          <div className="service-dropdown-menu" onClick={(e) => e.stopPropagation()}>
                             <div className="service-dropdown-search">
                               <input
                                 type="text"
@@ -3875,22 +4875,717 @@ const MyAgent = ({
                                 onClick={(e) => e.stopPropagation()}
                               />
                             </div>
-                            <div className="service-dropdown-list">
+                            <div className="service-dropdown-list" ref={handleListRef}>
                               {filteredServices.length > 0 ? (
-                                filteredServices.map((service) => (
-                                  <button
-                                    key={service}
-                                    type="button"
-                                    onClick={() => {
-                                      onServiceChange(service);
-                                      setIsOpen(false);
-                                      setSearchTerm('');
+                                filteredServices.map((service) => {
+                                  const isSelected = (selectedServices || []).includes(service);
+                                  return (
+                                    <button
+                                      key={service}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleService(service, e);
+                                      }}
+                                      className={`service-dropdown-item-multi ${isSelected ? 'service-dropdown-item-selected' : ''}`}
+                                    >
+                                      <div className={`w-4 h-4 rounded border flex items-center justify-center mr-2 ${
+                                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                      }`}>
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                                      </div>
+                                      {service}
+                                    </button>
+                                  );
+                                })
+                              ) : (
+                                <div className="service-dropdown-empty">
+                                  No services found
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                };
+
+                // PhotoUploadBox component for Before & After - single box with label
+                const BeforeAfterUploadBox = ({ onFileSelect, label, mediaFile, mediaUrl, onClear }) => (
+                  <div className="before-after-upload-wrapper">
+                    <span className="before-after-label">{label}</span>
+                    {mediaFile ? (
+                      <div className="before-after-preview">
+                        <img
+                          src={mediaUrl || URL.createObjectURL(mediaFile)}
+                          alt={label}
+                          className="before-after-preview-image"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClear();
+                          }}
+                          className="before-after-remove-button"
+                          type="button"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="before-after-upload-label">
+                        <div className="before-after-upload-content">
+                          <Upload className="before-after-upload-icon" />
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png"
+                          className="photo-upload-input"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              onFileSelect(file);
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                );
+
+                return (
+                  <div
+                    key={step.id}
+                    className="bg-slate-50 rounded-2xl p-5 h-full flex flex-col"
+                  >
+                    <BeforeAfterTitle />
+
+                    <div className="flex-1 section-spacing overflow-y-auto mb-4">
+                        {/* Saved Before & After Section */}
+                        {savedBeforeAfter.length > 0 && (
+                          <div className="mb-2">
+                            <div className="space-y-3">
+                              {savedBeforeAfter.map((item) => (
+                                <div key={item.id} className="p-4 bg-white rounded-xl border border-slate-200 relative">
+                                  <div className="absolute top-3 right-3 flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => editSavedBeforeAfter(item.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                      title="Edit"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteSavedBeforeAfter(item.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <div className="flex gap-4 pr-16">
+                                    {/* Before Photo */}
+                                    {item.beforeMedia && (
+                                      <div className="before-after-saved-photo-wrapper">
+                                        <span className="before-after-saved-label">Before</span>
+                                        <div
+                                          className="before-after-saved-photo group cursor-pointer"
+                                          onClick={() => setExpandedBeforeAfterPhotoId(`${item.id}-before`)}
+                                        >
+                                          <img
+                                            src={item.beforeMediaUrl || URL.createObjectURL(item.beforeMedia)}
+                                            alt="Before"
+                                            className="w-full h-full object-contain"
+                                          />
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <Maximize className="w-5 h-5 text-white drop-shadow-lg" />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {/* After Photo */}
+                                    {item.afterMedia && (
+                                      <div className="before-after-saved-photo-wrapper">
+                                        <span className="before-after-saved-label">After</span>
+                                        <div
+                                          className="before-after-saved-photo group cursor-pointer"
+                                          onClick={() => setExpandedBeforeAfterPhotoId(`${item.id}-after`)}
+                                        >
+                                          <img
+                                            src={item.afterMediaUrl || URL.createObjectURL(item.afterMedia)}
+                                            alt="After"
+                                            className="w-full h-full object-contain"
+                                          />
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <Maximize className="w-5 h-5 text-white drop-shadow-lg" />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      {item.description && (
+                                        <div className="mb-2">
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Description:</span>
+                                          <span className="text-sm italic text-gray-600">{item.description}</span>
+                                        </div>
+                                      )}
+                                      {item.services && item.services.length > 0 && (
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Tags:</span>
+                                          <div className="inline-flex flex-wrap gap-1">
+                                            {item.services.map((service, idx) => (
+                                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">{service}</span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Expanded Photo Modal - Before */}
+                                  {expandedBeforeAfterPhotoId === `${item.id}-before` && item.beforeMedia && (
+                                    <div
+                                      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+                                      onClick={() => setExpandedBeforeAfterPhotoId(null)}
+                                    >
+                                      <div className="relative max-w-4xl max-h-[90vh] w-full">
+                                        <img
+                                          src={item.beforeMediaUrl || URL.createObjectURL(item.beforeMedia)}
+                                          alt="Before - Expanded"
+                                          className="w-full h-full object-contain rounded-lg"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedBeforeAfterPhotoId(null)}
+                                          className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                                        >
+                                          <X className="w-5 h-5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {/* Expanded Photo Modal - After */}
+                                  {expandedBeforeAfterPhotoId === `${item.id}-after` && item.afterMedia && (
+                                    <div
+                                      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+                                      onClick={() => setExpandedBeforeAfterPhotoId(null)}
+                                    >
+                                      <div className="relative max-w-4xl max-h-[90vh] w-full">
+                                        <img
+                                          src={item.afterMediaUrl || URL.createObjectURL(item.afterMedia)}
+                                          alt="After - Expanded"
+                                          className="w-full h-full object-contain rounded-lg"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedBeforeAfterPhotoId(null)}
+                                          className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                                        >
+                                          <X className="w-5 h-5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Divider between saved and editable */}
+                        {savedBeforeAfter.length > 0 && (displayItems.length > 0 || savedBeforeAfter.length < 10) && (
+                          <div className="border-t border-slate-300 mt-1 mb-2"></div>
+                        )}
+
+                        {/* Editable Items Section */}
+                        {(displayItems.length > 0 && ((step.mediaItems || []).length > 0 || savedBeforeAfter.length === 0)) && (
+                          <div className="media-items-container">
+                            {displayItems.map((item, itemIndex) => (
+                              <div key={item.id} className="before-after-item">
+                                {/* Before and After photo boxes side by side */}
+                                <div className="before-after-photos">
+                                  <BeforeAfterUploadBox
+                                    label="Before"
+                                    mediaFile={item.beforeMedia}
+                                    mediaUrl={item.beforeMediaUrl}
+                                    onFileSelect={(file) => {
+                                      const url = URL.createObjectURL(file);
+                                      updateMediaItem(item.id, 'beforeMedia', file, { beforeMediaUrl: url });
+                                      if (beforeAfterErrors[item.id]) {
+                                        setBeforeAfterErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
                                     }}
-                                    className={`service-dropdown-item ${selectedService === service ? 'service-dropdown-item-selected' : ''}`}
+                                    onClear={() => {
+                                      if (item.beforeMediaUrl) URL.revokeObjectURL(item.beforeMediaUrl);
+                                      updateMediaItem(item.id, 'beforeMedia', null, { beforeMediaUrl: null });
+                                    }}
+                                  />
+                                  <BeforeAfterUploadBox
+                                    label="After"
+                                    mediaFile={item.afterMedia}
+                                    mediaUrl={item.afterMediaUrl}
+                                    onFileSelect={(file) => {
+                                      const url = URL.createObjectURL(file);
+                                      updateMediaItem(item.id, 'afterMedia', file, { afterMediaUrl: url });
+                                      if (beforeAfterErrors[item.id]) {
+                                        setBeforeAfterErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    onClear={() => {
+                                      if (item.afterMediaUrl) URL.revokeObjectURL(item.afterMediaUrl);
+                                      updateMediaItem(item.id, 'afterMedia', null, { afterMediaUrl: null });
+                                    }}
+                                  />
+                                </div>
+
+                                <div className="before-after-fields">
+                                  <BeforeAfterServiceDropdown
+                                    itemId={item.id}
+                                    selectedServices={item.services || []}
+                                    onServicesChange={(services) => {
+                                      updateMediaItem(item.id, 'services', services);
+                                      if (beforeAfterErrors[item.id]) {
+                                        setBeforeAfterErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                  />
+                                  <DescriptionInput
+                                    value={item.description || ''}
+                                    onChange={(newDescription) => {
+                                      updateMediaItem(item.id, 'description', newDescription);
+                                      if (beforeAfterErrors[item.id]) {
+                                        setBeforeAfterErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    maxLength={150}
+                                  />
+                                  <div className="flex items-center justify-end gap-3 mt-2">
+                                    {beforeAfterErrors[item.id] && (
+                                      <span className="text-xs text-red-500 flex items-center gap-0.5">
+                                        <span className="text-red-500">*</span> Please fill out all sections
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        // Validate this item - need both before and after photos
+                                        const errors = {
+                                          beforeMedia: !item.beforeMedia,
+                                          afterMedia: !item.afterMedia,
+                                          services: !item.services || item.services.length === 0,
+                                          description: !item.description || item.description.trim() === ''
+                                        };
+
+                                        if (errors.beforeMedia || errors.afterMedia || errors.services || errors.description) {
+                                          setBeforeAfterErrors(prev => ({
+                                            ...prev,
+                                            [item.id]: errors
+                                          }));
+                                          return;
+                                        }
+
+                                        // Clear errors and save this item
+                                        setBeforeAfterErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                        setSavedBeforeAfter([...savedBeforeAfter, item]);
+                                        // Remove from edit section
+                                        const remainingItems = (step.mediaItems || []).filter(i => i.id !== item.id);
+                                        // Restore pending items if any
+                                        if (pendingBeforeAfterItems.length > 0) {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: [...remainingItems, ...pendingBeforeAfterItems] }
+                                              : s
+                                          ));
+                                          setPendingBeforeAfterItems([]);
+                                        } else {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: remainingItems }
+                                              : s
+                                          ));
+                                        }
+                                      }}
+                                      className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                                      type="button"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add Photo button */}
+                        {(savedBeforeAfter.length + (step.mediaItems || []).length) < 10 && (() => {
+                          const currentMediaItems = step.mediaItems || [];
+                          const hasEditForm = currentMediaItems.length > 0;
+                          return (
+                            <div className="mt-1">
+                              <button
+                                onClick={addMediaItem}
+                                disabled={hasEditForm}
+                                className={`flex items-center gap-2 transition-colors ${
+                                  hasEditForm
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-blue-600 hover:text-blue-700'
+                                }`}
+                                type="button"
+                                title={hasEditForm ? 'Save the current form before adding another' : 'Add Photo'}
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-sm font-medium">Add Photo</span>
+                              </button>
+                            </div>
+                          );
+                        })()}
+                    </div>
+                  </div>
+                );
+              }
+
+              // If Before & After step but not selected, don't render
+              if (isBeforeAfter) return null;
+
+              // Special handling for Infographics
+              if (isInfographics && selectedSalesFlowHook === 'Infographics') {
+                const step = agentFlowSteps.find(s => s.id === 5);
+                if (!step) return null;
+                let mediaItems = step.mediaItems || [];
+                // Filter out items that are in pending state (hidden while editing a saved item)
+                const filteredMediaItems = mediaItems.filter(item =>
+                  !pendingInfographicsItems.some(pending => pending.id === item.id)
+                );
+                // Ensure at least one media item exists for display only when no saved items
+                const displayItems = filteredMediaItems.length === 0 && savedInfographics.length === 0
+                  ? [{ id: 'temp-infographics', media: null, mediaUrl: null, description: '', services: [] }]
+                  : filteredMediaItems;
+
+                const addMediaItem = () => {
+                  const currentItems = step.mediaItems || [];
+                  // Limit to 10 items total (saved + editing)
+                  if (savedInfographics.length + currentItems.length >= 10) return;
+                  const newItem = { id: Date.now(), media: null, mediaUrl: null, description: '', services: [] };
+                  setAgentFlowSteps(agentFlowSteps.map(s =>
+                    s.id === step.id
+                      ? { ...s, mediaItems: currentItems.length === 0 ? [newItem] : [...currentItems, newItem] }
+                      : s
+                  ));
+                };
+
+                const updateMediaItem = (itemId, field, value) => {
+                  const currentItems = step.mediaItems || [];
+                  // If updating a temp item and mediaItems is empty, initialize it
+                  if (currentItems.length === 0 && itemId.toString().startsWith('temp-')) {
+                    const newItem = { id: Date.now(), media: null, mediaUrl: null, description: '', services: [] };
+                    // If setting media, also create the blob URL
+                    if (field === 'media' && value instanceof File) {
+                      const blobUrl = URL.createObjectURL(value);
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? { ...s, mediaItems: [{ ...newItem, media: value, mediaUrl: blobUrl }] }
+                          : s
+                      ));
+                    } else {
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? { ...s, mediaItems: [{ ...newItem, [field]: value }] }
+                          : s
+                      ));
+                    }
+                  } else {
+                    // If setting media, also create the blob URL
+                    if (field === 'media' && value instanceof File) {
+                      const blobUrl = URL.createObjectURL(value);
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? {
+                              ...s,
+                              mediaItems: currentItems.map(item =>
+                                item.id === itemId ? { ...item, media: value, mediaUrl: blobUrl } : item
+                              )
+                            }
+                          : s
+                      ));
+                    } else {
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? {
+                              ...s,
+                              mediaItems: currentItems.map(item =>
+                                item.id === itemId ? { ...item, [field]: value } : item
+                              )
+                            }
+                          : s
+                      ));
+                    }
+                  }
+                };
+
+                const removeMediaItem = (itemId) => {
+                  const currentItems = step.mediaItems || [];
+                  // If there are saved items, allow removing all items completely
+                  if (savedInfographics.length > 0) {
+                    // Revoke blob URLs before removing
+                    const itemToRemove = currentItems.find(item => item.id === itemId);
+                    if (itemToRemove?.mediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.mediaUrl);
+                    }
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
+                        : s
+                    ));
+                  } else if (currentItems.length <= 1) {
+                    // If no saved items and it's the last item, clear the media instead of removing
+                    const itemToReset = currentItems.find(item => item.id === itemId);
+                    if (itemToReset?.mediaUrl) {
+                      URL.revokeObjectURL(itemToReset.mediaUrl);
+                    }
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? {
+                            ...s,
+                            mediaItems: currentItems.map(item =>
+                              item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '', services: [] } : item
+                            )
+                          }
+                        : s
+                    ));
+                  } else {
+                    // Multiple items, remove the item
+                    const itemToRemove = currentItems.find(item => item.id === itemId);
+                    if (itemToRemove?.mediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.mediaUrl);
+                    }
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
+                        : s
+                    ));
+                  }
+                };
+
+                const clearMediaFromItem = (itemId) => {
+                  const currentItems = step.mediaItems || [];
+                  // Revoke blob URL before clearing
+                  const itemToClear = currentItems.find(item => item.id === itemId);
+                  if (itemToClear?.mediaUrl) {
+                    URL.revokeObjectURL(itemToClear.mediaUrl);
+                  }
+                  // Clear media, mediaUrl, and description but keep the item
+                  setAgentFlowSteps(agentFlowSteps.map(s =>
+                    s.id === step.id
+                      ? {
+                          ...s,
+                          mediaItems: currentItems.map(item =>
+                            item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '' } : item
+                          )
+                        }
+                      : s
+                  ));
+                };
+
+                const editSavedInfographic = (itemId) => {
+                  const itemToEdit = savedInfographics.find(d => d.id === itemId);
+                  if (itemToEdit) {
+                    // Save any existing editable items to pending
+                    const currentItems = step.mediaItems || [];
+                    if (currentItems.length > 0) {
+                      setPendingInfographicsItems([...pendingInfographicsItems, ...currentItems]);
+                    }
+                    // Remove from saved and add to edit
+                    setSavedInfographics(savedInfographics.filter(d => d.id !== itemId));
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id ? { ...s, mediaItems: [itemToEdit] } : s
+                    ));
+                  }
+                };
+
+                const deleteSavedInfographic = (itemId) => {
+                  const itemToDelete = savedInfographics.find(d => d.id === itemId);
+                  if (itemToDelete?.mediaUrl) {
+                    URL.revokeObjectURL(itemToDelete.mediaUrl);
+                  }
+                  setSavedInfographics(savedInfographics.filter(d => d.id !== itemId));
+                };
+
+                // Title header for Infographics
+                const InfographicsTitle = () => (
+                  <div className="flex items-center gap-3 mb-6 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+                      <Images className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 flex-1">{step.name}</h3>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHookTooltip(openHookTooltip === 'infographics' ? null : 'infographics')}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                      {openHookTooltip === 'infographics' && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Upload infographics to educate customers about your services, processes, or industry tips. (Upload JPG/PNG (≤5MB). Images auto-resized for fast delivery.)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+
+                // Get all services alphabetized
+                const allServices = [
+                  ...softWashingServices,
+                  ...customSoftWashingServices,
+                  ...pressureWashingServices,
+                  ...customPressureWashingServices,
+                  ...specialtyCleaningServices,
+                  ...customSpecialtyCleaningServices
+                ].sort((a, b) => a.localeCompare(b));
+
+                // ServiceDropdown component for Infographics (multi-select)
+                const InfographicsServiceDropdown = ({ itemId, selectedServices = [], onServicesChange }) => {
+                  const isOpen = openInfographicsServicesDropdownId === itemId;
+                  const [searchTerm, setSearchTerm] = useState('');
+
+                  const filteredServices = allServices.filter(service =>
+                    service.toLowerCase().includes(searchTerm.toLowerCase())
+                  );
+
+                  const handleListRef = (el) => {
+                    if (el && infographicsDropdownScrollRef.current > 0) {
+                      // Use requestAnimationFrame to ensure scroll happens after layout
+                      requestAnimationFrame(() => {
+                        el.scrollTop = infographicsDropdownScrollRef.current;
+                      });
+                    }
+                  };
+
+                  const toggleService = (service, e) => {
+                    // Save scroll position from the list element
+                    const listEl = e.target.closest('.service-dropdown-list');
+                    if (listEl) {
+                      infographicsDropdownScrollRef.current = listEl.scrollTop;
+                    }
+                    const services = selectedServices || [];
+                    if (services.includes(service)) {
+                      onServicesChange(services.filter(s => s !== service));
+                    } else {
+                      onServicesChange([...services, service]);
+                    }
+                  };
+
+                  const removeService = (e, service) => {
+                    e.stopPropagation();
+                    const services = selectedServices || [];
+                    onServicesChange(services.filter(s => s !== service));
+                  };
+
+                  return (
+                    <div className="service-dropdown-multi">
+                      <button
+                        type="button"
+                        onClick={() => setOpenInfographicsServicesDropdownId(isOpen ? null : itemId)}
+                        className={`service-dropdown-button-inline ${isOpen ? 'service-dropdown-button-open' : ''}`}
+                      >
+                        <div className="service-dropdown-content">
+                          {(selectedServices || []).length === 0 ? (
+                            <span className="service-dropdown-placeholder">Select services</span>
+                          ) : (
+                            <div className="service-pills-inline">
+                              {selectedServices.map((service) => (
+                                <span key={service} className="service-pill-inline">
+                                  {service}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeService(e, service);
+                                    }}
+                                    className="service-pill-remove-inline"
                                   >
-                                    {service}
+                                    <X className="w-3 h-3" />
                                   </button>
-                                ))
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <ChevronDown className={`service-dropdown-chevron ${isOpen ? 'service-dropdown-chevron-open' : ''}`} />
+                      </button>
+
+                      {isOpen && (
+                        <>
+                          <div
+                            className="service-dropdown-overlay"
+                            onClick={() => setOpenInfographicsServicesDropdownId(null)}
+                          />
+                          <div className="service-dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                            <div className="service-dropdown-search">
+                              <input
+                                type="text"
+                                placeholder="Search services..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="service-dropdown-search-input"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                            <div className="service-dropdown-list" ref={handleListRef}>
+                              {filteredServices.length > 0 ? (
+                                filteredServices.map((service) => {
+                                  const isSelected = (selectedServices || []).includes(service);
+                                  return (
+                                    <button
+                                      key={service}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleService(service, e);
+                                      }}
+                                      className={`service-dropdown-item-multi ${isSelected ? 'service-dropdown-item-selected' : ''}`}
+                                    >
+                                      <div className={`w-4 h-4 rounded border flex items-center justify-center mr-2 ${
+                                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                      }`}>
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                                      </div>
+                                      {service}
+                                    </button>
+                                  );
+                                })
                               ) : (
                                 <div className="service-dropdown-empty">
                                   No services found
@@ -3914,7 +5609,7 @@ const MyAgent = ({
                       </div>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png"
                         className="photo-upload-input"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -3943,92 +5638,265 @@ const MyAgent = ({
                 return (
                   <div
                     key={step.id}
-                    className="bg-slate-50 rounded-2xl p-5 min-h-[400px] flex flex-col"
+                    className="bg-slate-50 rounded-2xl p-5 h-full flex flex-col"
                   >
                     <InfographicsTitle />
 
-                    {/* Infographics Note */}
-                    <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-gray-600">
-                        Upload infographics to educate customers about your services, processes, or industry tips. (Upload JPG/PNG (≤5MB). Images auto-resized for fast delivery.)
-                      </p>
-                    </div>
-
                     <div className="flex-1 section-spacing overflow-y-auto mb-4">
-                        <div className="media-items-container">
-                          {displayItems.map((item, itemIndex) => (
-                            <div key={item.id} className="media-item">
-                              {item.media ? (
-                                <div className="media-preview">
-                                  {item.media instanceof File && item.media.type.startsWith('image/') ? (
-                                    <div className="media-preview-container">
-                                      <img
-                                        src={URL.createObjectURL(item.media)}
-                                        alt="Uploaded"
-                                        className="media-preview-image"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
+                        {/* Saved Infographics Section */}
+                        {savedInfographics.length > 0 && (
+                          <div className="mb-2">
+                            <div className="space-y-3">
+                              {savedInfographics.map((item) => (
+                                <div key={item.id} className="p-4 bg-white rounded-xl border border-slate-200 relative">
+                                  <div className="absolute top-3 right-3 flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => editSavedInfographic(item.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                      title="Edit"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteSavedInfographic(item.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <div className="flex gap-4 pr-16">
+                                    {item.media && item.media instanceof File && item.media.type.startsWith('image/') && (
+                                      <div
+                                        className="w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 relative group cursor-pointer"
+                                        onClick={() => setExpandedInfographicsPhotoId(item.id)}
                                       >
-                                        <X className="media-remove-icon" />
-                                      </button>
+                                        <img
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          alt="Infographic"
+                                          className="w-full h-full object-contain"
+                                        />
+                                        {/* Expand overlay on hover */}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Maximize className="w-6 h-6 text-white drop-shadow-lg" />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      {item.description && (
+                                        <div className="mb-2">
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Description:</span>
+                                          <span className="text-sm italic text-gray-600">{item.description}</span>
+                                        </div>
+                                      )}
+                                      {item.services && item.services.length > 0 && (
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Tags:</span>
+                                          <div className="inline-flex flex-wrap gap-1">
+                                            {item.services.map((service, idx) => (
+                                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">{service}</span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <InfographicsUploadBox
-                                  onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
-                                  itemId={item.id}
-                                  onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
-                                />
-                              )}
+                                  </div>
 
-                              <div className="media-item-fields">
-                                <InfographicsServiceDropdown
-                                  itemId={item.id}
-                                  selectedService={item.service || ''}
-                                  onServiceChange={(service) => updateMediaItem(item.id, 'service', service)}
-                                />
-                                <div className="media-description-wrapper">
-                                  <textarea
-                                    value={item.description || ''}
-                                    onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
-                                    className="media-description-input"
-                                    placeholder="Add short description"
-                                    maxLength={150}
-                                  />
-                                  <span className="media-description-counter">{(item.description || '').length}/150</span>
+                                  {/* Expanded Photo Modal */}
+                                  {expandedInfographicsPhotoId === item.id && (
+                                    <div
+                                      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+                                      onClick={() => setExpandedInfographicsPhotoId(null)}
+                                    >
+                                      <div className="relative max-w-4xl max-h-[90vh] w-full">
+                                        <img
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          alt="Infographic - Expanded"
+                                          className="w-full h-full object-contain rounded-lg"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedInfographicsPhotoId(null)}
+                                          className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                                        >
+                                          <X className="w-5 h-5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-
-                        {(step.mediaItems || []).length < 10 && (
-                          <div className="mt-3">
-                            <button
-                              onClick={addMediaItem}
-                              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                              type="button"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span className="text-sm font-medium">Add Another Infographic</span>
-                            </button>
                           </div>
                         )}
-                    </div>
 
-                    {/* Save Button */}
-                    <div className="flex justify-end pt-4 border-t border-slate-200 flex-shrink-0">
-                      <button
-                        onClick={handleSaveInfographics}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        type="button"
-                      >
-                        Save
-                      </button>
+                        {/* Divider between saved and editable */}
+                        {savedInfographics.length > 0 && (displayItems.length > 0 || savedInfographics.length < 10) && (
+                          <div className="border-t border-slate-300 mt-1 mb-2"></div>
+                        )}
+
+                        {/* Editable Items Section */}
+                        {(displayItems.length > 0 && ((step.mediaItems || []).length > 0 || savedInfographics.length === 0)) && (
+                          <div className="media-items-container">
+                            {displayItems.map((item, itemIndex) => (
+                              <div key={item.id} className="media-item">
+                                {item.media ? (
+                                  <div className="media-preview">
+                                    {item.media instanceof File && item.media.type.startsWith('image/') ? (
+                                      <div className="media-preview-container" key={`photo-container-${item.id}-${item.mediaUrl}`}>
+                                        <img
+                                          key={`photo-${item.id}-${item.mediaUrl}`}
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          alt="Uploaded"
+                                          className="media-preview-image"
+                                        />
+                                        <button
+                                          onClick={() => clearMediaFromItem(item.id)}
+                                          className="media-remove-button"
+                                          type="button"
+                                        >
+                                          <X className="media-remove-icon" />
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <InfographicsUploadBox
+                                    onFileSelect={(file) => {
+                                      updateMediaItem(item.id, 'media', file);
+                                      // Clear errors when file is uploaded
+                                      if (infographicsErrors[item.id]) {
+                                        setInfographicsErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    itemId={item.id}
+                                    onDelete={displayItems.length > 1 || savedInfographics.length > 0 ? () => removeMediaItem(item.id) : null}
+                                  />
+                                )}
+
+                                <div className="media-item-fields">
+                                  <InfographicsServiceDropdown
+                                    itemId={item.id}
+                                    selectedServices={item.services || []}
+                                    onServicesChange={(services) => {
+                                      updateMediaItem(item.id, 'services', services);
+                                      // Clear errors when selection changes
+                                      if (infographicsErrors[item.id]) {
+                                        setInfographicsErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                  />
+                                  <DescriptionInput
+                                    value={item.description || ''}
+                                    onChange={(newDescription) => {
+                                      updateMediaItem(item.id, 'description', newDescription);
+                                      // Clear errors when user finishes typing
+                                      if (infographicsErrors[item.id]) {
+                                        setInfographicsErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    maxLength={150}
+                                  />
+                                  <div className="flex items-center justify-end gap-3 mt-2">
+                                    {infographicsErrors[item.id] && (
+                                      <span className="text-xs text-red-500 flex items-center gap-0.5">
+                                        <span className="text-red-500">*</span> Please fill out all sections
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        // Validate this item
+                                        const errors = {
+                                          media: !item.media,
+                                          services: !item.services || item.services.length === 0,
+                                          description: !item.description || item.description.trim() === ''
+                                        };
+
+                                        if (errors.media || errors.services || errors.description) {
+                                          setInfographicsErrors(prev => ({
+                                            ...prev,
+                                            [item.id]: errors
+                                          }));
+                                          return;
+                                        }
+
+                                        // Clear errors and save this item
+                                        setInfographicsErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                        setSavedInfographics([...savedInfographics, item]);
+                                        // Remove from edit section
+                                        const remainingItems = (step.mediaItems || []).filter(i => i.id !== item.id);
+                                        // Restore pending items if any
+                                        if (pendingInfographicsItems.length > 0) {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: [...remainingItems, ...pendingInfographicsItems] }
+                                              : s
+                                          ));
+                                          setPendingInfographicsItems([]);
+                                        } else {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: remainingItems }
+                                              : s
+                                          ));
+                                        }
+                                      }}
+                                      className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                                      type="button"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add Infographic button */}
+                        {(savedInfographics.length + (step.mediaItems || []).length) < 10 && (() => {
+                          const currentMediaItems = step.mediaItems || [];
+                          const hasEditForm = currentMediaItems.length > 0;
+                          return (
+                            <div className="mt-1">
+                              <button
+                                onClick={addMediaItem}
+                                disabled={hasEditForm}
+                                className={`flex items-center gap-2 transition-colors ${
+                                  hasEditForm
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-blue-600 hover:text-blue-700'
+                                }`}
+                                type="button"
+                                title={hasEditForm ? 'Save the current form before adding another' : 'Add Infographic'}
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-sm font-medium">Add Infographic</span>
+                              </button>
+                            </div>
+                          );
+                        })()}
                     </div>
                   </div>
                 );
@@ -4042,16 +5910,20 @@ const MyAgent = ({
                 const step = agentFlowSteps.find(s => s.id === 6);
                 if (!step) return null;
                 let mediaItems = step.mediaItems || [];
-                // Ensure at least one media item exists for display
-                const displayItems = mediaItems.length === 0
-                  ? [{ id: 'temp-' + Date.now(), media: null, description: '', service: '' }]
-                  : mediaItems;
+                // Filter out pending items (hidden while editing saved items)
+                const filteredMediaItems = mediaItems.filter(item =>
+                  !pendingJobHighlightItems.some(pending => pending.id === item.id)
+                );
+                // Ensure at least one media item exists for display only when no saved items
+                const displayItems = filteredMediaItems.length === 0 && savedJobHighlight.length === 0
+                  ? [{ id: 'temp-job-highlight', media: null, mediaUrl: null, description: '', services: [] }]
+                  : filteredMediaItems;
 
                 const addMediaItem = () => {
                   const currentItems = step.mediaItems || [];
-                  // Limit to 10 items
-                  if (currentItems.length >= 10) return;
-                  const newItem = { id: Date.now(), media: null, description: '', service: '' };
+                  // Limit to 10 items total (saved + editing)
+                  if (savedJobHighlight.length + currentItems.length >= 10) return;
+                  const newItem = { id: Date.now(), media: null, mediaUrl: null, description: '', services: [] };
                   setAgentFlowSteps(agentFlowSteps.map(s =>
                     s.id === step.id
                       ? { ...s, mediaItems: currentItems.length === 0 ? [newItem] : [...currentItems, newItem] }
@@ -4063,44 +5935,87 @@ const MyAgent = ({
                   const currentItems = step.mediaItems || [];
                   // If updating a temp item and mediaItems is empty, initialize it
                   if (currentItems.length === 0 && itemId.toString().startsWith('temp-')) {
-                    const newItem = { id: Date.now(), media: null, description: '', service: '' };
-                    setAgentFlowSteps(agentFlowSteps.map(s =>
-                      s.id === step.id
-                        ? { ...s, mediaItems: [{ ...newItem, [field]: value }] }
-                        : s
-                    ));
+                    const newItem = { id: Date.now(), media: null, mediaUrl: null, description: '', services: [] };
+                    // If setting media, also create the blob URL
+                    if (field === 'media' && value instanceof File) {
+                      const blobUrl = URL.createObjectURL(value);
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? { ...s, mediaItems: [{ ...newItem, media: value, mediaUrl: blobUrl }] }
+                          : s
+                      ));
+                    } else {
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? { ...s, mediaItems: [{ ...newItem, [field]: value }] }
+                          : s
+                      ));
+                    }
                   } else {
-                    setAgentFlowSteps(agentFlowSteps.map(s =>
-                      s.id === step.id
-                        ? {
-                            ...s,
-                            mediaItems: currentItems.map(item =>
-                              item.id === itemId ? { ...item, [field]: value } : item
-                            )
-                          }
-                        : s
-                    ));
+                    // If setting media, also create the blob URL
+                    if (field === 'media' && value instanceof File) {
+                      const blobUrl = URL.createObjectURL(value);
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? {
+                              ...s,
+                              mediaItems: currentItems.map(item =>
+                                item.id === itemId ? { ...item, media: value, mediaUrl: blobUrl } : item
+                              )
+                            }
+                          : s
+                      ));
+                    } else {
+                      setAgentFlowSteps(agentFlowSteps.map(s =>
+                        s.id === step.id
+                          ? {
+                              ...s,
+                              mediaItems: currentItems.map(item =>
+                                item.id === itemId ? { ...item, [field]: value } : item
+                              )
+                            }
+                          : s
+                      ));
+                    }
                   }
                 };
 
                 const removeMediaItem = (itemId) => {
                   const currentItems = step.mediaItems || [];
-                  // If it's the last item, clear the media instead of removing the item
-                  if (currentItems.length <= 1) {
+                  // If there are saved items, allow removing all items completely
+                  if (savedJobHighlight.length > 0) {
+                    // Revoke blob URLs before removing
+                    const itemToRemove = currentItems.find(item => item.id === itemId);
+                    if (itemToRemove?.mediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.mediaUrl);
+                    }
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id
+                        ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
+                        : s
+                    ));
+                  } else if (currentItems.length <= 1) {
+                    // If no saved items and it's the last item, clear the media instead of removing
+                    const itemToReset = currentItems.find(item => item.id === itemId);
+                    if (itemToReset?.mediaUrl) {
+                      URL.revokeObjectURL(itemToReset.mediaUrl);
+                    }
                     setAgentFlowSteps(agentFlowSteps.map(s =>
                       s.id === step.id
                         ? {
                             ...s,
-                            mediaItems: currentItems.length === 0
-                              ? [{ id: Date.now(), media: null, description: '', service: '' }]
-                              : currentItems.map(item =>
-                                  item.id === itemId ? { ...item, media: null, description: '' } : item
-                                )
+                            mediaItems: currentItems.map(item =>
+                              item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '', services: [] } : item
+                            )
                           }
                         : s
                     ));
                   } else {
-                    // If there are multiple items, remove the item
+                    // Multiple items, remove the item
+                    const itemToRemove = currentItems.find(item => item.id === itemId);
+                    if (itemToRemove?.mediaUrl) {
+                      URL.revokeObjectURL(itemToRemove.mediaUrl);
+                    }
                     setAgentFlowSteps(agentFlowSteps.map(s =>
                       s.id === step.id
                         ? { ...s, mediaItems: currentItems.filter(item => item.id !== itemId) }
@@ -4111,40 +6026,71 @@ const MyAgent = ({
 
                 const clearMediaFromItem = (itemId) => {
                   const currentItems = step.mediaItems || [];
-                  // Clear media and description but keep the item
+                  // Revoke blob URL before clearing
+                  const itemToClear = currentItems.find(item => item.id === itemId);
+                  if (itemToClear?.mediaUrl) {
+                    URL.revokeObjectURL(itemToClear.mediaUrl);
+                  }
+                  // Clear media, mediaUrl, and description but keep the item
                   setAgentFlowSteps(agentFlowSteps.map(s =>
                     s.id === step.id
                       ? {
                           ...s,
                           mediaItems: currentItems.map(item =>
-                            item.id === itemId ? { ...item, media: null, description: '' } : item
+                            item.id === itemId ? { ...item, media: null, mediaUrl: null, description: '' } : item
                           )
                         }
                       : s
                   ));
                 };
 
-                const handleSaveJobHighlight = () => {
-                  const currentItems = step.mediaItems || [];
-                  // Validate that all items with media have service and description
-                  const itemsWithMedia = currentItems.filter(item => item.media);
-                  const invalidItems = itemsWithMedia.filter(item => !item.service || !item.description || item.description.trim() === '');
-                  if (invalidItems.length > 0) {
-                    alert('Please fill in service and description for all uploaded media.');
-                    return;
+                const editSavedJobHighlight = (itemId) => {
+                  const itemToEdit = savedJobHighlight.find(d => d.id === itemId);
+                  if (itemToEdit) {
+                    // Save any existing editable items to pending
+                    const currentItems = step.mediaItems || [];
+                    if (currentItems.length > 0) {
+                      setPendingJobHighlightItems([...pendingJobHighlightItems, ...currentItems]);
+                    }
+                    // Remove from saved and add to edit
+                    setSavedJobHighlight(savedJobHighlight.filter(d => d.id !== itemId));
+                    setAgentFlowSteps(agentFlowSteps.map(s =>
+                      s.id === step.id ? { ...s, mediaItems: [itemToEdit] } : s
+                    ));
                   }
-                  // Save the media items data
-                  console.log('Saving Job Highlight:', currentItems);
-                  alert('Job Highlight saved successfully!');
+                };
+
+                const deleteSavedJobHighlight = (itemId) => {
+                  const itemToDelete = savedJobHighlight.find(d => d.id === itemId);
+                  if (itemToDelete?.mediaUrl) {
+                    URL.revokeObjectURL(itemToDelete.mediaUrl);
+                  }
+                  setSavedJobHighlight(savedJobHighlight.filter(d => d.id !== itemId));
                 };
 
                 // Title header for Job Highlight
                 const JobHighlightTitle = () => (
-                  <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-3 mb-6 flex-shrink-0">
                     <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
                       <Star className="w-5 h-5 text-yellow-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-700 flex-1">{step.name}</h3>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHookTooltip(openHookTooltip === 'job-highlight' ? null : 'job-highlight')}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                      {openHookTooltip === 'job-highlight' && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Showcase your best work by adding photos of exceptional jobs you want to highlight. (Upload JPG/PNG (≤5MB). Images auto-resized for fast delivery.)
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
 
@@ -4158,25 +6104,74 @@ const MyAgent = ({
                   ...customSpecialtyCleaningServices
                 ].sort((a, b) => a.localeCompare(b));
 
-                // ServiceDropdown component for Job Highlight
-                const JobHighlightServiceDropdown = ({ itemId, selectedService, onServiceChange }) => {
-                  const [isOpen, setIsOpen] = useState(false);
+                // ServiceDropdown component for Job Highlight (multi-select)
+                const JobHighlightServiceDropdown = ({ itemId, selectedServices = [], onServicesChange }) => {
+                  const isOpen = openJobHighlightServicesDropdownId === itemId;
                   const [searchTerm, setSearchTerm] = useState('');
 
                   const filteredServices = allServices.filter(service =>
                     service.toLowerCase().includes(searchTerm.toLowerCase())
                   );
 
+                  const handleListRef = (el) => {
+                    if (el && jobHighlightDropdownScrollRef.current > 0) {
+                      // Use requestAnimationFrame to ensure scroll happens after layout
+                      requestAnimationFrame(() => {
+                        el.scrollTop = jobHighlightDropdownScrollRef.current;
+                      });
+                    }
+                  };
+
+                  const toggleService = (service, e) => {
+                    // Save scroll position from the list element
+                    const listEl = e.target.closest('.service-dropdown-list');
+                    if (listEl) {
+                      jobHighlightDropdownScrollRef.current = listEl.scrollTop;
+                    }
+                    const services = selectedServices || [];
+                    if (services.includes(service)) {
+                      onServicesChange(services.filter(s => s !== service));
+                    } else {
+                      onServicesChange([...services, service]);
+                    }
+                  };
+
+                  const removeService = (e, service) => {
+                    e.stopPropagation();
+                    const services = selectedServices || [];
+                    onServicesChange(services.filter(s => s !== service));
+                  };
+
                   return (
-                    <div className="service-dropdown">
+                    <div className="service-dropdown-multi">
                       <button
                         type="button"
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={`service-dropdown-button ${isOpen ? 'service-dropdown-button-open' : ''}`}
+                        onClick={() => setOpenJobHighlightServicesDropdownId(isOpen ? null : itemId)}
+                        className={`service-dropdown-button-inline ${isOpen ? 'service-dropdown-button-open' : ''}`}
                       >
-                        <span className="service-dropdown-text">
-                          {selectedService || 'Select service'}
-                        </span>
+                        <div className="service-dropdown-content">
+                          {(selectedServices || []).length === 0 ? (
+                            <span className="service-dropdown-placeholder">Select services</span>
+                          ) : (
+                            <div className="service-pills-inline">
+                              {selectedServices.map((service) => (
+                                <span key={service} className="service-pill-inline">
+                                  {service}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeService(e, service);
+                                    }}
+                                    className="service-pill-remove-inline"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <ChevronDown className={`service-dropdown-chevron ${isOpen ? 'service-dropdown-chevron-open' : ''}`} />
                       </button>
 
@@ -4184,9 +6179,9 @@ const MyAgent = ({
                         <>
                           <div
                             className="service-dropdown-overlay"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => setOpenJobHighlightServicesDropdownId(null)}
                           />
-                          <div className="service-dropdown-menu">
+                          <div className="service-dropdown-menu" onClick={(e) => e.stopPropagation()}>
                             <div className="service-dropdown-search">
                               <input
                                 type="text"
@@ -4197,22 +6192,29 @@ const MyAgent = ({
                                 onClick={(e) => e.stopPropagation()}
                               />
                             </div>
-                            <div className="service-dropdown-list">
+                            <div className="service-dropdown-list" ref={handleListRef}>
                               {filteredServices.length > 0 ? (
-                                filteredServices.map((service) => (
-                                  <button
-                                    key={service}
-                                    type="button"
-                                    onClick={() => {
-                                      onServiceChange(service);
-                                      setIsOpen(false);
-                                      setSearchTerm('');
-                                    }}
-                                    className={`service-dropdown-item ${selectedService === service ? 'service-dropdown-item-selected' : ''}`}
-                                  >
-                                    {service}
-                                  </button>
-                                ))
+                                filteredServices.map((service) => {
+                                  const isSelected = (selectedServices || []).includes(service);
+                                  return (
+                                    <button
+                                      key={service}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleService(service, e);
+                                      }}
+                                      className={`service-dropdown-item-multi ${isSelected ? 'service-dropdown-item-selected' : ''}`}
+                                    >
+                                      <div className={`w-4 h-4 rounded border flex items-center justify-center mr-2 ${
+                                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                      }`}>
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                                      </div>
+                                      {service}
+                                    </button>
+                                  );
+                                })
                               ) : (
                                 <div className="service-dropdown-empty">
                                   No services found
@@ -4265,92 +6267,265 @@ const MyAgent = ({
                 return (
                   <div
                     key={step.id}
-                    className="bg-slate-50 rounded-2xl p-5 min-h-[400px] flex flex-col"
+                    className="bg-slate-50 rounded-2xl p-5 h-full flex flex-col"
                   >
                     <JobHighlightTitle />
 
-                    {/* Job Highlight Note */}
-                    <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-gray-600">
-                        Showcase your best work by adding photos of exceptional jobs you want to highlight. (Upload JPG/PNG (≤5MB). Images auto-resized for fast delivery.)
-                      </p>
-                    </div>
-
                     <div className="flex-1 section-spacing overflow-y-auto mb-4">
-                        <div className="media-items-container">
-                          {displayItems.map((item, itemIndex) => (
-                            <div key={item.id} className="media-item">
-                              {item.media ? (
-                                <div className="media-preview">
-                                  {item.media instanceof File && item.media.type.startsWith('image/') ? (
-                                    <div className="media-preview-container">
-                                      <img
-                                        src={URL.createObjectURL(item.media)}
-                                        alt="Uploaded"
-                                        className="media-preview-image"
-                                      />
-                                      <button
-                                        onClick={() => clearMediaFromItem(item.id)}
-                                        className="media-remove-button"
-                                        type="button"
+                        {/* Saved Job Highlight Section */}
+                        {savedJobHighlight.length > 0 && (
+                          <div className="mb-2">
+                            <div className="space-y-3">
+                              {savedJobHighlight.map((item) => (
+                                <div key={item.id} className="p-4 bg-white rounded-xl border border-slate-200 relative">
+                                  <div className="absolute top-3 right-3 flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => editSavedJobHighlight(item.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                      title="Edit"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteSavedJobHighlight(item.id)}
+                                      className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <div className="flex gap-4 pr-16">
+                                    {item.media && item.media instanceof File && item.media.type.startsWith('image/') && (
+                                      <div
+                                        className="w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 relative group cursor-pointer"
+                                        onClick={() => setExpandedPhotoId(item.id)}
                                       >
-                                        <X className="media-remove-icon" />
-                                      </button>
+                                        <img
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          alt="Job Highlight"
+                                          className="w-full h-full object-contain"
+                                        />
+                                        {/* Expand overlay on hover */}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Maximize className="w-6 h-6 text-white drop-shadow-lg" />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      {item.description && (
+                                        <div className="mb-2">
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Description:</span>
+                                          <span className="text-sm italic text-gray-600">{item.description}</span>
+                                        </div>
+                                      )}
+                                      {item.services && item.services.length > 0 && (
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-700 mr-2">Tags:</span>
+                                          <div className="inline-flex flex-wrap gap-1">
+                                            {item.services.map((service, idx) => (
+                                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">{service}</span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <JobHighlightUploadBox
-                                  onFileSelect={(file) => updateMediaItem(item.id, 'media', file)}
-                                  itemId={item.id}
-                                  onDelete={displayItems.length > 1 ? () => removeMediaItem(item.id) : null}
-                                />
-                              )}
+                                  </div>
 
-                              <div className="media-item-fields">
-                                <JobHighlightServiceDropdown
-                                  itemId={item.id}
-                                  selectedService={item.service || ''}
-                                  onServiceChange={(service) => updateMediaItem(item.id, 'service', service)}
-                                />
-                                <div className="media-description-wrapper">
-                                  <textarea
-                                    value={item.description || ''}
-                                    onChange={(e) => updateMediaItem(item.id, 'description', e.target.value)}
-                                    className="media-description-input"
-                                    placeholder="Add short description"
-                                    maxLength={150}
-                                  />
-                                  <span className="media-description-counter">{(item.description || '').length}/150</span>
+                                  {/* Expanded Photo Modal */}
+                                  {expandedPhotoId === item.id && (
+                                    <div
+                                      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+                                      onClick={() => setExpandedPhotoId(null)}
+                                    >
+                                      <div className="relative max-w-4xl max-h-[90vh] w-full">
+                                        <img
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          alt="Job Highlight - Expanded"
+                                          className="w-full h-full object-contain rounded-lg"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedPhotoId(null)}
+                                          className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                                        >
+                                          <X className="w-5 h-5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-
-                        {(step.mediaItems || []).length < 10 && (
-                          <div className="mt-3">
-                            <button
-                              onClick={addMediaItem}
-                              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                              type="button"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span className="text-sm font-medium">Add Another Photo</span>
-                            </button>
                           </div>
                         )}
-                    </div>
 
-                    {/* Save Button */}
-                    <div className="flex justify-end pt-4 border-t border-slate-200 flex-shrink-0">
-                      <button
-                        onClick={handleSaveJobHighlight}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                        type="button"
-                      >
-                        Save
-                      </button>
+                        {/* Divider between saved and editable */}
+                        {savedJobHighlight.length > 0 && (displayItems.length > 0 || savedJobHighlight.length < 10) && (
+                          <div className="border-t border-slate-300 mt-1 mb-2"></div>
+                        )}
+
+                        {/* Editable Items Section */}
+                        {(displayItems.length > 0 && ((step.mediaItems || []).length > 0 || savedJobHighlight.length === 0)) && (
+                          <div className="media-items-container">
+                            {displayItems.map((item, itemIndex) => (
+                              <div key={item.id} className="media-item">
+                                {item.media ? (
+                                  <div className="media-preview">
+                                    {item.media instanceof File && item.media.type.startsWith('image/') ? (
+                                      <div className="media-preview-container" key={`photo-container-${item.id}-${item.mediaUrl}`}>
+                                        <img
+                                          key={`photo-${item.id}-${item.mediaUrl}`}
+                                          src={item.mediaUrl || URL.createObjectURL(item.media)}
+                                          alt="Uploaded"
+                                          className="media-preview-image"
+                                        />
+                                        <button
+                                          onClick={() => clearMediaFromItem(item.id)}
+                                          className="media-remove-button"
+                                          type="button"
+                                        >
+                                          <X className="media-remove-icon" />
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <JobHighlightUploadBox
+                                    onFileSelect={(file) => {
+                                      updateMediaItem(item.id, 'media', file);
+                                      // Clear errors when file is uploaded
+                                      if (jobHighlightErrors[item.id]) {
+                                        setJobHighlightErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    itemId={item.id}
+                                    onDelete={displayItems.length > 1 || savedJobHighlight.length > 0 ? () => removeMediaItem(item.id) : null}
+                                  />
+                                )}
+
+                                <div className="media-item-fields">
+                                  <JobHighlightServiceDropdown
+                                    itemId={item.id}
+                                    selectedServices={item.services || []}
+                                    onServicesChange={(services) => {
+                                      updateMediaItem(item.id, 'services', services);
+                                      // Clear errors when selection changes
+                                      if (jobHighlightErrors[item.id]) {
+                                        setJobHighlightErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                  />
+                                  <DescriptionInput
+                                    value={item.description || ''}
+                                    onChange={(newDescription) => {
+                                      updateMediaItem(item.id, 'description', newDescription);
+                                      // Clear errors when user finishes typing
+                                      if (jobHighlightErrors[item.id]) {
+                                        setJobHighlightErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                      }
+                                    }}
+                                    maxLength={150}
+                                  />
+                                  <div className="flex items-center justify-end gap-3 mt-2">
+                                    {jobHighlightErrors[item.id] && (
+                                      <span className="text-xs text-red-500 flex items-center gap-0.5">
+                                        <span className="text-red-500">*</span> Please fill out all sections
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        // Validate this item
+                                        const errors = {
+                                          media: !item.media,
+                                          services: !item.services || item.services.length === 0,
+                                          description: !item.description || item.description.trim() === ''
+                                        };
+
+                                        if (errors.media || errors.services || errors.description) {
+                                          setJobHighlightErrors(prev => ({
+                                            ...prev,
+                                            [item.id]: errors
+                                          }));
+                                          return;
+                                        }
+
+                                        // Clear errors and save this item
+                                        setJobHighlightErrors(prev => {
+                                          const newErrors = { ...prev };
+                                          delete newErrors[item.id];
+                                          return newErrors;
+                                        });
+                                        setSavedJobHighlight([...savedJobHighlight, item]);
+                                        // Remove from edit section
+                                        const remainingItems = (step.mediaItems || []).filter(i => i.id !== item.id);
+                                        // Restore pending items if any
+                                        if (pendingJobHighlightItems.length > 0) {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: [...remainingItems, ...pendingJobHighlightItems] }
+                                              : s
+                                          ));
+                                          setPendingJobHighlightItems([]);
+                                        } else {
+                                          setAgentFlowSteps(agentFlowSteps.map(s =>
+                                            s.id === step.id
+                                              ? { ...s, mediaItems: remainingItems }
+                                              : s
+                                          ));
+                                        }
+                                      }}
+                                      className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                                      type="button"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add Photo button */}
+                        {(savedJobHighlight.length + (step.mediaItems || []).length) < 10 && (() => {
+                          const currentMediaItems = step.mediaItems || [];
+                          const hasEditForm = currentMediaItems.length > 0;
+                          return (
+                            <div className="mt-1">
+                              <button
+                                onClick={addMediaItem}
+                                disabled={hasEditForm}
+                                className={`flex items-center gap-2 transition-colors ${
+                                  hasEditForm
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-blue-600 hover:text-blue-700'
+                                }`}
+                                type="button"
+                                title={hasEditForm ? 'Save the current form before adding another' : 'Add Photo'}
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-sm font-medium">Add Photo</span>
+                              </button>
+                            </div>
+                          );
+                        })()}
                     </div>
                   </div>
                 );
@@ -4530,13 +6705,22 @@ const MyAgent = ({
                         <Pencil className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
                       </button>
                     )}
-                  </div>
-
-                  {/* Company Slogan Note */}
-                  <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-gray-600">
-                      A memorable slogan helps customers remember your brand and what you stand for.
-                    </p>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHookTooltip(openHookTooltip === 'company-slogan' ? null : 'company-slogan')}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                      {openHookTooltip === 'company-slogan' && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            A memorable slogan helps customers remember your brand and what you stand for.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-5">
@@ -4604,13 +6788,22 @@ const MyAgent = ({
                         <Pencil className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
                       </button>
                     )}
-                  </div>
-
-                  {/* Experience Note */}
-                  <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-gray-600">
-                      Highlight your experience to build credibility. Share how long you've been in business and the number of jobs you've completed.
-                    </p>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHookTooltip(openHookTooltip === 'experience' ? null : 'experience')}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                      {openHookTooltip === 'experience' && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Highlight your experience to build credibility. Share how long you've been in business and the number of jobs you've completed.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-5">
@@ -4618,14 +6811,20 @@ const MyAgent = ({
                       <div className="flex gap-4">
                         {savedBrandIdentity.experienceYears && (
                           <div className="flex-1 bg-white rounded-xl p-4 border border-slate-200">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Years in Business</label>
-                            <p className="text-2xl font-bold italic text-gray-900">{savedBrandIdentity.experienceYears}</p>
+                            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              Years in Business
+                            </label>
+                            <p className="text-2xl font-bold text-gray-700">{savedBrandIdentity.experienceYears}</p>
                           </div>
                         )}
                         {savedBrandIdentity.jobsCompleted && (
                           <div className="flex-1 bg-white rounded-xl p-4 border border-slate-200">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Jobs Completed</label>
-                            <p className="text-2xl font-bold italic text-gray-900">{savedBrandIdentity.jobsCompleted}</p>
+                            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1">
+                              <Briefcase className="w-3.5 h-3.5" />
+                              Jobs Completed
+                            </label>
+                            <p className="text-2xl font-bold text-gray-700">{savedBrandIdentity.jobsCompleted}</p>
                           </div>
                         )}
                       </div>
@@ -4713,13 +6912,22 @@ const MyAgent = ({
                         <Pencil className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
                       </button>
                     )}
-                  </div>
-
-                  {/* Company Qualities Note */}
-                  <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-gray-600">
-                      Select the qualities that best describe what sets your company apart from competitors.
-                    </p>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHookTooltip(openHookTooltip === 'company-qualities' ? null : 'company-qualities')}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                      {openHookTooltip === 'company-qualities' && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Select the qualities that best describe what sets your company apart from competitors.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-5">
@@ -4750,13 +6958,13 @@ const MyAgent = ({
                                   type="button"
                                   onClick={() => toggleCompanyQuality(quality)}
                                   disabled={isDisabled}
-                                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
                                     isSelected
-                                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                      ? 'bg-blue-100 text-blue-700'
                                       : isDisabled
-                                      ? 'bg-white text-slate-400 border-slate-200 cursor-not-allowed'
-                                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                  } shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                      : 'bg-gray-100 text-gray-600'
+                                  } focus:outline-none`}
                                 >
                                   <span>{quality}</span>
                                 </button>
@@ -4814,357 +7022,23 @@ const MyAgent = ({
                   <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
                     <Tag className="w-5 h-5 text-pink-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 flex-1">Promotions <span className="text-lg font-normal text-gray-600">(add up to 10 promotions)</span></h3>
-                  {savedSalesFlowPromotions.length > 0 && (companyInfo.promotionsList || []).length === 0 && (
+                  <h3 className="text-2xl font-bold text-gray-900 flex-1">Promotions</h3>
+                  <div className="relative">
                     <button
                       type="button"
-                      onClick={() => {
-                        // Move all saved promotions back to editable
-                        updateCompanyInfo('promotionsList', [...savedSalesFlowPromotions]);
-                        setSavedSalesFlowPromotions([]);
-                      }}
-                      className="group p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Edit"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'promotions' ? null : 'promotions')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                      <Pencil className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
+                      <HelpCircle className="w-5 h-5" />
                     </button>
-                  )}
-                </div>
-
-                {/* Promotions Note */}
-                <div className="bg-slate-100 rounded-lg p-4 mb-4 flex-shrink-0">
-                  <p className="text-sm text-gray-600">
-                    Add promotions and special offers to share with potential customers during conversations.
-                  </p>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-4" style={{ maxHeight: 'calc(100vh - 400px)' }}>
-                  {/* Saved Promotions - Display Mode */}
-                  {savedSalesFlowPromotions.length > 0 && (companyInfo.promotionsList || []).length === 0 && (
-                    <div className="space-y-3">
-                      {savedSalesFlowPromotions.map((promotion) => (
-                        <div key={promotion.id} className="p-4 bg-white rounded-xl border border-slate-200 relative">
-                          <div className="absolute top-3 right-3 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Move this promotion to editable
-                                const updatedSaved = savedSalesFlowPromotions.filter(p => p.id !== promotion.id);
-                                setSavedSalesFlowPromotions(updatedSaved);
-                                updateCompanyInfo('promotionsList', [
-                                  ...(companyInfo.promotionsList || []),
-                                  { ...promotion }
-                                ]);
-                              }}
-                              className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                              title="Edit"
-                            >
-                              <Pencil className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = savedSalesFlowPromotions.filter(p => p.id !== promotion.id);
-                                setSavedSalesFlowPromotions(updated);
-                              }}
-                              className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
-                            </button>
-                          </div>
-                          <div className="pr-20 space-y-2">
-                            <p className="text-sm font-semibold text-gray-900">{promotion.title || 'Untitled Promotion'}</p>
-                            {promotion.services && promotion.services.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {promotion.services.map((service, idx) => (
-                                  <span key={idx} className="px-2 py-0.5 bg-pink-50 text-pink-700 text-xs rounded-full">{service}</span>
-                                ))}
-                              </div>
-                            )}
-                            {promotion.terms && <p className="text-sm text-gray-600 mt-2">{promotion.terms}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Editable Promotions */}
-                  {((companyInfo.promotionsList || []).length > 0 || savedSalesFlowPromotions.length === 0) && (
-                    <div className="space-y-4">
-                      {(companyInfo.promotionsList || []).length === 0 && savedSalesFlowPromotions.length === 0 && (
-                        <div className="bg-white rounded-xl p-4 border border-slate-200 relative">
-                          <div className="space-y-3 pr-8">
-                            {/* Promotion Title */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Promotion Title</label>
-                              <input
-                                type="text"
-                                placeholder="e.g., Summer Special 20% Off"
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm focus:outline-none"
-                                onBlur={(e) => {
-                                  if (e.target.value.trim()) {
-                                    updateCompanyInfo('promotionsList', [
-                                      { id: Date.now() + Math.random(), title: e.target.value, services: [], terms: '' }
-                                    ]);
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && e.target.value.trim()) {
-                                    updateCompanyInfo('promotionsList', [
-                                      { id: Date.now() + Math.random(), title: e.target.value, services: [], terms: '' }
-                                    ]);
-                                  }
-                                }}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 italic">Type a title and press Enter or click outside to add promotion</p>
-                          </div>
-                        </div>
-                      )}
-                      {(companyInfo.promotionsList || []).map((promotion, index) => {
-                        // Build services list from props
-                        const allServices = [
-                          ...(softWashingServices || []).filter(s => s.selected).map(s => s.name),
-                          ...(customSoftWashingServices || []),
-                          ...(pressureWashingServices || []).filter(s => s.selected).map(s => s.name),
-                          ...(customPressureWashingServices || []),
-                          ...(specialtyCleaningServices || []).filter(s => s.selected).map(s => s.name),
-                          ...(customSpecialtyCleaningServices || [])
-                        ];
-
-                        return (
-                          <div key={promotion.id} className="bg-white rounded-xl p-4 border border-slate-200 relative">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = (companyInfo.promotionsList || []).filter(p => p.id !== promotion.id);
-                                updateCompanyInfo('promotionsList', updated);
-                              }}
-                              className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-
-                            <div className="space-y-3 pr-8">
-                              {/* Promotion Title */}
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Promotion Title</label>
-                                <input
-                                  type="text"
-                                  value={promotion.title || ''}
-                                  onChange={(e) => {
-                                    const updated = (companyInfo.promotionsList || []).map(p =>
-                                      p.id === promotion.id ? { ...p, title: e.target.value } : p
-                                    );
-                                    updateCompanyInfo('promotionsList', updated);
-                                  }}
-                                  placeholder="e.g., Summer Special 20% Off"
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm focus:outline-none"
-                                />
-                              </div>
-
-                              {/* Services Covered */}
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Services Covered</label>
-                                <div className="relative" data-services-dropdown={openServicesDropdownId === promotion.id ? "true" : undefined}>
-                                  <button
-                                    type="button"
-                                    onClick={() => setOpenServicesDropdownId(openServicesDropdownId === promotion.id ? null : promotion.id)}
-                                    className="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-slate-200 rounded-lg hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                  >
-                                    <div className="flex flex-wrap gap-1.5 flex-1">
-                                      {(promotion.services || []).length === 0 ? (
-                                        <span className="text-sm text-gray-400">Select services...</span>
-                                      ) : (
-                                        (promotion.services || []).map((serviceName) => (
-                                          <span
-                                            key={serviceName}
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md"
-                                          >
-                                            {serviceName}
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                const newServices = (promotion.services || []).filter(s => s !== serviceName);
-                                                const updated = (companyInfo.promotionsList || []).map(p =>
-                                                  p.id === promotion.id ? { ...p, services: newServices } : p
-                                                );
-                                                updateCompanyInfo('promotionsList', updated);
-                                              }}
-                                              className="ml-0.5 text-blue-400 hover:text-blue-600"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          </span>
-                                        ))
-                                      )}
-                                    </div>
-                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${openServicesDropdownId === promotion.id ? 'rotate-180' : ''}`} />
-                                  </button>
-                                  {openServicesDropdownId === promotion.id && (
-                                    <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                      {(allServices.length > 0 ? allServices : ['Roof Cleaning', 'House Washing', 'Driveway Cleaning']).map((service) => {
-                                        const isSelected = (promotion.services || []).includes(service);
-                                        return (
-                                          <button
-                                            key={service}
-                                            type="button"
-                                            onClick={() => {
-                                              const newServices = isSelected
-                                                ? (promotion.services || []).filter(s => s !== service)
-                                                : [...(promotion.services || []), service];
-                                              const updated = (companyInfo.promotionsList || []).map(p =>
-                                                p.id === promotion.id ? { ...p, services: newServices } : p
-                                              );
-                                              updateCompanyInfo('promotionsList', updated);
-                                            }}
-                                            className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
-                                              isSelected
-                                                ? 'bg-blue-50 text-blue-700'
-                                                : 'text-gray-700 hover:bg-slate-50'
-                                            }`}
-                                          >
-                                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                                              isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
-                                            }`}>
-                                              {isSelected && <Check className="w-3 h-3 text-white" />}
-                                            </div>
-                                            <span>{service}</span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Promotion Terms */}
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Promotion Terms</label>
-                                <textarea
-                                  value={promotion.terms || ''}
-                                  onChange={(e) => {
-                                    // Handle temp item - create new item in list
-                                    if (promotion.id.toString().startsWith('temp-')) {
-                                      updateCompanyInfo('promotionsList', [
-                                        { id: Date.now() + Math.random(), title: '', services: [], terms: e.target.value }
-                                      ]);
-                                      return;
-                                    }
-                                    const updated = (companyInfo.promotionsList || []).map(p =>
-                                      p.id === promotion.id ? { ...p, terms: e.target.value } : p
-                                    );
-                                    updateCompanyInfo('promotionsList', updated);
-                                  }}
-                                  rows={3}
-                                  placeholder="Enter promotion details and terms..."
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-sm"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Add Promotion button - shown when editing and total promotions < 10 */}
-                      {(savedSalesFlowPromotions.length + (companyInfo.promotionsList || []).length) < 10 && (
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              updateCompanyInfo('promotionsList', [
-                                ...(companyInfo.promotionsList || []),
-                                { id: Date.now() + Math.random(), title: '', services: [], terms: '' }
-                              ]);
-                            }}
-                            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span className="text-sm font-medium">{(companyInfo.promotionsList || []).length > 0 ? 'Add Another Promotion' : 'Add Promotion'}</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Divider and Add Promotion button - only shown when there's at least one saved promotion and no editable ones */}
-                  {savedSalesFlowPromotions.length > 0 && (companyInfo.promotionsList || []).length === 0 && savedSalesFlowPromotions.length < 10 && (
-                    <>
-                      <div className="border-t border-slate-300 mt-4"></div>
-                      <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateCompanyInfo('promotionsList', [
-                              { id: Date.now() + Math.random(), title: '', services: [], terms: '' }
-                            ]);
-                          }}
-                          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-sm font-medium">Add Promotion</span>
-                        </button>
+                    {openHookTooltip === 'promotions' && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                        <p className="text-sm text-gray-600">
+                          Create promotions in the Pricing Tool tab, then enable them here to share with leads interested in relevant services.
+                        </p>
                       </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Save button at bottom right - always visible */}
-                <div className="flex justify-end items-center gap-3 pt-4 flex-shrink-0 border-t border-slate-200 mt-4">
-                  {promotionsSaveAttempted && (
-                    (companyInfo.promotionsList || []).length === 0 ||
-                    (companyInfo.promotionsList || []).some(p =>
-                      !p.title || p.title.trim() === '' ||
-                      !p.services || p.services.length === 0 ||
-                      !p.terms || p.terms.trim() === ''
-                    )
-                  ) && (
-                    <span className="text-red-600 text-sm font-medium flex items-center">
-                      <span className="text-red-500 mr-1">*</span> All fields must be present to save
-                    </span>
-                  )}
-                  <button
-                    onClick={() => {
-                      setPromotionsSaveAttempted(true);
-
-                      // Check if there are any promotions to save
-                      const promotionsList = companyInfo.promotionsList || [];
-                      if (promotionsList.length === 0) {
-                        return;
-                      }
-
-                      // Validate all promotions - check if any promotion is missing required fields
-                      const hasError = promotionsList.some(promotion =>
-                        !promotion.title || promotion.title.trim() === '' ||
-                        !promotion.services || promotion.services.length === 0 ||
-                        !promotion.terms || promotion.terms.trim() === ''
-                      );
-
-                      if (hasError) {
-                        return;
-                      }
-
-                      // Check if we're at limit
-                      if (savedSalesFlowPromotions.length + promotionsList.length > 10) {
-                        alert('Maximum of 10 promotions allowed');
-                        return;
-                      }
-
-                      // Save all editable promotions
-                      const newSavedPromotions = [...savedSalesFlowPromotions, ...promotionsList];
-                      setSavedSalesFlowPromotions(newSavedPromotions);
-
-                      // Clear editable list and reset states
-                      updateCompanyInfo('promotionsList', []);
-                      setPromotionsSaveAttempted(false);
-                    }}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                  >
-                    Save
-                  </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -5191,18 +7065,27 @@ const MyAgent = ({
                       <Pencil className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
                     </button>
                   )}
-                </div>
-
-                {/* Customer Reviews Note */}
-                <div className="bg-slate-100 rounded-lg p-4 mb-4 flex-shrink-0">
-                  <p className="text-sm text-gray-600">
-                    Add testimonials from satisfied customers to build trust and credibility with potential clients.
-                  </p>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenHookTooltip(openHookTooltip === 'customer-reviews' ? null : 'customer-reviews')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                    {openHookTooltip === 'customer-reviews' && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                        <p className="text-sm text-gray-600">
+                          Add testimonials from satisfied customers to build trust and credibility with potential clients.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-4" style={{ maxHeight: 'calc(100vh - 400px)' }}>
-                  {/* Saved Customer Reviews - Display Mode */}
-                  {savedCustomerReviews.length > 0 && (companyInfo.customerReviewsList || []).length === 0 && (
+                  {/* Saved Customer Reviews - Always visible when there are saved reviews */}
+                  {savedCustomerReviews.length > 0 && (
                     <div className="space-y-3">
                       {savedCustomerReviews.map((review) => (
                         <div key={review.id} className="p-4 bg-white rounded-xl border border-slate-200 relative">
@@ -5235,37 +7118,175 @@ const MyAgent = ({
                               <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
                             </button>
                           </div>
-                          <div className="pr-20 space-y-1">
-                            <p className="text-sm font-medium text-gray-900">{review.customerName || 'Anonymous'}</p>
-                            {review.service && <p className="text-xs text-blue-600">{review.service}</p>}
-                            <p className="text-sm italic text-gray-600 mt-2">{review.reviewText}</p>
+                          <div className="pr-20 space-y-2">
+                            <p className="text-sm italic text-gray-600">"{review.reviewText}"</p>
+                            <div className="flex items-center flex-wrap gap-1">
+                              <span className="text-sm text-gray-500">—</span>
+                              <span className="text-sm font-semibold text-gray-900 ml-1">{review.customerName || 'Anonymous'}</span>
+                              {(review.services || []).length > 0 && (
+                                <div className="flex flex-wrap gap-1 ml-2">
+                                  {review.services.map((service) => (
+                                    <span key={service} className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{service}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Editable Customer Reviews */}
-                  {((companyInfo.customerReviewsList || []).length > 0 || savedCustomerReviews.length === 0) && (
-                    <div className="space-y-4">
-                      {((companyInfo.customerReviewsList || []).length === 0 && savedCustomerReviews.length === 0
-                        ? [{ id: 'temp-' + Date.now(), customerName: '', service: '', reviewText: '' }]
-                        : (companyInfo.customerReviewsList || [])
-                      ).map((review, index) => {
-                        // Build services list from props
-                        const allServices = [
-                          ...(softWashingServices || []).filter(s => s.selected).map(s => s.name),
-                          ...(customSoftWashingServices || []),
-                          ...(pressureWashingServices || []).filter(s => s.selected).map(s => s.name),
-                          ...(customPressureWashingServices || []),
-                          ...(specialtyCleaningServices || []).filter(s => s.selected).map(s => s.name),
-                          ...(customSpecialtyCleaningServices || [])
-                        ];
+                  {/* Divider between saved and editable */}
+                  {savedCustomerReviews.length > 0 && (companyInfo.customerReviewsList || []).length > 0 && (
+                    <div className="border-t border-slate-300 my-2"></div>
+                  )}
 
+                  {/* Editable Customer Reviews - show when there are editable reviews OR no saved reviews */}
+                  {((companyInfo.customerReviewsList || []).length > 0 || savedCustomerReviews.length === 0) && (() => {
+                    // Create display items - show blank form if both saved and editable are empty
+                    const editableReviews = companyInfo.customerReviewsList || [];
+                    const displayReviews = editableReviews.length === 0 && savedCustomerReviews.length === 0
+                      ? [{ id: 'temp-customer-review', customerName: '', services: [], reviewText: '' }]
+                      : editableReviews;
+
+                    // Build services list from props - same as Job Demos
+                    const allServices = [
+                      ...softWashingServices,
+                      ...customSoftWashingServices,
+                      ...pressureWashingServices,
+                      ...customPressureWashingServices,
+                      ...specialtyCleaningServices,
+                      ...customSpecialtyCleaningServices
+                    ].sort((a, b) => a.localeCompare(b));
+
+                    // CustomerReviewServiceDropdown component (multi-select)
+                    const CustomerReviewServiceDropdown = ({ itemId, selectedServices = [], onServicesChange }) => {
+                      const isOpen = openCustomerReviewServicesDropdownId === itemId;
+                      const [searchTerm, setSearchTerm] = useState('');
+
+                      const filteredServices = allServices.filter(service =>
+                        service.toLowerCase().includes(searchTerm.toLowerCase())
+                      );
+
+                      const handleListRef = (el) => {
+                        if (el && customerReviewDropdownScrollRef.current > 0) {
+                          requestAnimationFrame(() => {
+                            el.scrollTop = customerReviewDropdownScrollRef.current;
+                          });
+                        }
+                      };
+
+                      const toggleService = (service, e) => {
+                        const listEl = e.target.closest('.service-dropdown-list');
+                        if (listEl) {
+                          customerReviewDropdownScrollRef.current = listEl.scrollTop;
+                        }
+                        const services = selectedServices || [];
+                        if (services.includes(service)) {
+                          onServicesChange(services.filter(s => s !== service));
+                        } else {
+                          onServicesChange([...services, service]);
+                        }
+                      };
+
+                      const removeService = (e, service) => {
+                        e.stopPropagation();
+                        const services = selectedServices || [];
+                        onServicesChange(services.filter(s => s !== service));
+                      };
+
+                      return (
+                        <div className="service-dropdown-multi">
+                          <button
+                            type="button"
+                            onClick={() => setOpenCustomerReviewServicesDropdownId(isOpen ? null : itemId)}
+                            className={`review-dropdown-button ${isOpen ? 'review-dropdown-button-open' : ''}`}
+                          >
+                            <div className="service-dropdown-content">
+                              {(selectedServices || []).length === 0 ? (
+                                <span className="service-dropdown-placeholder">Select services</span>
+                              ) : (
+                                <div className="service-pills-inline">
+                                  {selectedServices.map((service) => (
+                                    <span key={service} className="service-pill-inline">
+                                      {service}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeService(e, service);
+                                        }}
+                                        className="service-pill-remove-inline"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <ChevronDown className={`service-dropdown-chevron ${isOpen ? 'service-dropdown-chevron-open' : ''}`} />
+                          </button>
+
+                          {isOpen && (
+                            <>
+                              <div
+                                className="service-dropdown-overlay"
+                                onClick={() => setOpenCustomerReviewServicesDropdownId(null)}
+                              />
+                              <div className="service-dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                                <div className="service-dropdown-search">
+                                  <input
+                                    type="text"
+                                    placeholder="Search services..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="service-dropdown-search-input"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                                <div className="service-dropdown-list" ref={handleListRef}>
+                                  {filteredServices.length > 0 ? (
+                                    filteredServices.map((service) => {
+                                      const isSelected = (selectedServices || []).includes(service);
+                                      return (
+                                        <button
+                                          key={service}
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleService(service, e);
+                                          }}
+                                          className={`service-dropdown-item-multi ${isSelected ? 'service-dropdown-item-selected' : ''}`}
+                                        >
+                                          <div className={`w-4 h-4 rounded border flex items-center justify-center mr-2 ${
+                                            isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                          }`}>
+                                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                                          </div>
+                                          {service}
+                                        </button>
+                                      );
+                                    })
+                                  ) : (
+                                    <div className="service-dropdown-empty">No services found</div>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    };
+
+                    return (
+                    <div className="space-y-4">
+                      {displayReviews.map((review, index) => {
                         return (
                           <div key={review.id} className="bg-white rounded-xl p-4 border border-slate-200 relative">
-                            {/* Hide delete button for temp items (initial empty form) */}
-                            {!review.id.toString().startsWith('temp-') && (
+                            {/* Show delete button only if there are saved reviews OR multiple editable reviews */}
+                            {(savedCustomerReviews.length > 0 || displayReviews.length > 1) && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -5287,48 +7308,48 @@ const MyAgent = ({
                                   type="text"
                                   value={review.customerName || ''}
                                   onChange={(e) => {
-                                    // Handle temp item - create new item in list
+                                    const currentList = companyInfo.customerReviewsList || [];
+                                    // Handle temp item - create a new real item
                                     if (review.id.toString().startsWith('temp-')) {
                                       updateCompanyInfo('customerReviewsList', [
-                                        { id: Date.now() + Math.random(), customerName: e.target.value, service: '', reviewText: '' }
+                                        { id: Date.now() + Math.random(), customerName: e.target.value, services: [], reviewText: '' }
                                       ]);
-                                      return;
+                                    } else {
+                                      const updated = currentList.map(r =>
+                                        r.id === review.id ? { ...r, customerName: e.target.value } : r
+                                      );
+                                      updateCompanyInfo('customerReviewsList', updated);
                                     }
-                                    const updated = (companyInfo.customerReviewsList || []).map(r =>
-                                      r.id === review.id ? { ...r, customerName: e.target.value } : r
-                                    );
-                                    updateCompanyInfo('customerReviewsList', updated);
                                   }}
                                   placeholder="e.g., John D."
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm focus:outline-none"
+                                  className="review-input"
                                 />
                               </div>
 
-                              {/* Service Dropdown */}
+                              {/* Service Dropdown - Multi-select */}
                               <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Service (optional)</label>
-                                <select
-                                  value={review.service || ''}
-                                  onChange={(e) => {
-                                    // Handle temp item - create new item in list
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Services (optional)</label>
+                                <CustomerReviewServiceDropdown
+                                  itemId={review.id}
+                                  selectedServices={review.services || []}
+                                  onServicesChange={(newServices) => {
+                                    const currentList = companyInfo.customerReviewsList || [];
+                                    // Handle temp item - create a new real item
                                     if (review.id.toString().startsWith('temp-')) {
+                                      const newId = Date.now() + Math.random();
                                       updateCompanyInfo('customerReviewsList', [
-                                        { id: Date.now() + Math.random(), customerName: '', service: e.target.value, reviewText: '' }
+                                        { id: newId, customerName: '', services: newServices, reviewText: '' }
                                       ]);
-                                      return;
+                                      // Keep dropdown open with new ID
+                                      setOpenCustomerReviewServicesDropdownId(newId);
+                                    } else {
+                                      const updated = currentList.map(r =>
+                                        r.id === review.id ? { ...r, services: newServices } : r
+                                      );
+                                      updateCompanyInfo('customerReviewsList', updated);
                                     }
-                                    const updated = (companyInfo.customerReviewsList || []).map(r =>
-                                      r.id === review.id ? { ...r, service: e.target.value } : r
-                                    );
-                                    updateCompanyInfo('customerReviewsList', updated);
                                   }}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white shadow-sm focus:outline-none"
-                                >
-                                  <option value="">Select a service...</option>
-                                  {(allServices.length > 0 ? allServices : ['Roof Cleaning', 'House Washing', 'Driveway Cleaning']).map((service, idx) => (
-                                    <option key={idx} value={service}>{service}</option>
-                                  ))}
-                                </select>
+                                />
                               </div>
 
                               {/* Review Text */}
@@ -5337,48 +7358,81 @@ const MyAgent = ({
                                 <textarea
                                   value={review.reviewText || ''}
                                   onChange={(e) => {
-                                    // Handle temp item - create new item in list
+                                    const currentList = companyInfo.customerReviewsList || [];
+                                    // Handle temp item - create a new real item
                                     if (review.id.toString().startsWith('temp-')) {
                                       updateCompanyInfo('customerReviewsList', [
-                                        { id: Date.now() + Math.random(), customerName: '', service: '', reviewText: e.target.value }
+                                        { id: Date.now() + Math.random(), customerName: '', services: [], reviewText: e.target.value }
                                       ]);
-                                      return;
+                                    } else {
+                                      const updated = currentList.map(r =>
+                                        r.id === review.id ? { ...r, reviewText: e.target.value } : r
+                                      );
+                                      updateCompanyInfo('customerReviewsList', updated);
                                     }
-                                    const updated = (companyInfo.customerReviewsList || []).map(r =>
-                                      r.id === review.id ? { ...r, reviewText: e.target.value } : r
-                                    );
-                                    updateCompanyInfo('customerReviewsList', updated);
                                   }}
                                   rows={3}
                                   placeholder="Enter a customer review..."
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-sm"
+                                  className="review-textarea"
                                 />
+                              </div>
+
+                              {/* Save Button */}
+                              <div className="flex justify-end pt-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Validate - need at least customer name and review text
+                                    if (!review.customerName || !review.customerName.trim() || !review.reviewText || !review.reviewText.trim()) {
+                                      return;
+                                    }
+                                    // Save to savedCustomerReviews
+                                    setSavedCustomerReviews([...savedCustomerReviews, review]);
+                                    // Remove from editable list
+                                    const updated = (companyInfo.customerReviewsList || []).filter(r => r.id !== review.id);
+                                    updateCompanyInfo('customerReviewsList', updated);
+                                  }}
+                                  className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                                >
+                                  Save
+                                </button>
                               </div>
                             </div>
                           </div>
                         );
                       })}
 
-                      {/* Add Review button - shown when editing and total reviews < 10 */}
-                      {(savedCustomerReviews.length + (companyInfo.customerReviewsList || []).length) < 10 && (
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              updateCompanyInfo('customerReviewsList', [
-                                ...(companyInfo.customerReviewsList || []),
-                                { id: Date.now() + Math.random(), customerName: '', service: '', reviewText: '' }
-                              ]);
-                            }}
-                            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span className="text-sm font-medium">Add Another Review</span>
-                          </button>
-                        </div>
-                      )}
+                      {/* Add Review button - shown when total reviews < 10 */}
+                      {(savedCustomerReviews.length + (companyInfo.customerReviewsList || []).length) < 10 && (() => {
+                        // Button should be grayed out if there are editable forms OR if temp form is showing (no saved reviews)
+                        const hasUnsavedForms = (companyInfo.customerReviewsList || []).length > 0 || savedCustomerReviews.length === 0;
+                        return (
+                          <div className="pt-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateCompanyInfo('customerReviewsList', [
+                                  ...(companyInfo.customerReviewsList || []),
+                                  { id: Date.now() + Math.random(), customerName: '', services: [], reviewText: '' }
+                                ]);
+                              }}
+                              disabled={hasUnsavedForms}
+                              className={`flex items-center gap-2 transition-colors ${
+                                hasUnsavedForms
+                                  ? 'text-gray-400 cursor-not-allowed'
+                                  : 'text-blue-600 hover:text-blue-700'
+                              }`}
+                              title={hasUnsavedForms ? 'Save the current form before adding another' : 'Add Review'}
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span className="text-sm font-medium">Add Review</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Divider and Add Review button - only shown when there's at least one saved review and no editable ones */}
                   {savedCustomerReviews.length > 0 && (companyInfo.customerReviewsList || []).length === 0 && savedCustomerReviews.length < 10 && (
@@ -5389,7 +7443,7 @@ const MyAgent = ({
                           type="button"
                           onClick={() => {
                             updateCompanyInfo('customerReviewsList', [
-                              { id: Date.now() + Math.random(), customerName: '', service: '', reviewText: '' }
+                              { id: Date.now() + Math.random(), customerName: '', services: [], reviewText: '' }
                             ]);
                           }}
                           className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
@@ -5402,308 +7456,384 @@ const MyAgent = ({
                   )}
 
                 </div>
-
-                {/* Save button at bottom right - always visible */}
-                <div className="flex justify-end items-center gap-3 pt-4 flex-shrink-0 border-t border-slate-200 mt-4">
-                  {customerReviewsSaveAttempted && (
-                    (companyInfo.customerReviewsList || []).length === 0 ||
-                    (companyInfo.customerReviewsList || []).some(r => !r.reviewText || r.reviewText.trim() === '')
-                  ) && (
-                    <span className="text-red-600 text-sm font-medium flex items-center">
-                      <span className="text-red-500 mr-1">*</span> All fields must be present to save
-                    </span>
-                  )}
-                  <button
-                    onClick={() => {
-                      setCustomerReviewsSaveAttempted(true);
-
-                      // Check if there are any reviews to save
-                      const reviewsList = companyInfo.customerReviewsList || [];
-                      if (reviewsList.length === 0) {
-                        return;
-                      }
-
-                      // Validate all reviews - check if any review is missing required text
-                      const hasError = reviewsList.some(review => !review.reviewText || review.reviewText.trim() === '');
-
-                      if (hasError) {
-                        return;
-                      }
-
-                      // Check if we're at limit
-                      if (savedCustomerReviews.length + reviewsList.length > 10) {
-                        alert('Maximum of 10 customer reviews allowed');
-                        return;
-                      }
-
-                      // Save all editable reviews
-                      const newSavedReviews = [...savedCustomerReviews, ...reviewsList];
-                      setSavedCustomerReviews(newSavedReviews);
-
-                      // Clear editable list and reset states
-                      updateCompanyInfo('customerReviewsList', []);
-                      setCustomerReviewsSaveAttempted(false);
-                    }}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                  >
-                    Save
-                  </button>
-                </div>
               </div>
             )}
 
             {/* Online Reviews Content */}
-            {selectedSalesFlowHook === 'Online Reviews' && (
-              <div className="bg-slate-50 rounded-2xl p-6 h-full flex flex-col">
-                <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                    <Globe className="w-5 h-5 text-violet-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 flex-1">Online Reviews</h3>
-                  {savedOnlineReviews && !editingOnlineReviews && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingOnlineReviews(true);
-                        updateCompanyInfo('onlineReviews', savedOnlineReviews);
-                      }}
-                      className="group p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Edit"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+            {selectedSalesFlowHook === 'Online Reviews' && (() => {
+              const allPlatforms = [
+                { key: 'google', label: 'Google' },
+                { key: 'facebook', label: 'Facebook' },
+                { key: 'nextdoor', label: 'Nextdoor' },
+                { key: 'yelp', label: 'Yelp' },
+                { key: 'homeadvisor', label: 'HomeAdvisor' },
+                { key: 'bbb', label: 'BBB' },
+                { key: 'angi', label: 'Angi' },
+                { key: 'thumbtack', label: 'Thumbtack' }
+              ];
 
-                {/* Online Reviews Note */}
-                <div className="bg-slate-100 rounded-lg p-4 mb-4 flex-shrink-0">
-                  <p className="text-sm text-gray-600">
-                    Enter your ratings and review counts from popular platforms to highlight your online reputation.
-                  </p>
-                </div>
+              // Get list of platforms already saved
+              const savedPlatformKeys = Object.keys(savedOnlineReviews || {}).filter(key => {
+                const review = savedOnlineReviews[key];
+                return review && (review.averageRating || review.totalReviews || review.fiveStarReviews);
+              });
 
-                <div className="flex-1 overflow-y-auto mb-4">
-                    {/* Display Mode */}
-                    {savedOnlineReviews && !editingOnlineReviews ? (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-center px-2 mb-3">
-                          <p className="text-xs font-medium text-gray-700">Platform</p>
-                          <p className="text-xs font-medium text-gray-700">Avg Rating</p>
-                          <p className="text-xs font-medium text-gray-700">Total Reviews</p>
-                          <p className="text-xs font-medium text-gray-700">5-Star Reviews</p>
-                          <div className="w-[28px]"></div>
+              // Get list of platforms being edited
+              const editingPlatformKeys = (companyInfo.onlineReviewsList || []).map(r => r.platform).filter(Boolean);
+
+              // Available platforms for new rows (exclude saved and currently editing)
+              const availablePlatforms = allPlatforms.filter(p =>
+                !savedPlatformKeys.includes(p.key) && !editingPlatformKeys.includes(p.key)
+              );
+
+              const addNewReviewRow = () => {
+                const currentList = companyInfo.onlineReviewsList || [];
+                if (currentList.length + savedPlatformKeys.length >= allPlatforms.length) return;
+                const newRow = {
+                  id: Date.now(),
+                  platform: '',
+                  averageRating: '',
+                  totalReviews: '',
+                  fiveStarReviews: ''
+                };
+                updateCompanyInfo('onlineReviewsList', [...currentList, newRow]);
+              };
+
+              const updateReviewRow = (id, field, value) => {
+                const updated = (companyInfo.onlineReviewsList || []).map(r =>
+                  r.id === id ? { ...r, [field]: value } : r
+                );
+                updateCompanyInfo('onlineReviewsList', updated);
+              };
+
+              const deleteReviewRow = (id) => {
+                const updated = (companyInfo.onlineReviewsList || []).filter(r => r.id !== id);
+                updateCompanyInfo('onlineReviewsList', updated);
+              };
+
+              const saveReviewRow = (row) => {
+                // Validate - need platform and at least one value
+                if (!row.platform || (!row.averageRating && !row.totalReviews && !row.fiveStarReviews)) {
+                  return;
+                }
+
+                // Add to saved
+                const newSaved = { ...savedOnlineReviews };
+                newSaved[row.platform] = {
+                  averageRating: row.averageRating,
+                  totalReviews: row.totalReviews,
+                  fiveStarReviews: row.fiveStarReviews
+                };
+                setSavedOnlineReviews(newSaved);
+
+                // Remove from editing list
+                const remaining = (companyInfo.onlineReviewsList || []).filter(r => r.id !== row.id);
+                updateCompanyInfo('onlineReviewsList', remaining);
+              };
+
+              const editSavedReview = (platformKey) => {
+                const review = savedOnlineReviews[platformKey];
+                if (!review) return;
+                // Remove from saved
+                const newSaved = { ...savedOnlineReviews };
+                delete newSaved[platformKey];
+                setSavedOnlineReviews(newSaved);
+                // Add to editing list
+                const newRow = {
+                  id: Date.now(),
+                  platform: platformKey,
+                  averageRating: review.averageRating || '',
+                  totalReviews: review.totalReviews || '',
+                  fiveStarReviews: review.fiveStarReviews || ''
+                };
+                updateCompanyInfo('onlineReviewsList', [...(companyInfo.onlineReviewsList || []), newRow]);
+              };
+
+              const deleteSavedReview = (platformKey) => {
+                const newSaved = { ...savedOnlineReviews };
+                delete newSaved[platformKey];
+                setSavedOnlineReviews(newSaved);
+              };
+
+              return (
+                <div className="bg-slate-50 rounded-2xl p-6 h-full flex flex-col">
+                  <div className="flex items-center gap-3 mb-6 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                      <Globe className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 flex-1">Online Reviews</h3>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHookTooltip(openHookTooltip === 'online-reviews' ? null : 'online-reviews')}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                      {openHookTooltip === 'online-reviews' && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-slate-100 rounded-lg p-4 shadow-lg z-50 border border-slate-200">
+                          <p className="text-sm text-gray-600">
+                            Add your ratings and review counts from popular platforms to highlight your online reputation.
+                          </p>
                         </div>
-                        <div className="border-t border-slate-300"></div>
+                      )}
+                    </div>
+                  </div>
 
-                        {[
-                          { key: 'google', label: 'Google' },
-                          { key: 'facebook', label: 'Facebook' },
-                          { key: 'nextdoor', label: 'Nextdoor' },
-                          { key: 'yelp', label: 'Yelp' },
-                          { key: 'homeadvisor', label: 'HomeAdvisor' }
-                        ].filter(platform => {
-                          const review = savedOnlineReviews[platform.key];
-                          return review && (review.averageRating || review.totalReviews || review.fiveStarReviews);
-                        }).map((platform, index, filteredArray) => {
-                          const review = savedOnlineReviews[platform.key];
+                  <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+                    {/* Saved Reviews - Display Mode */}
+                    {savedPlatformKeys.length > 0 && (
+                      <div className="space-y-3">
+                        {savedPlatformKeys.map((platformKey) => {
+                          const platform = allPlatforms.find(p => p.key === platformKey);
+                          const review = savedOnlineReviews[platformKey];
+                          if (!platform || !review) return null;
                           return (
-                            <React.Fragment key={platform.key}>
-                              <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-center px-2 py-3">
-                                <p className="text-sm text-gray-700">{platform.label}</p>
-                                <div className="flex items-center gap-1">
-                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                  <p className="text-sm font-bold italic text-gray-900">{review.averageRating || '-'}</p>
-                                </div>
-                                <p className="text-sm font-bold italic text-gray-900">{review.totalReviews || '-'}</p>
-                                <p className="text-sm font-bold italic text-gray-900">{review.fiveStarReviews || '-'}</p>
+                            <div key={platformKey} className="p-4 bg-white rounded-xl border border-slate-200 relative">
+                              <div className="absolute top-3 right-3 flex gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    const updatedReviews = { ...savedOnlineReviews };
-                                    delete updatedReviews[platform.key];
-                                    setSavedOnlineReviews(updatedReviews);
-                                  }}
-                                  className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                  aria-label="Delete online review"
+                                  onClick={() => editSavedReview(platformKey)}
+                                  className="group p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                  title="Edit"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteSavedReview(platformKey)}
+                                  className="group p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
-                              {index < filteredArray.length - 1 && (
-                                <div className="border-t border-slate-300 my-2"></div>
-                              )}
-                            </React.Fragment>
+                              <div className="pr-20">
+                                <p className="text-base font-semibold text-gray-900 mb-3">{platform.label}</p>
+                                <div className="flex items-center gap-4">
+                                  {review.averageRating && (
+                                    <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
+                                      <div className="flex items-center gap-1">
+                                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                        <span className="text-lg font-bold text-gray-500">{review.averageRating}</span>
+                                      </div>
+                                      <span className="text-xs text-gray-500">avg rating</span>
+                                    </div>
+                                  )}
+                                  {review.totalReviews && (
+                                    <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
+                                      <span className="text-lg font-bold text-gray-500">{review.totalReviews}</span>
+                                      <span className="text-xs text-gray-500">total reviews</span>
+                                    </div>
+                                  )}
+                                  {review.fiveStarReviews && (
+                                    <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
+                                      <span className="text-lg font-bold text-gray-500">{review.fiveStarReviews}</span>
+                                      <span className="text-xs text-gray-500">5-star reviews</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
-                    ) : (
-                      /* Edit Mode */
-                      <div>
-                        <div className="space-y-4 mt-4">
-                          {[
-                            { key: 'google', label: 'Google' },
-                            { key: 'facebook', label: 'Facebook' },
-                            { key: 'nextdoor', label: 'Nextdoor' },
-                            { key: 'yelp', label: 'Yelp' },
-                            { key: 'homeadvisor', label: 'HomeAdvisor' }
-                          ].map((platform) => (
-                            <div key={platform.key} className="grid grid-cols-4 gap-4 items-center p-4 bg-white rounded-lg">
-                              <div className="font-semibold text-gray-900 min-w-[120px]">{platform.label}</div>
+                    )}
 
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Avg Rating (out of 5)</label>
-                                <div className="relative">
-                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="5"
-                                    step="0.01"
-                                    value={companyInfo.onlineReviews?.[platform.key]?.averageRating || ''}
-                                    onChange={(e) => {
-                                      let value = e.target.value;
-                                      if (value === '') {
-                                        const updatedReviews = {
-                                          ...(companyInfo.onlineReviews || {}),
-                                          [platform.key]: {
-                                            ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                            averageRating: ''
+                    {/* Divider between saved and editable */}
+                    {savedPlatformKeys.length > 0 && ((companyInfo.onlineReviewsList || []).length > 0 || savedPlatformKeys.length < allPlatforms.length) && (
+                      <div className="border-t border-slate-300 my-4"></div>
+                    )}
+
+                    {/* Editable Rows - show blank form by default when no saved reviews */}
+                    {(() => {
+                      const editableRows = companyInfo.onlineReviewsList || [];
+                      // Show at least one blank form if no saved items and no editing items
+                      const displayRows = editableRows.length === 0 && savedPlatformKeys.length === 0
+                        ? [{ id: 'temp-' + Date.now(), platform: '', averageRating: '', totalReviews: '', fiveStarReviews: '' }]
+                        : editableRows;
+
+                      if (displayRows.length === 0) return null;
+
+                      return (
+                        <div className="space-y-3">
+                          {displayRows.map((row) => {
+                            // Get available platforms for this row (include current selection)
+                            const rowAvailablePlatforms = allPlatforms.filter(p =>
+                              !savedPlatformKeys.includes(p.key) &&
+                              (!editingPlatformKeys.includes(p.key) || p.key === row.platform)
+                            );
+
+                            const isTemp = row.id.toString().startsWith('temp-');
+
+                            return (
+                              <div key={row.id} className="bg-white rounded-xl p-4 border border-slate-200 relative">
+                                {!isTemp && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteReviewRow(row.id)}
+                                    className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                <div className={`space-y-3 ${!isTemp ? 'pr-8' : ''}`}>
+                                  {/* Platform Dropdown */}
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Platform</label>
+                                    <select
+                                      value={row.platform || ''}
+                                      onChange={(e) => {
+                                        if (isTemp) {
+                                          // Convert temp to real row
+                                          const newRow = {
+                                            id: Date.now(),
+                                            platform: e.target.value,
+                                            averageRating: '',
+                                            totalReviews: '',
+                                            fiveStarReviews: ''
+                                          };
+                                          updateCompanyInfo('onlineReviewsList', [newRow]);
+                                        } else {
+                                          updateReviewRow(row.id, 'platform', e.target.value);
+                                        }
+                                      }}
+                                      className="review-select"
+                                    >
+                                      <option value="">Select platform...</option>
+                                      {rowAvailablePlatforms.map((p) => (
+                                        <option key={p.key} value={p.key}>{p.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  {/* Rating and Review Inputs */}
+                                  <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Avg Rating</label>
+                                      <div className="relative">
+                                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          max="5"
+                                          step="0.01"
+                                          value={row.averageRating || ''}
+                                          onChange={(e) => {
+                                            let value = e.target.value;
+                                            if (value !== '') {
+                                              const numValue = parseFloat(value);
+                                              if (!isNaN(numValue)) {
+                                                if (numValue > 5) value = '5.00';
+                                                else if (numValue < 0) value = '0';
+                                              }
+                                            }
+                                            if (isTemp) {
+                                              const newRow = { ...row, id: Date.now(), averageRating: value };
+                                              updateCompanyInfo('onlineReviewsList', [newRow]);
+                                            } else {
+                                              updateReviewRow(row.id, 'averageRating', value);
+                                            }
+                                          }}
+                                          placeholder="0.0"
+                                          className="review-input-with-icon"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Total Reviews</label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="10000"
+                                        value={row.totalReviews || ''}
+                                        onChange={(e) => {
+                                          let value = e.target.value;
+                                          if (value !== '' && parseInt(value) > 10000) value = '10000';
+                                          if (isTemp) {
+                                            const newRow = { ...row, id: Date.now(), totalReviews: value };
+                                            updateCompanyInfo('onlineReviewsList', [newRow]);
+                                          } else {
+                                            updateReviewRow(row.id, 'totalReviews', value);
                                           }
-                                        };
-                                        updateCompanyInfo('onlineReviews', updatedReviews);
-                                        return;
-                                      }
-                                      const numValue = parseFloat(value);
-                                      if (!isNaN(numValue)) {
-                                        if (numValue > 5) value = '5.00';
-                                        else if (numValue < 0) value = '0';
-                                        else {
-                                          const parts = value.split('.');
-                                          if (parts[1] && parts[1].length > 2) value = numValue.toFixed(2);
-                                        }
-                                      }
-                                      const updatedReviews = {
-                                        ...(companyInfo.onlineReviews || {}),
-                                        [platform.key]: {
-                                          ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                          averageRating: value
-                                        }
-                                      };
-                                      updateCompanyInfo('onlineReviews', updatedReviews);
-                                    }}
-                                    placeholder="0.0"
-                                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                  />
+                                        }}
+                                        placeholder="0"
+                                        className="review-input"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">5-Star Reviews</label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="10000"
+                                        value={row.fiveStarReviews || ''}
+                                        onChange={(e) => {
+                                          let value = e.target.value;
+                                          if (value !== '' && parseInt(value) > 10000) value = '10000';
+                                          if (isTemp) {
+                                            const newRow = { ...row, id: Date.now(), fiveStarReviews: value };
+                                            updateCompanyInfo('onlineReviewsList', [newRow]);
+                                          } else {
+                                            updateReviewRow(row.id, 'fiveStarReviews', value);
+                                          }
+                                        }}
+                                        placeholder="0"
+                                        className="review-input"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Save Button */}
+                                  <div className="flex justify-end pt-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => saveReviewRow(row)}
+                                      className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+
                                 </div>
                               </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Total Reviews</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100000"
-                                  value={companyInfo.onlineReviews?.[platform.key]?.totalReviews || ''}
-                                  onChange={(e) => {
-                                    let value = e.target.value;
-                                    if (value === '') {
-                                      const updatedReviews = {
-                                        ...(companyInfo.onlineReviews || {}),
-                                        [platform.key]: {
-                                          ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                          totalReviews: ''
-                                        }
-                                      };
-                                      updateCompanyInfo('onlineReviews', updatedReviews);
-                                      return;
-                                    }
-                                    const numValue = parseInt(value, 10);
-                                    if (!isNaN(numValue)) {
-                                      if (numValue > 100000) value = '100000';
-                                      else if (numValue < 0) value = '0';
-                                    }
-                                    const updatedReviews = {
-                                      ...(companyInfo.onlineReviews || {}),
-                                      [platform.key]: {
-                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                        totalReviews: value
-                                      }
-                                    };
-                                    updateCompanyInfo('onlineReviews', updatedReviews);
-                                  }}
-                                  placeholder="0"
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">5-Star Reviews</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100000"
-                                  value={companyInfo.onlineReviews?.[platform.key]?.fiveStarReviews || ''}
-                                  onChange={(e) => {
-                                    let value = e.target.value;
-                                    if (value === '') {
-                                      const updatedReviews = {
-                                        ...(companyInfo.onlineReviews || {}),
-                                        [platform.key]: {
-                                          ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                          fiveStarReviews: ''
-                                        }
-                                      };
-                                      updateCompanyInfo('onlineReviews', updatedReviews);
-                                      return;
-                                    }
-                                    const numValue = parseInt(value, 10);
-                                    if (!isNaN(numValue)) {
-                                      if (numValue > 100000) value = '100000';
-                                      else if (numValue < 0) value = '0';
-                                    }
-                                    const updatedReviews = {
-                                      ...(companyInfo.onlineReviews || {}),
-                                      [platform.key]: {
-                                        ...(companyInfo.onlineReviews?.[platform.key] || {}),
-                                        fiveStarReviews: value
-                                      }
-                                    };
-                                    updateCompanyInfo('onlineReviews', updatedReviews);
-                                  }}
-                                  placeholder="0"
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
+                      );
+                    })()}
 
-                      </div>
-                    )}
+                    {/* Add Platform Button - below review forms */}
+                    {availablePlatforms.length > 0 && (() => {
+                      // Button is grayed out if there are any unsaved forms (including the temp form shown when no saved reviews)
+                      const hasUnsavedForms = (companyInfo.onlineReviewsList || []).length > 0 || savedPlatformKeys.length === 0;
+                      return (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={addNewReviewRow}
+                            disabled={hasUnsavedForms}
+                            className={`flex items-center gap-2 transition-colors ${
+                              hasUnsavedForms
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-blue-600 hover:text-blue-700'
+                            }`}
+                            title={hasUnsavedForms ? 'Save the current form before adding another' : 'Add Platform'}
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-sm font-medium">Add Platform</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
-
-                {/* Save Button - always visible */}
-                <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 flex-shrink-0">
-                  {onlineReviewsSaveAttempted && (!companyInfo.onlineReviews || !Object.keys(companyInfo.onlineReviews || {}).some(platform => {
-                    const review = companyInfo.onlineReviews[platform];
-                    return (review.averageRating && review.averageRating !== '') ||
-                           (review.totalReviews && review.totalReviews !== '') ||
-                           (review.fiveStarReviews && review.fiveStarReviews !== '');
-                  })) && (
-                    <span className="text-red-600 text-sm font-medium flex items-center">
-                      <span className="text-red-500">*</span> Please enter at least one review
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleSaveOnlineReviews}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                  >
-                    Save
-                  </button>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       </div>

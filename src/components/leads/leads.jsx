@@ -91,9 +91,21 @@ const Leads = ({
   // State to track message input values (keyed by `${leadId}_${medium}`)
   const [messageInputs, setMessageInputs] = useState({});
 
+  // State to track email subject lines (keyed by leadId)
+  const [emailSubjects, setEmailSubjects] = useState({});
+
+  // State to track chat panel heights (keyed by leadId)
+  const [chatHeights, setChatHeights] = useState({});
+  const [isDragging, setIsDragging] = useState(null);
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(0);
+
   // Ref for file input and current target
   const fileInputRef = useRef(null);
   const [currentFileTarget, setCurrentFileTarget] = useState(null);
+
+  // Refs for message containers to enable auto-scroll
+  const messageContainerRefs = useRef({});
 
   // Sales Flow Hooks options
   const salesFlowHooks = [
@@ -137,21 +149,30 @@ const Leads = ({
   };
 
   const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (file && currentFileTarget) {
-      // Create a preview URL for the file
-      const fileUrl = URL.createObjectURL(file);
-      const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0 && currentFileTarget) {
+      const currentAttachments = attachedFiles[currentFileTarget] || [];
+      const remainingSlots = 5 - currentAttachments.length;
 
-      setAttachedFiles(prev => ({
-        ...prev,
-        [currentFileTarget]: {
+      // Only add files up to the limit of 5
+      const filesToAdd = files.slice(0, remainingSlots);
+
+      const newAttachments = filesToAdd.map(file => {
+        const fileUrl = URL.createObjectURL(file);
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+
+        return {
           file,
           url: fileUrl,
           name: file.name,
           type: isImage ? 'image' : isVideo ? 'video' : 'file'
-        }
+        };
+      });
+
+      setAttachedFiles(prev => ({
+        ...prev,
+        [currentFileTarget]: [...(prev[currentFileTarget] || []), ...newAttachments]
       }));
     }
     // Reset the input so the same file can be selected again
@@ -159,14 +180,22 @@ const Leads = ({
     setCurrentFileTarget(null);
   };
 
-  const removeAttachedFile = (key) => {
+  const removeAttachedFile = (key, index) => {
     setAttachedFiles(prev => {
-      const newFiles = { ...prev };
-      if (newFiles[key]?.url) {
-        URL.revokeObjectURL(newFiles[key].url);
+      const currentAttachments = prev[key] || [];
+      if (index !== undefined && currentAttachments[index]) {
+        // Revoke the URL for the removed file
+        URL.revokeObjectURL(currentAttachments[index].url);
+        // Remove the specific file at index
+        const newAttachments = currentAttachments.filter((_, i) => i !== index);
+        if (newAttachments.length === 0) {
+          const newFiles = { ...prev };
+          delete newFiles[key];
+          return newFiles;
+        }
+        return { ...prev, [key]: newAttachments };
       }
-      delete newFiles[key];
-      return newFiles;
+      return prev;
     });
   };
 
@@ -183,19 +212,19 @@ const Leads = ({
   const handleSendMessage = (leadId, medium) => {
     const key = `${leadId}_${medium}`;
     const messageText = messageInputs[key]?.trim() || '';
-    const attachment = attachedFiles[key];
+    const attachments = attachedFiles[key] || [];
 
     // Don't send if there's no content
-    if (!messageText && !attachment) return;
+    if (!messageText && attachments.length === 0) return;
 
     const newMessage = {
       from: 'user',
       text: messageText,
-      attachment: attachment ? {
-        type: attachment.type,
-        url: attachment.url,
-        name: attachment.name
-      } : null,
+      attachments: attachments.length > 0 ? attachments.map(att => ({
+        type: att.type,
+        url: att.url,
+        name: att.name
+      })) : [],
       timestamp: new Date().toISOString()
     };
 
@@ -205,13 +234,13 @@ const Leads = ({
       [key]: [...(prev[key] || []), newMessage]
     }));
 
-    // Clear the input and attachment
+    // Clear the input and attachments
     setMessageInputs(prev => ({
       ...prev,
       [key]: ''
     }));
 
-    // Remove attachment (but don't revoke URL since it's now in sent messages)
+    // Remove attachments (but don't revoke URLs since they're now in sent messages)
     setAttachedFiles(prev => {
       const newFiles = { ...prev };
       delete newFiles[key];
@@ -235,6 +264,54 @@ const Leads = ({
     }
   }, [openAttachmentMenu]);
 
+  // Auto-scroll to bottom when messages are sent
+  useEffect(() => {
+    Object.keys(sentMessages).forEach(key => {
+      const container = messageContainerRefs.current[key];
+      if (container) {
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight;
+        }, 50);
+      }
+    });
+  }, [sentMessages]);
+
+  // Handle chat panel resize drag
+  const handleDragStart = (e, leadId) => {
+    e.preventDefault();
+    setIsDragging(leadId);
+    dragStartY.current = e.clientY || e.touches?.[0]?.clientY || 0;
+    dragStartHeight.current = chatHeights[leadId] || 340;
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+    const clientY = e.clientY || e.touches?.[0]?.clientY || 0;
+    const deltaY = clientY - dragStartY.current;
+    const newHeight = Math.max(200, Math.min(600, dragStartHeight.current + deltaY));
+    setChatHeights(prev => ({ ...prev, [isDragging]: newHeight }));
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(null);
+  };
+
+  // Add global mouse/touch listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+      document.addEventListener('touchmove', handleDragMove);
+      document.addEventListener('touchend', handleDragEnd);
+      return () => {
+        document.removeEventListener('mousemove', handleDragMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+        document.removeEventListener('touchmove', handleDragMove);
+        document.removeEventListener('touchend', handleDragEnd);
+      };
+    }
+  }, [isDragging]);
+
   // Render a lead section (Ready Jobs, In Progress, Paused, or Rejected)
   const renderLeadSection = (leads, sectionType) => {
     if (!leads || leads.length === 0) return null;
@@ -249,14 +326,13 @@ const Leads = ({
 
     const renderLeadRow = (lead) => {
       const isChatExpanded = !!expandedChatPanels[lead.id];
-      const chatHeightClass = isChatExpanded ? 'min-h-[360px]' : 'min-h-[260px]';
       const actionButtons = sectionType === 'rejected' ? [] : [
         { label: 'Estimate', icon: FileText },
         { label: 'Contract', icon: FileSignature },
         { label: 'Invoice', icon: Receipt },
         { label: 'Thank You', icon: HeartHandshake }
       ];
-      const chatMediumOptions = ['Text', 'Call', 'Email'];
+      const chatMediumOptions = ['Text', 'Email'];
       const selectedMedium = chatMediumByLead[lead.id] || 'Text';
       const leadFirstName = lead.firstName || lead.name?.split(' ')[0] || 'there';
       
@@ -573,22 +649,39 @@ const Leads = ({
                         </div>
                       ) : selectedMedium === 'Email' ? (
                         /* Email View */
-                        <div className="email-view-wrapper">
-                          <div className="email-thread">
+                        <div className="email-view-wrapper"
+                          style={{ height: chatHeights[lead.id] ? `${chatHeights[lead.id]}px` : undefined }}
+                        >
+                          <div
+                            className="email-thread"
+                            ref={el => messageContainerRefs.current[`${lead.id}_email`] = el}
+                          >
                             {transcript.map((message, idx) => {
                               const emailDate = new Date(Date.now() - (transcript.length - idx) * 86400000);
+                              const emailSubject = 'Re: Service Inquiry';
                               return (
                                 <div key={`email-${lead.id}-${idx}`} className="email-item">
                                   <div className="email-header">
                                     <div className="email-from">
                                       {message.from === 'assistant' ? 'Holy City Clean Co.' : lead.name || 'Customer'}
                                     </div>
-                                    <div className="email-date">
-                                      {emailDate.toLocaleDateString()}
+                                    <div className="email-header-right">
+                                      <button
+                                        type="button"
+                                        className="email-reply-btn"
+                                        onClick={() => setEmailSubjects(prev => ({ ...prev, [lead.id]: emailSubject }))}
+                                        title="Reply"
+                                      >
+                                        <Mail className="email-reply-icon" />
+                                        Reply
+                                      </button>
+                                      <div className="email-date">
+                                        {emailDate.toLocaleDateString()}
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="email-subject">
-                                    Re: Service Inquiry
+                                    {emailSubject}
                                   </div>
                                   <div className="email-body">
                                     {message.text}
@@ -600,45 +693,228 @@ const Leads = ({
                               );
                             })}
                             {/* Sent Emails */}
-                            {(sentMessages[`${lead.id}_email`] || []).map((message, idx) => (
-                              <div key={`sent-email-${lead.id}-${idx}`} className="email-item email-item-sent">
-                                <div className="email-header">
-                                  <div className="email-from">You</div>
-                                  <div className="email-date">
-                                    {new Date(message.timestamp).toLocaleDateString()}
+                            {(sentMessages[`${lead.id}_email`] || []).map((message, idx) => {
+                              const attachments = message.attachments || (message.attachment ? [message.attachment] : []);
+                              const emailSubject = message.subject || 'Re: Service Inquiry';
+                              return (
+                                <div key={`sent-email-${lead.id}-${idx}`} className="email-item email-item-sent">
+                                  <div className="email-header">
+                                    <div className="email-from">You</div>
+                                    <div className="email-header-right">
+                                      <button
+                                        type="button"
+                                        className="email-reply-btn"
+                                        onClick={() => setEmailSubjects(prev => ({ ...prev, [lead.id]: emailSubject }))}
+                                        title="Reply"
+                                      >
+                                        <Mail className="email-reply-icon" />
+                                        Reply
+                                      </button>
+                                      <div className="email-date">
+                                        {new Date(message.timestamp).toLocaleDateString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="email-subject">
+                                    {emailSubject}
+                                  </div>
+                                  {attachments.length > 0 && (
+                                    <div className="sent-email-attachments-row">
+                                      {attachments.map((att, attIdx) => (
+                                        <div key={attIdx} className="sent-email-attachment">
+                                          {att.type === 'image' ? (
+                                            <img src={att.url} alt="Attachment" className="sent-attachment-image" />
+                                          ) : att.type === 'video' ? (
+                                            <video src={att.url} className="sent-attachment-video" controls />
+                                          ) : (
+                                            <div className="sent-attachment-file">
+                                              <FileText className="file-icon" />
+                                              <span>{att.name}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="email-body">
+                                    {message.text}
+                                  </div>
+                                  <div className="email-footer">
+                                    Sent {new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                   </div>
                                 </div>
-                                <div className="email-subject">
-                                  Re: Service Inquiry
-                                </div>
-                                {message.attachment && (
-                                  <div className="sent-email-attachment">
-                                    {message.attachment.type === 'image' ? (
-                                      <img src={message.attachment.url} alt="Attachment" className="sent-attachment-image" />
-                                    ) : message.attachment.type === 'video' ? (
-                                      <video src={message.attachment.url} className="sent-attachment-video" controls />
+                              );
+                            })}
+                          </div>
+                          {/* Email Compose Section */}
+                          <div className="email-compose-section">
+                            {/* Subject Line */}
+                            <div className="email-subject-input-row">
+                              <span className="email-subject-label">Subject:</span>
+                              <input
+                                type="text"
+                                className="email-subject-input"
+                                placeholder="Enter subject..."
+                                value={emailSubjects[lead.id] || ''}
+                                onChange={(e) => setEmailSubjects(prev => ({ ...prev, [lead.id]: e.target.value }))}
+                              />
+                              {emailSubjects[lead.id] && (
+                                <button
+                                  type="button"
+                                  className="email-subject-clear"
+                                  onClick={() => setEmailSubjects(prev => ({ ...prev, [lead.id]: '' }))}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                            {/* Attachments Preview */}
+                            {attachedFiles[`${lead.id}_email`] && attachedFiles[`${lead.id}_email`].length > 0 && (
+                              <div className="attached-files-row">
+                                {attachedFiles[`${lead.id}_email`].map((attachment, idx) => (
+                                  <div key={idx} className="attached-file-item">
+                                    {attachment.type === 'image' ? (
+                                      <img
+                                        src={attachment.url}
+                                        alt="Attached"
+                                        className="attached-media-thumb"
+                                      />
+                                    ) : attachment.type === 'video' ? (
+                                      <video
+                                        src={attachment.url}
+                                        className="attached-media-thumb"
+                                      />
                                     ) : (
-                                      <div className="sent-attachment-file">
-                                        <FileText className="file-icon" />
-                                        <span>{message.attachment.name}</span>
-                                      </div>
+                                      <span className="attached-name-inline">{attachment.name}</span>
                                     )}
+                                    <button
+                                      type="button"
+                                      className="remove-attachment-btn"
+                                      onClick={() => removeAttachedFile(`${lead.id}_email`, idx)}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                                {attachedFiles[`${lead.id}_email`].length < 5 && (
+                                  <div className="attachment-count-label">
+                                    {attachedFiles[`${lead.id}_email`].length}/5
                                   </div>
                                 )}
-                                <div className="email-body">
-                                  {message.text}
-                                </div>
-                                <div className="email-footer">
-                                  Sent {new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                                </div>
                               </div>
-                            ))}
+                            )}
+                            {/* Message Input */}
+                            <div className="message-input-box-inline">
+                              <textarea
+                                placeholder="Compose email..."
+                                className="message-textarea-inline"
+                                value={messageInputs[`${lead.id}_email`] || ''}
+                                onChange={(e) => handleMessageInputChange(lead.id, 'email', e.target.value)}
+                                rows={4}
+                              />
+                              <div className="message-buttons-inline">
+                                <div className="attachment-menu-wrapper">
+                                  <button
+                                    type="button"
+                                    className={`message-plus-btn-inline ${openAttachmentMenu === `${lead.id}_email` ? 'active' : ''}`}
+                                    onClick={() => toggleAttachmentMenu(lead.id, 'email')}
+                                  >
+                                    <Plus className="message-plus-icon" />
+                                  </button>
+                                  {openAttachmentMenu === `${lead.id}_email` && (
+                                    <div className="attachment-dropdown">
+                                      <div className="attachment-dropdown-section">
+                                        <div className="attachment-dropdown-label">Sales Flow Hooks</div>
+                                        {salesFlowHooks.map((hook) => {
+                                          const HookIcon = hook.icon;
+                                          return (
+                                            <button
+                                              key={hook.name}
+                                              type="button"
+                                              className="attachment-dropdown-item"
+                                              onClick={() => handleHookSelect(hook.name)}
+                                            >
+                                              <HookIcon className={`attachment-item-icon ${hook.color}`} />
+                                              <span>{hook.name}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                      <div className="attachment-dropdown-divider" />
+                                      <div className="attachment-dropdown-section">
+                                        <button
+                                          type="button"
+                                          className="attachment-dropdown-item"
+                                          onClick={() => handleMediaUpload(lead.id, 'email')}
+                                        >
+                                          <Image className="attachment-item-icon text-gray-500" />
+                                          <span>Select from files</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="message-send-btn-inline"
+                                  onClick={() => {
+                                    const key = `${lead.id}_email`;
+                                    const messageText = messageInputs[key]?.trim() || '';
+                                    const attachments = attachedFiles[key] || [];
+                                    const subject = emailSubjects[lead.id] || 'Re: Service Inquiry';
+
+                                    if (!messageText && attachments.length === 0) return;
+
+                                    const newMessage = {
+                                      from: 'user',
+                                      text: messageText,
+                                      subject: subject,
+                                      attachments: attachments.length > 0 ? attachments.map(att => ({
+                                        type: att.type,
+                                        url: att.url,
+                                        name: att.name
+                                      })) : [],
+                                      timestamp: new Date().toISOString()
+                                    };
+
+                                    setSentMessages(prev => ({
+                                      ...prev,
+                                      [key]: [...(prev[key] || []), newMessage]
+                                    }));
+
+                                    setMessageInputs(prev => ({ ...prev, [key]: '' }));
+                                    setEmailSubjects(prev => ({ ...prev, [lead.id]: '' }));
+                                    setAttachedFiles(prev => {
+                                      const newFiles = { ...prev };
+                                      delete newFiles[key];
+                                      return newFiles;
+                                    });
+                                  }}
+                                >
+                                  <ArrowUp className="message-send-arrow" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Resize Handle */}
+                          <div
+                            className={`chat-resize-handle ${isDragging === lead.id ? 'dragging' : ''}`}
+                            onMouseDown={(e) => handleDragStart(e, lead.id)}
+                            onTouchStart={(e) => handleDragStart(e, lead.id)}
+                          >
+                            <div className="chat-resize-bar"></div>
                           </div>
                         </div>
                       ) : (
                         /* Text View with Messages and Input */
-                        <div className="chat-messages-wrapper">
-                          <div className={`chat-active-messages ${isChatExpanded ? 'chat-active-messages-expanded' : ''}`}>
+                        <div
+                          className="chat-messages-wrapper"
+                          style={{ height: chatHeights[lead.id] ? `${chatHeights[lead.id]}px` : undefined }}
+                        >
+                          <div
+                            className={`chat-active-messages ${isChatExpanded ? 'chat-active-messages-expanded' : ''}`}
+                            ref={el => messageContainerRefs.current[`${lead.id}_text`] = el}
+                          >
                             {transcript.map((message, idx) => (
                               <div
                                 key={`${selectedMedium}-${lead.id}-${idx}`}
@@ -660,7 +936,8 @@ const Leads = ({
                             ))}
                             {/* Sent Messages */}
                             {(sentMessages[`${lead.id}_text`] || []).map((message, idx) => {
-                              const hasMedia = message.attachment && (message.attachment.type === 'image' || message.attachment.type === 'video');
+                              const attachments = message.attachments || (message.attachment ? [message.attachment] : []);
+                              const hasMedia = attachments.some(att => att.type === 'image' || att.type === 'video');
 
                               return (
                                 <div
@@ -670,12 +947,16 @@ const Leads = ({
                                   <div className="sent-message-wrapper">
                                     {hasMedia ? (
                                       <>
-                                        <div className="sent-media-standalone">
-                                          {message.attachment.type === 'image' ? (
-                                            <img src={message.attachment.url} alt="Sent" className="sent-media-image" />
-                                          ) : (
-                                            <video src={message.attachment.url} className="sent-media-video" controls />
-                                          )}
+                                        <div className="sent-media-row">
+                                          {attachments.map((att, attIdx) => (
+                                            <div key={attIdx} className="sent-media-item">
+                                              {att.type === 'image' ? (
+                                                <img src={att.url} alt="Sent" className="sent-media-image" />
+                                              ) : att.type === 'video' ? (
+                                                <video src={att.url} className="sent-media-video" controls />
+                                              ) : null}
+                                            </div>
+                                          ))}
                                         </div>
                                         {message.text && (
                                           <div className="chat-message-bubble chat-message-bubble-active-assistant">
@@ -685,18 +966,23 @@ const Leads = ({
                                       </>
                                     ) : (
                                       <div className="chat-message-bubble chat-message-bubble-active-assistant">
-                                        {message.attachment && (
+                                        {attachments.length > 0 && (
                                           <div className="sent-attachment">
-                                            <div className="sent-attachment-file">
-                                              <FileText className="file-icon" />
-                                              <span>{message.attachment.name}</span>
-                                            </div>
+                                            {attachments.map((att, attIdx) => (
+                                              <div key={attIdx} className="sent-attachment-file">
+                                                <FileText className="file-icon" />
+                                                <span>{att.name}</span>
+                                              </div>
+                                            ))}
                                           </div>
                                         )}
                                         {message.text}
                                       </div>
                                     )}
-                                    <span className="sent-indicator">Sent <Check className="sent-check-icon" /></span>
+                                    <span className="sent-indicator">
+                                      Sent {new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                      <Check className="sent-check-icon" />
+                                    </span>
                                   </div>
                                 </div>
                               );
@@ -704,24 +990,38 @@ const Leads = ({
                           </div>
                           {/* Text Message Input */}
                           <div className="message-compose-inline">
-                            {attachedFiles[`${lead.id}_text`] && (
-                              <div className="attached-file-inline">
-                                {attachedFiles[`${lead.id}_text`].type === 'image' ? (
-                                  <img
-                                    src={attachedFiles[`${lead.id}_text`].url}
-                                    alt="Attached"
-                                    className="attached-image-inline"
-                                  />
-                                ) : (
-                                  <span className="attached-name-inline">{attachedFiles[`${lead.id}_text`].name}</span>
+                            {attachedFiles[`${lead.id}_text`] && attachedFiles[`${lead.id}_text`].length > 0 && (
+                              <div className="attached-files-row">
+                                {attachedFiles[`${lead.id}_text`].map((attachment, idx) => (
+                                  <div key={idx} className="attached-file-item">
+                                    {attachment.type === 'image' ? (
+                                      <img
+                                        src={attachment.url}
+                                        alt="Attached"
+                                        className="attached-media-thumb"
+                                      />
+                                    ) : attachment.type === 'video' ? (
+                                      <video
+                                        src={attachment.url}
+                                        className="attached-media-thumb"
+                                      />
+                                    ) : (
+                                      <span className="attached-name-inline">{attachment.name}</span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className="remove-attachment-btn"
+                                      onClick={() => removeAttachedFile(`${lead.id}_text`, idx)}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                                {attachedFiles[`${lead.id}_text`].length < 5 && (
+                                  <div className="attachment-count-label">
+                                    {attachedFiles[`${lead.id}_text`].length}/5
+                                  </div>
                                 )}
-                                <button
-                                  type="button"
-                                  className="remove-attachment-inline"
-                                  onClick={() => removeAttachedFile(`${lead.id}_text`)}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
                               </div>
                             )}
                             <div className="message-input-box-inline">
@@ -730,6 +1030,12 @@ const Leads = ({
                                 className="message-textarea-inline"
                                 value={messageInputs[`${lead.id}_text`] || ''}
                                 onChange={(e) => handleMessageInputChange(lead.id, 'text', e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage(lead.id, 'text');
+                                  }
+                                }}
                                 rows={4}
                               />
                               <div className="message-buttons-inline">
@@ -783,6 +1089,15 @@ const Leads = ({
                                 </button>
                               </div>
                             </div>
+                            <span className="text-input-hint">Press Enter to send, Shift+Enter for new line</span>
+                          </div>
+                          {/* Resize Handle */}
+                          <div
+                            className={`chat-resize-handle ${isDragging === lead.id ? 'dragging' : ''}`}
+                            onMouseDown={(e) => handleDragStart(e, lead.id)}
+                            onTouchStart={(e) => handleDragStart(e, lead.id)}
+                          >
+                            <div className="chat-resize-bar"></div>
                           </div>
                         </div>
                       )}
@@ -835,7 +1150,11 @@ const Leads = ({
                             return 'action-button-label action-button-label-slate';
                           };
                           const getCardClass = () => {
-                            return 'action-button-card';
+                            if (action.label === 'Estimate') return 'action-button-card action-button-card-green';
+                            if (action.label === 'Contract') return 'action-button-card action-button-card-purple';
+                            if (action.label === 'Invoice') return 'action-button-card action-button-card-amber';
+                            if (action.label === 'Thank You') return 'action-button-card action-button-card-rose';
+                            return 'action-button-card action-button-card-slate';
                           };
                           const formStatus = (() => {
                             if (action.label === 'Estimate' || action.label === 'Contract') return 'received';
@@ -924,7 +1243,8 @@ const Leads = ({
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+        accept="image/*,video/*"
+        multiple
         style={{ display: 'none' }}
       />
 

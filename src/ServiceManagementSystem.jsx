@@ -527,20 +527,14 @@ const ServiceManagementSystem = () => {
     'Professional service always',
     'Quality you can see',
     'Honest, transparent pricing',
-    'We show up',
-    'Respect for your home',
-    'Clean, careful work',
     'No-damage guarantee',
     'Customer-first mindset',
     'Reliable scheduling',
-    'Fast, efficient service',
     'Pride in workmanship',
-    'Job done right',
     'Clear communication',
     'Local community focused',
     'Eco-friendly cleaning',
-    'Trained, certified staff',
-    'Full accountability'
+    'Trained, certified staff'
   ];
 
   // Brand Identity helper functions
@@ -643,6 +637,9 @@ const ServiceManagementSystem = () => {
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
+
+  // Ads state
+  const [adsPlatform, setAdsPlatform] = useState('facebook');
 
   // Helper functions
   const getJobsForDate = (date) => {
@@ -947,6 +944,42 @@ const ServiceManagementSystem = () => {
             getGuaranteeWarrantyCompletion={getGuaranteeWarrantyCompletion}
             getOnlineReviewsCompletion={getOnlineReviewsCompletion}
           />
+        )}
+
+        {activeTab === 'ads' && (
+          <div className="p-6 space-y-8">
+            {/* My Active Campaigns Section */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">My Active Campaigns</h2>
+                <div className="flex items-center gap-2 bg-gray-100 rounded-full p-1">
+                  <button
+                    onClick={() => setAdsPlatform('facebook')}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      adsPlatform === 'facebook'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Facebook
+                  </button>
+                  <button
+                    onClick={() => setAdsPlatform('instagram')}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      adsPlatform === 'instagram'
+                        ? 'bg-white text-pink-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Instagram
+                  </button>
+                </div>
+              </div>
+              <div className="min-h-[200px]">
+                {/* Content placeholder */}
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'pricingTool' && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronDown, X, Wrench, ArrowRight, Percent, ShoppingCart, Gift, DollarSign, Bot, Send, FileText, FileSignature, Receipt, HeartHandshake, Phone, Star, MapPin, Clock, Award, Shield, ShieldCheck, Search, Pencil } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, X, Wrench, ArrowRight, Percent, ShoppingCart, Gift, DollarSign, Bot, Send, FileText, FileSignature, Receipt, HeartHandshake, Phone, Star, MapPin, Clock, Award, Shield, ShieldCheck, Search, Pencil, HelpCircle } from 'lucide-react';
 import './pricingTool.css';
 
 const PricingTool = ({
@@ -46,6 +46,8 @@ const PricingTool = ({
   const [savedPromotions, setSavedPromotions] = useState([]);
   const [promotionErrors, setPromotionErrors] = useState({}); // Track validation errors by promotion ID
   const [priceErrors, setPriceErrors] = useState({}); // Track validation errors by price format ID
+  const [showAddPriceTooltip, setShowAddPriceTooltip] = useState(false);
+  const [showAddPromotionTooltip, setShowAddPromotionTooltip] = useState(false);
   const [expiredPromotions, setExpiredPromotions] = useState([
     // Sample expired promotions
     {
@@ -170,7 +172,7 @@ const PricingTool = ({
         id: Date.now(),
         title: '',
         services: [],
-        promotionType: '',
+        promotionType: 'percentOff',
         percentOff: '',
         percentOffServices: [],
         packageType: 'buyOneGetOne',
@@ -480,7 +482,27 @@ const PricingTool = ({
             <div className="pricing-format-section">
               {/* Add Price Subsection */}
               <div className="bg-white rounded-3xl p-6 mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Add Price</h3>
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-lg font-semibold text-gray-700">Add Price</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddPriceTooltip(!showAddPriceTooltip);
+                        setShowAddPromotionTooltip(false);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </button>
+                    {showAddPriceTooltip && (
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-72 p-3 bg-white text-gray-700 text-xs rounded-lg shadow-lg border border-slate-200">
+                        <p>Create pricing formulas for your services. Select a service, add rates, expenses, multipliers, and fees to calculate your price. Click "Save Price" when done.</p>
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-white border-l border-b border-slate-200 rotate-45"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               <div className="section-spacing">
                   {pricingFormats.map((format) => {
                     const usedServices = getUsedServices();
@@ -540,18 +562,21 @@ const PricingTool = ({
                             </>
                           )}
                           <div className="add-service-button-container">
+                            {priceErrors[format.id]?.services && (
+                              <span className="text-red-500 text-lg font-bold mr-1">*</span>
+                            )}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setOpenPricingDropdown(openPricingDropdown === format.id ? null : format.id);
                               }}
-                              className="add-service-button"
+                              className={`add-service-button ${priceErrors[format.id]?.services ? 'ring-2 ring-red-300' : ''}`}
                             >
                               <Plus className="add-service-icon" />
                             </button>
                             {(!format.services || format.services.length === 0) && (
-                              <span className="add-service-placeholder">Add Services</span>
+                              <span className={`add-service-placeholder ${priceErrors[format.id]?.services ? 'text-red-500' : ''}`}>Add Services</span>
                             )}
                           </div>
                         </div>
@@ -862,6 +887,13 @@ const PricingTool = ({
                             <>
                           {/* Four Columns Side by Side - Responsive: 2x2 grid on small screens */}
                           <div className="relative pricing-structure-container" style={{ overflow: 'visible' }}>
+                            {/* Error indicator for missing pricing values */}
+                            {priceErrors[format.id]?.values && (
+                              <div className="absolute -top-2 -left-2 flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded-full border border-red-200 z-10">
+                                <span className="text-red-500 text-sm font-bold">*</span>
+                                <span className="text-red-500 text-xs">Add a value</span>
+                              </div>
+                            )}
                             {/* All Four Sections: Rates, Expenses, Fees, Multipliers */}
                             {['rates', 'expenses', 'fees', 'multipliers'].map((sectionType, sectionIndex) => {
                               const sectionLabel = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
@@ -882,7 +914,7 @@ const PricingTool = ({
                                       </div>
                                     </div>
                                   )}
-                                  <div className="relative flex-1 min-w-0 border-2 border-gray-300 rounded-2xl px-4 py-3 bg-slate-50/60 flex flex-col" style={{ minHeight: '280px', overflow: 'visible' }}>
+                                  <div className="relative flex-1 min-w-0 border border-gray-300 rounded-2xl px-4 py-3 bg-white flex flex-col" style={{ minHeight: '280px', overflow: 'visible' }}>
                                     {/* Section Label */}
                                     <label className="block text-sm font-semibold text-gray-700 mb-2 flex-shrink-0">{sectionLabel}</label>
                                     
@@ -1760,7 +1792,7 @@ const PricingTool = ({
                     {!isBlank && (
                       <div className="flex justify-end items-center gap-2 pt-2 border-t border-gray-200 mt-4">
                         {priceErrors[format.id] && (
-                          <span className="text-red-600 text-sm">* {priceErrors[format.id]}</span>
+                          <span className="text-red-600 text-sm">* {priceErrors[format.id].message || 'Please fill in all required fields'}</span>
                         )}
                                                 <button
                                                   type="button"
@@ -1771,36 +1803,36 @@ const PricingTool = ({
                               delete updated[format.id];
                               return updated;
                             });
-                            
+
                             // Check if any service is already used in saved prices
                             const formatServices = format.services || [];
                             const alreadyUsed = formatServices.filter(service => usedServices.has(service));
-                            
+
                             if (alreadyUsed.length > 0) {
-                              setPriceErrors((prev) => ({ ...prev, [format.id]: 'Please fill in all required fields' }));
+                              setPriceErrors((prev) => ({ ...prev, [format.id]: { message: 'Service already used in saved prices', services: true } }));
                               return;
                             }
-                            
+
                             // Check if price has at least one service
                             if (formatServices.length === 0) {
-                              setPriceErrors((prev) => ({ ...prev, [format.id]: 'Please fill in all required fields' }));
+                              setPriceErrors((prev) => ({ ...prev, [format.id]: { message: 'Please add at least one service', services: true } }));
                               return;
                             }
-                            
+
                             // Check if at least one price component has a value filled in
                             const structure = format.pricingStructure || {};
                             const rates = Array.isArray(structure.rates) ? structure.rates : [];
                             const expenses = Array.isArray(structure.expenses) ? structure.expenses : [];
                             const multipliers = Array.isArray(structure.multipliers) ? structure.multipliers : [];
                             const fees = Array.isArray(structure.fees) ? structure.fees : [];
-                            
+
                             const hasRateValue = rates.some(r => r && typeof r === 'object' && r.value && parseFloat(r.value) > 0);
                             const hasExpenseValue = expenses.some(e => e && typeof e === 'object' && e.value && parseFloat(e.value) > 0);
                             const hasMultiplierValue = multipliers.some(m => m && typeof m === 'object' && m.value && parseFloat(m.value) > 0);
                             const hasFeeValue = fees.some(f => f && typeof f === 'object' && f.value && parseFloat(f.value) > 0);
-                            
+
                             if (!hasRateValue && !hasExpenseValue && !hasMultiplierValue && !hasFeeValue) {
-                              setPriceErrors((prev) => ({ ...prev, [format.id]: 'Please fill in all required fields' }));
+                              setPriceErrors((prev) => ({ ...prev, [format.id]: { message: 'Please add at least one pricing value', values: true } }));
                               return;
                             }
                             
@@ -2029,7 +2061,7 @@ const PricingTool = ({
                       return (
                         <div
                           key={savedPrice.id}
-                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative"
+                          className="border border-gray-300 rounded-2xl px-4 py-4 bg-white relative"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -2166,7 +2198,27 @@ const PricingTool = ({
               
               {/* Add Promotions Subsection */}
               <div className="bg-white rounded-3xl p-6 mt-6 mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Add Promotions</h3>
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-lg font-semibold text-gray-700">Add Promotions</h3>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddPromotionTooltip(!showAddPromotionTooltip);
+                        setShowAddPriceTooltip(false);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </button>
+                    {showAddPromotionTooltip && (
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-72 p-3 bg-white text-gray-700 text-xs rounded-lg shadow-lg border border-slate-200">
+                        <p>Create promotional offers for your services. Choose a promotion type (Percent Off, Package, or Buy/Get), configure the details, and set the duration. Click "Save Promotion" when done.</p>
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-white border-l border-b border-slate-200 rotate-45"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               <div className="space-y-3">
                   {promotions.map((promotion) => {
                     // Check if promotion is blank (no saved data)
@@ -2178,7 +2230,7 @@ const PricingTool = ({
                     return (
                   <div
                     key={promotion.id}
-                      className="border-2 border-gray-300 rounded-2xl px-4 py-3 bg-slate-50/60 space-y-3 relative"
+                      className="border border-gray-300 rounded-2xl px-4 py-3 bg-white space-y-3 relative"
                     >
                     {/* First Row - Promotion Type and Title */}
                     <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -2283,7 +2335,7 @@ const PricingTool = ({
                                         const dropdownKey = `${promotion.id}-percent-service`;
                                         setOpenPackageFormulaDropdown(openPackageFormulaDropdown === dropdownKey ? null : dropdownKey);
                                       }}
-                                      className="px-4 py-2.5 rounded-lg text-sm font-medium border-2 border-gray-300 bg-white text-gray-400  focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center gap-2 w-full"
+                                      className="px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-400  focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center gap-2 w-full"
                                       data-promotion-dropdown
                                     >
                                       <span>Select...</span>
@@ -2468,7 +2520,7 @@ const PricingTool = ({
                                   <div className="flex flex-wrap gap-1 w-full">
                                   {(promotion.percentOffServices || []).map((service, index) => (
                                       <div key={index} className="flex items-center" data-service-index={index}>
-                                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border-2 border-blue-200 ">
+                                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200 ">
                                         <span>{service}</span>
                                         <button
                                           type="button"
@@ -2520,7 +2572,7 @@ const PricingTool = ({
                                           const dropdownKey = `${promotion.id}-percent-main`;
                                           setOpenPercentDropdown(openPercentDropdown === dropdownKey ? null : dropdownKey);
                                         }}
-                                        className="px-4 py-2.5 rounded-lg text-sm font-medium border-2 border-gray-300 bg-white text-gray-700  focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center gap-2 w-full"
+                                        className="px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-700  focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center gap-2 w-full"
                                         data-percent-dropdown
                                       >
                                         <span>{promotion.percentOff ? `${promotion.percentOff}% off` : 'Select...'}</span>
@@ -2779,7 +2831,7 @@ const PricingTool = ({
                                     <div className="flex flex-wrap gap-1 w-full mt-2">
                                       {(promotion.packageServices || []).map((service, index) => (
                                         <div key={index} className="flex items-center gap-2" data-service-index={index}>
-                                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border-2 border-blue-200 ">
+                                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200 ">
                                           <span>{service}</span>
                                           <button
                                             type="button"
@@ -3095,7 +3147,7 @@ const PricingTool = ({
                                   <div className="flex flex-wrap gap-1 w-full">
                                   {(promotion.packageFormula?.initialServices || []).map((service, index) => (
                                       <div key={index} className="flex items-center" data-service-index={index}>
-                                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border-2 border-blue-200 ">
+                                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200 ">
                                         <span>{service}</span>
                                         <button
                                           type="button"
@@ -3446,7 +3498,7 @@ const PricingTool = ({
                                     <div className="flex flex-wrap gap-1 w-full">
                                     {(promotion.packageFormula?.additionalServices || []).map((additionalService, index) => (
                                         <div key={index} className="flex items-center">
-                                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 text-blue-700 border-2 border-blue-200 ">
+                                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 ">
                                           <span className="text-sm font-medium">{additionalService.service}</span>
                                           <div className="relative percent-dropdown-container">
                                             <button
@@ -3456,7 +3508,7 @@ const PricingTool = ({
                                                 const dropdownKey = `${promotion.id}-percent-${index}`;
                                                 setOpenPercentDropdown(openPercentDropdown === dropdownKey ? null : dropdownKey);
                                               }}
-                                                className="text-sm font-medium border-2 border-gray-300 rounded-md px-3 py-1 pr-8 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center gap-2"
+                                                className="text-sm font-medium border border-gray-300 rounded-md px-3 py-1 pr-8 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center gap-2"
                                             >
                                                 <span>{additionalService.percentOff === 100 ? 'FREE' : additionalService.percentOff ? `${additionalService.percentOff}% off` : 'Select...'}</span>
                                                 <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -3832,7 +3884,7 @@ const PricingTool = ({
                       return (
                         <div
                           key={savedPromotion.id}
-                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative"
+                          className="border border-gray-300 rounded-2xl px-4 py-4 bg-white relative"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -3949,7 +4001,7 @@ const PricingTool = ({
                       return (
                         <div
                           key={expiredPromotion.id}
-                          className="border-2 border-gray-300 rounded-2xl px-4 py-4 bg-slate-50/60 relative  opacity-75"
+                          className="border border-gray-300 rounded-2xl px-4 py-4 bg-white relative  opacity-75"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
